@@ -3,7 +3,7 @@
 
 name: Build and deploy dotnet core app to Azure Function App - af0e-functions
 
-on: |+
+on:
   push:
     branches:
       - dev
@@ -16,7 +16,6 @@ env:
 jobs:
   build-and-deploy:
     runs-on: windows-latest
-    
     steps:
       - name: 'Checkout GitHub Action'
         uses: actions/checkout@v4
