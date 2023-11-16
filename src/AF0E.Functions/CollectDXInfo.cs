@@ -8,9 +8,9 @@ public class CollectDXInfo
 {
     private readonly ILogger<CollectDXInfo> _logger;
 
-    public const string OrchestratorFunctionName = nameof(CollectDXInfo) + "OrchestratorAsync";
-    public const string HttpStarterFunctionName = nameof(CollectDXInfo) + "HttpStarterAsync";
-    public const string TimerStarterFunctionName = nameof(CollectDXInfo) + "TimerStarterAsync";
+    public const string OrchestratorFunctionName = nameof(CollectDXInfo) + "Orchestrator";
+    public const string HttpStarterFunctionName = nameof(CollectDXInfo) + "HttpStarter";
+    public const string TimerStarterFunctionName = nameof(CollectDXInfo) + "TimerStarter";
     
     public CollectDXInfo(ILoggerFactory loggerFactory)
     {
@@ -18,7 +18,7 @@ public class CollectDXInfo
     }
 
     //[Function(TimerStarterFunctionName)]
-    public async Task TimerStarter([TimerTrigger("0 */1 * * * *")] MyInfo myTimer, [DurableClient] DurableTaskClient starter) // 0 0 0 * * * - at 12am
+    public async Task TimerStarterAsync([TimerTrigger("0 */1 * * * *")] MyInfo myTimer, [DurableClient] DurableTaskClient starter) // 0 0 0 * * * - at 12am
     {
         _logger.LogInformation("!!!   C# Timer trigger function executed at: {Now}", DateTime.Now);
         _logger.LogInformation("!!!   Next timer schedule at: {ScheduleStatusNext}", myTimer.ScheduleStatus.Next);
@@ -27,7 +27,7 @@ public class CollectDXInfo
     }
         
     [Function(HttpStarterFunctionName)]
-    public async Task<HttpResponseData> HttpStarter([HttpTrigger(AuthorizationLevel.Function, "get", "post")] HttpRequestData req, [DurableClient] DurableTaskClient starter) 
+    public async Task<HttpResponseData> HttpStarterAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req, [DurableClient] DurableTaskClient starter) 
     {
         _logger.LogInformation("!!!   C# HTTP trigger function processed a request at: {Now}", DateTime.Now);
 
