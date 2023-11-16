@@ -3,7 +3,9 @@
     "AF0E.Functions": {
       "commandName": "Project",
       "commandLineArgs": "--port 7275",
-      "launchBrowser": false
+      "environmentVariables": {
+        "TaskHubName": "FunctionsLocalHub"
+      }
     }
   }
 }

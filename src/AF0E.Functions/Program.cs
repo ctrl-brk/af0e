@@ -4,14 +4,18 @@ using Microsoft.Extensions.Hosting;
 
 var host = new HostBuilder()
     .ConfigureFunctionsWorkerDefaults()
+    /*
     .ConfigureAppConfiguration(config =>
     {
         config
+            /*
             .AddJsonFile("appsettings.json", true, true)
             .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
             .AddEnvironmentVariables()
+            #1#
             .Build();
     })
+    */
     /*
     .ConfigureServices(services =>
     {
