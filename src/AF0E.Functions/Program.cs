@@ -1,6 +1,8 @@
-using Microsoft.DurableTask.Client;
+﻿using Microsoft.DurableTask.Client;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Serilog;
 
 var host = new HostBuilder()
     .ConfigureFunctionsWorkerDefaults()
@@ -16,9 +18,11 @@ var host = new HostBuilder()
             .Build();
     })
     */
-    /*
+
     .ConfigureServices(services =>
     {
+        services.AddHttpClient();
+        /*
         services.AddDurableTaskClient(builder =>
         {
             // Configure options for this builder. Can be omitted if no options customization is needed.
@@ -32,8 +36,14 @@ var host = new HostBuilder()
             // name, so the line below is NOT required as it was already called for us.
             builder.RegisterDirectly();
         });
+        */
     })
-    */
+
+    /*
+    .UseSerilog((context, config) =>
+        config.ReadFrom.Configuration(context.Configuration))
+        */
+
     .Build();
 
 host.Run();

@@ -1,0 +1,9 @@
+<Project>
+	<PropertyGroup>
+		<AnalysisLevel>latest</AnalysisLevel>
+		<AnalysisMode>All</AnalysisMode>
+		<ThreatWarningsAsErrors>true</ThreatWarningsAsErrors>
+		<CodeAnalysisThreatWarningsAsErrors>true</CodeAnalysisThreatWarningsAsErrors>
+		<EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+	</PropertyGroup>
+</Project>
