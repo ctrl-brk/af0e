@@ -1,10 +1,9 @@
 ﻿using System.Text.Json;
-using Azure;
-using Azure.Data.Tables;
+using AF0E.Shared.Entities;
 
 namespace AF0E.Functions.DX.Infrastructure;
 
-public sealed class DxInfoDto : ITableEntity
+public sealed class DxInfoDto : DxInfoTableEntity
 {
     public DxInfoDto(string partitionKey, DxInfo info)
     {
@@ -32,30 +31,9 @@ public sealed class DxInfoDto : ITableEntity
         RowKey = info.CallSign.Replace('/', '|');
     }
 
-#pragma warning disable CS8618
-    // ReSharper disable UnusedMember.Global
+    // ReSharper disable once UnusedMember.Global
     /// <summary>
     /// Json constructor
     /// </summary>
     public DxInfoDto() {}
-    // ReSharper restore UnusedMember.Global
-#pragma warning restore CS8618
-
-    // ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
-    public string? Name { get; set; }
-    public string? DXCC { get; set; }
-    public string? IOTA { get; set; }
-    public string CallSign { get; set; } //set is for json only
-    public DateTime BeginDate { get; set; }
-    public bool BeginDateSet { get; set; }
-    public DateTime EndDate { get; set; }
-    public bool EndDateSet { get; set; }
-    public string? Links { get; set; } //set is for json only
-    public string? Description { get; set; }
-
-    public string PartitionKey { get; set; } = null!;
-    public string RowKey { get; set; }
-    public DateTimeOffset? Timestamp { get; set; }
-    public ETag ETag { get; set; }
-    // ReSharper restore AutoPropertyCanBeMadeGetOnly.Global
 }
