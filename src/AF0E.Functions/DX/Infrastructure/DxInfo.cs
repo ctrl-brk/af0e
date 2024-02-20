@@ -60,7 +60,7 @@ public sealed class DxInfo
     public bool BeginDateSet { get; set; }
     public DateTime EndDate { get; set; }
     public bool EndDateSet { get; set; }
-    public Collection<string> Links { get; } = new();
+    public Collection<string> Links { get; } = [];
     public string? Description { get; set; }
 
     public static IEnumerable<DxInfo> FromMultipleCallsigns(DxInfoSource source, string callSigns)

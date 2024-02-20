@@ -2,25 +2,18 @@
 
 namespace AF0E.Functions.DX.Activities;
 
-public sealed class Va3RjActivity
+public sealed class Va3RjActivity(ILoggerFactory loggerFactory, IHttpClientFactory httpClientFactory)
 {
     public const string ActivityName = nameof(Va3RjActivity);
 
-    private readonly ILogger<Va3RjActivity> _logger;
-    private readonly IHttpClientFactory _httpClientFactory;
-
-    public Va3RjActivity(ILoggerFactory loggerFactory, IHttpClientFactory httpClientFactory)
-    {
-        _logger = loggerFactory.CreateLogger<Va3RjActivity>();
-        _httpClientFactory = httpClientFactory;
-    }
+    private readonly ILogger<Va3RjActivity> _logger = loggerFactory.CreateLogger<Va3RjActivity>();
 
     [Function(ActivityName)]
     public async Task<ScrapeActivityResult> Run([ActivityTrigger] object x)
     {
         try
         {
-            using var client = _httpClientFactory.CreateClient();
+            using var client = httpClientFactory.CreateClient();
 
             var uri = new Uri(Environment.GetEnvironmentVariable("VA3RJ_URL", EnvironmentVariableTarget.Process) ?? throw new InvalidOperationException("VA3RJ_URL environment variable is not set"));
 
