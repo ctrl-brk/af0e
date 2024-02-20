@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+п»їusing Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 var host = new HostBuilder()
