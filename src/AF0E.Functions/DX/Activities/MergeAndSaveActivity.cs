@@ -66,9 +66,7 @@ public sealed class MergeAndSaveActivity(ILogger<MergeAndSaveActivity> logger)
 
         async Task Save()
         {
-            var svcClient = new TableServiceClient(
-                new Uri(Environment.GetEnvironmentVariable("StorageUrl")),
-                new TableSharedKeyCredential(Environment.GetEnvironmentVariable("StorageAccName"), Environment.GetEnvironmentVariable("StorageKey")));
+            var svcClient = new TableServiceClient(Environment.GetEnvironmentVariable("AzureTableStorage"));
 
             var tblClient = svcClient.GetTableClient("DxInfo");
 
