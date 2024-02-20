@@ -4,9 +4,15 @@
 POST https://www.dxmaps.com/dxcalendar.php
 Content-Type: application/x-www-form-urlencoded
 
-View=30DAY&DXCC=0&IOTA=&CQ=ALL&Mode=ALL&Band=HF
+View=30DAY&DXCC=0&CQ=ALL&Mode=ALL&Band=ALL
 
 ###
 
 // DX Scraper Starter
 GET https://af0e-functions-dev.azurewebsites.net/api/DxScraperHttpStarter?code={{DXScraperHttpStarterKey}}
+
+###
+
+// DX api
+GET http://localhost:5089/30days/
+Accept: application/json

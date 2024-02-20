@@ -19,10 +19,7 @@ public sealed class LoadSavedDataActivity
     [Function(ActivityName)]
     public async Task<List<DxInfo>> Run([ActivityTrigger] Tuple<DateTime, DateTime> dateRange)
     {
-        var svcClient = new TableServiceClient(
-            new Uri(Environment.GetEnvironmentVariable("StorageUrl")),
-            new TableSharedKeyCredential(Environment.GetEnvironmentVariable("StorageAccName"), Environment.GetEnvironmentVariable("StorageKey")));
-
+        var svcClient = new TableServiceClient(Environment.GetEnvironmentVariable("AzureTableStorage"));
         var tblClient = svcClient.GetTableClient("DxInfo");
 
         await tblClient.CreateIfNotExistsAsync();

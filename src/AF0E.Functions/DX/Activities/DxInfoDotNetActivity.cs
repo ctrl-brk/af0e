@@ -2,18 +2,11 @@
 
 namespace AF0E.Functions.DX.Activities;
 
-public sealed class DxInfoDotNetActivity
+public sealed class DxInfoDotNetActivity(ILoggerFactory loggerFactory, IHttpClientFactory httpClientFactory)
 {
     public const string ActivityName = nameof(DxInfoDotNetActivity);
 
-    private readonly ILogger<DxInfoDotNetActivity> _logger;
-    private readonly IHttpClientFactory _httpClientFactory;
-
-    public DxInfoDotNetActivity(ILoggerFactory loggerFactory, IHttpClientFactory httpClientFactory)
-    {
-        _logger = loggerFactory.CreateLogger<DxInfoDotNetActivity>();
-        _httpClientFactory = httpClientFactory;
-    }
+    private readonly ILogger<DxInfoDotNetActivity> _logger = loggerFactory.CreateLogger<DxInfoDotNetActivity>();
 
     [Function(ActivityName)]
 #pragma warning disable IDE0060
@@ -24,7 +17,7 @@ public sealed class DxInfoDotNetActivity
 
         try
         {
-            using var client = _httpClientFactory.CreateClient();
+            using var client = httpClientFactory.CreateClient();
 
             var uri = new Uri(
                 Environment.GetEnvironmentVariable("DX_INFO_NET_URL", EnvironmentVariableTarget.Process) ??

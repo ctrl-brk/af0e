@@ -3,18 +3,11 @@ using AF0E.Functions.DX.Infrastructure;
 
 namespace AF0E.Functions.DX.Activities;
 
-public sealed class DxMapsDotComActivity
+public sealed class DxMapsDotComActivity(ILoggerFactory loggerFactory, IHttpClientFactory httpClientFactory)
 {
     public const string ActivityName = nameof(DxMapsDotComActivity);
 
-    private readonly ILogger<DxMapsDotComActivity> _logger;
-    private readonly IHttpClientFactory _httpClientFactory;
-
-    public DxMapsDotComActivity(ILoggerFactory loggerFactory, IHttpClientFactory httpClientFactory)
-    {
-        _logger = loggerFactory.CreateLogger<DxMapsDotComActivity>();
-        _httpClientFactory = httpClientFactory;
-    }
+    private readonly ILogger<DxMapsDotComActivity> _logger = loggerFactory.CreateLogger<DxMapsDotComActivity>();
 
     [Function(ActivityName)]
 #pragma warning disable IDE0060
@@ -23,7 +16,7 @@ public sealed class DxMapsDotComActivity
     {
         try
         {
-            using var client = _httpClientFactory.CreateClient();
+            using var client = httpClientFactory.CreateClient();
 
             var uri = new Uri(
                 Environment.GetEnvironmentVariable("DX_MAPS_COM_URL", EnvironmentVariableTarget.Process) ??

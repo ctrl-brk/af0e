@@ -3,16 +3,9 @@ using Azure.Data.Tables;
 
 namespace AF0E.Functions.DX.Activities;
 
-public sealed class MergeAndSaveActivity
+public sealed class MergeAndSaveActivity(ILogger<MergeAndSaveActivity> logger)
 {
     public const string ActivityName = nameof(MergeAndSaveActivity);
-
-    private readonly ILogger<MergeAndSaveActivity> _logger;
-
-    public MergeAndSaveActivity(ILogger<MergeAndSaveActivity> logger)
-    {
-        _logger = logger;
-    }
 
     [Function(ActivityName)]
     public async Task Run([ActivityTrigger] Tuple<List<DxInfo>, List<DxInfo>, DateTime> results)
@@ -60,7 +53,7 @@ public sealed class MergeAndSaveActivity
                     continue;
 
 #if DEBUG
-                _logger.LogDxDifference(dxInfo.CallSign, existing.BeginDate, existing.EndDate, existing.Source, dxInfo.BeginDate, dxInfo.EndDate, dxInfo.Source);
+                logger.LogDxDifference(dxInfo.CallSign, existing.BeginDate, existing.EndDate, existing.Source, dxInfo.BeginDate, dxInfo.EndDate, dxInfo.Source);
 #endif
 
                 if (existing.BeginDate > dxInfo.BeginDate)
