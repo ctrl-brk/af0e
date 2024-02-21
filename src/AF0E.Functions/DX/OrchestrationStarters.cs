@@ -18,10 +18,13 @@ public sealed class OrchestrationStarters
     
 #pragma warning disable IDE0060
     // ReSharper disable once UnusedParameter.Global
-    //[Function(nameof(DxScraperTimerStarter))]
-    public async Task DxScraperTimerStarter([TimerTrigger("0 */1 * * * *")] TimerInfo timerInfo, [DurableClient] DurableTaskClient starter) // 0 0 0 * * * - at 12am
+    [Function(nameof(DxScraperTimerStarter))]
+    public async Task DxScraperTimerStarter([TimerTrigger("%ScheduleStarterConfig%")] TimerInfo timerInfo, [DurableClient] DurableTaskClient starter) // https://crontab.guru/
 #pragma warning restore IDE0060
     {
+        if (Environment.GetEnvironmentVariable("UseSchedule") != "true")
+            return;
+
         await starter.ScheduleNewOrchestrationInstanceAsync(DxScraperOrchestrator.OrchestratorName);
     }
         

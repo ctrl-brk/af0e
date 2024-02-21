@@ -1,0 +1,49 @@
+# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+
+name: af0e-dx-api - main to prod
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/AF0E.WebApi/DX/**'
+  workflow_dispatch:
+
+env:
+  APP_SRC_PATH: 'src/AF0E.WebApi/DX' # set this to the path to your web app project, defaults to the repository root
+  DOTNET_VERSION: '8.x' # set this to the dotnet version to use
+
+jobs:
+  build-and-deploy:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET ${{ env.DOTNET_VERSION }}
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          include-prerelease: true
+
+      - name: Build and publish
+        shell: pwsh
+        run: |
+          pushd './${{ env.APP_SRC_PATH }}'
+          dotnet publish -c Release -o ./output
+          popd
+
+      - name: Publish
+        run: dotnet publish -c Release -o ${{env.APP_SRC_PATH}}/output
+
+      - name: Deploy to Azure Web App
+        id: deploy-to-webapp
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: 'af0e-dx-api'
+          slot-name: 'Production'
+          publish-profile: ${{ DX_API_PROD_PUBLISH_PROFILE }}
+          package: ${{env.APP_SRC_PATH}}/output
