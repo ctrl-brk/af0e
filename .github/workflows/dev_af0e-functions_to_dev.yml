@@ -18,19 +18,20 @@ env:
 jobs:
   build-and-deploy:
     runs-on: windows-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup .NET ${{ env.DOTNET_VERSION }}
+      - name: Setup .NET ${{env.DOTNET_VERSION}}
         uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+          dotnet-version: ${{env.DOTNET_VERSION}}
 
       - name: Build
         shell: pwsh
         run: |
-          pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
+          pushd './${{env.AZURE_FUNCTIONAPP_PACKAGE_PATH}}'
           dotnet build --configuration Release --output ./output
           popd
       
@@ -40,5 +41,5 @@ jobs:
         with:
           app-name: 'af0e-functions'
           slot-name: 'dev'
-          package: '${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
-          publish-profile: ${{ secrets.DX_SCRAPER_FN_DEV_PUBLISH_PROFILE }}
+          package: '${{env.AZURE_FUNCTIONAPP_PACKAGE_PATH}}/output'
+          publish-profile: ${{secrets.DX_SCRAPER_FN_DEV_PUBLISH_PROFILE}}
