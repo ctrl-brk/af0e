@@ -32,7 +32,8 @@ app.MapGet("/30days", (IConfiguration config) =>
     var data = tblClient.Query<DxInfoTableEntity>(
             $"PartitionKey ge '{DateTime.UtcNow:yyyyMM}' and PartitionKey le '{DateTime.UtcNow.AddMonths(1):yyyyMM}'")
         .DistinctBy(x => x.CallSign)
-        .Where(x => x.BeginDate >= DateTime.UtcNow && x.EndDate <= DateTime.UtcNow.AddMonths(1))
+        .Where(x => x.BeginDate <= DateTime.UtcNow.AddMonths(1) && x.EndDate >= DateTime.UtcNow)
+        .OrderBy(x => x.BeginDate)
         .Select(x => new DxInfo(x))
         .ToList();
 

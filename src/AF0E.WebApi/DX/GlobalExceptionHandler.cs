@@ -7,6 +7,7 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
 {
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
+        logger.LogError(exception, "Test error log");
         logger.LogAppError(exception);
 
         await httpContext.Response.WriteAsJsonAsync(new ProblemDetails
