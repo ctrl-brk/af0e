@@ -23,16 +23,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup .NET ${{ env.DOTNET_VERSION }}
+      - name: Setup .NET ${{env.DOTNET_VERSION}}
         uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+          dotnet-version: ${{env.DOTNET_VERSION}}
           include-prerelease: true
 
       - name: Build and publish
         shell: pwsh
         run: |
-          pushd './${{ env.APP_SRC_PATH }}'
+          pushd './${{env.APP_SRC_PATH}}'
           dotnet publish -c Release -o ./output
           popd
 
@@ -45,5 +45,5 @@ jobs:
         with:
           app-name: 'af0e-dx-api'
           slot-name: 'Production'
-          publish-profile: ${{ DX_API_PROD_PUBLISH_PROFILE }}
+          publish-profile: ${{secrets.DX_API_PROD_PUBLISH_PROFILE}}
           package: ${{env.APP_SRC_PATH}}/output
