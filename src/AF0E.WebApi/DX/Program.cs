@@ -14,7 +14,7 @@ builder.Services.AddSwaggerGen();
 if (!builder.Environment.IsDevelopment())
 {
     builder.Logging.AddApplicationInsights(
-        configureTelemetryConfiguration: (c) => c.ConnectionString = builder.Configuration.GetConnectionString("APPLICATIONINSIGHTS_CONNECTION_STRING"),
+        configureTelemetryConfiguration: (c) => c.ConnectionString = builder.Configuration.GetConnectionString("AppInsights"),
         configureApplicationInsightsLoggerOptions: (_) => { }
     );
 
