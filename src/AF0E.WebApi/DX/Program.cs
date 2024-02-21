@@ -2,6 +2,7 @@
 using Azure.Data.Tables;
 using DX.Api;
 using DX.Api.Models;
+using Microsoft.Extensions.Logging.ApplicationInsights;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,6 +10,17 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+if (!builder.Environment.IsDevelopment())
+{
+    builder.Logging.AddApplicationInsights(
+        configureTelemetryConfiguration: (c) => c.ConnectionString = builder.Configuration.GetConnectionString("APPLICATIONINSIGHTS_CONNECTION_STRING"),
+        configureApplicationInsightsLoggerOptions: (_) => { }
+    );
+
+    builder.Logging.AddFilter<ApplicationInsightsLoggerProvider>("dx-api", LogLevel.Trace);
+}
+
 
 var app = builder.Build();
 
