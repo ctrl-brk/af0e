@@ -13,6 +13,12 @@ GET https://af0e-functions-dev.azurewebsites.net/api/DxScraperHttpStarter?code={
 
 ###
 
-// DX api
-GET http://localhost:5089/30days/
+// DX api local
+GET http://localhost:5089/v1/30days/
+Accept: application/json
+
+###
+
+// DX api prod
+GET https://af0e-dx-api.azurewebsites.net/v1/30days
 Accept: application/json
