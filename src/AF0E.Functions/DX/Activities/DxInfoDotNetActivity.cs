@@ -9,9 +9,7 @@ public sealed class DxInfoDotNetActivity(ILoggerFactory loggerFactory, IHttpClie
     private readonly ILogger<DxInfoDotNetActivity> _logger = loggerFactory.CreateLogger<DxInfoDotNetActivity>();
 
     [Function(ActivityName)]
-#pragma warning disable IDE0060
     public async Task<ScrapeActivityResult> Run([ActivityTrigger] object x)
-#pragma warning restore IDE0060
     {
         string? body;
 
@@ -34,7 +32,7 @@ public sealed class DxInfoDotNetActivity(ILoggerFactory loggerFactory, IHttpClie
 
             var info = ExtractInfo();
 
-            List<DxInfo> dxInfo = new();
+            List<DxInfo> dxInfo = [];
             var idx = 0;
             foreach (var delimitedSigns in callSigns)
             {
