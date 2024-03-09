@@ -1,14 +1,47 @@
 ﻿using AF0E.Shared.Entities;
+using Asp.Versioning;
 using Azure.Data.Tables;
 using DX.Api;
 using DX.Api.Models;
+using Microsoft.Extensions.Logging.ApplicationInsights;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
+
+builder.Services.AddApiVersioning(o =>
+{
+    o.ReportApiVersions = true;
+    o.AssumeDefaultVersionWhenUnspecified = true;
+
+    o.DefaultApiVersion = new ApiVersion(1);
+    //o.ApiVersionSelector = new CurrentImplementationApiVersionSelector(o);
+
+    o.ApiVersionReader = ApiVersionReader.Combine(
+        new UrlSegmentApiVersionReader(),
+        new HeaderApiVersionReader("X-Api-Version"));
+}).AddApiExplorer(o =>
+{
+    o.GroupNameFormat = "'v'V";
+    o.SubstituteApiVersionInUrl = true;
+});
+
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c => c.SwaggerDoc("v1", new OpenApiInfo{Title = "AFØE DX Api", Version = "v1"}));
+
+if (!builder.Environment.IsDevelopment())
+{
+    builder.Logging.AddApplicationInsights(
+        configureTelemetryConfiguration: (c) => c.ConnectionString = builder.Configuration.GetConnectionString("AppInsights"),
+        configureApplicationInsightsLoggerOptions: (_) => { }
+    );
+
+    builder.Logging.AddFilter<ApplicationInsightsLoggerProvider>("dx-api", LogLevel.Trace);
+}
+
+
 
 var app = builder.Build();
 
@@ -18,11 +51,21 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseSwagger();
-app.UseSwaggerUI();
+app.UseSwaggerUI(c =>
+{
+    c.RoutePrefix = string.Empty;
+    c.SwaggerEndpoint("swagger/v1/swagger.json", "v1");
+    c.DocumentTitle = "AFØE DX Api";
+});
 app.UseHttpsRedirection();
 
-app.MapGet("/30days", (IConfiguration config) =>
-{
+var versionSet = app.NewApiVersionSet()
+    .HasApiVersion(new ApiVersion(1))
+    .ReportApiVersions()
+    .Build();
+
+app.MapGet("v{version:apiVersion}/30days", (IConfiguration config) =>
+    {
     var connectionString = config.GetConnectionString("AzureTableStorage") ?? throw new ApplicationException("Connection string not found");
 
     var svcClient = new TableServiceClient(connectionString);
@@ -32,12 +75,14 @@ app.MapGet("/30days", (IConfiguration config) =>
     var data = tblClient.Query<DxInfoTableEntity>(
             $"PartitionKey ge '{DateTime.UtcNow:yyyyMM}' and PartitionKey le '{DateTime.UtcNow.AddMonths(1):yyyyMM}'")
         .DistinctBy(x => x.CallSign)
-        .Where(x => x.BeginDate >= DateTime.UtcNow && x.EndDate <= DateTime.UtcNow.AddMonths(1))
+        .Where(x => x.BeginDate <= DateTime.UtcNow.AddMonths(1) && x.EndDate >= DateTime.UtcNow)
+        .OrderBy(x => x.BeginDate)
         .Select(x => new DxInfo(x))
         .ToList();
 
     return TypedResults.Ok(data);
 })
+.WithApiVersionSet(versionSet)
 .WithName("GetActiveDx")
 .WithSummary("DX list for the next 30 days")
 .WithDescription("Gets list of scheduled DX stations for the next 30 days starting from now.")
