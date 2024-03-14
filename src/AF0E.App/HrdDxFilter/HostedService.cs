@@ -1,8 +1,8 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿using System.Text.Json;
+using System.Xml.Linq;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Text.Json;
-using System.Xml.Linq;
 
 namespace HrdDxFilter;
 
@@ -45,9 +45,10 @@ public class HostedService(ILogger<HostedService> logger, IHostApplicationLifeti
             {
                 var body = await response.Content.ReadAsStringAsync(cancellationToken);
 #pragma warning disable CA1869
-                var results = JsonSerializer.Deserialize<IEnumerable<DxInfo>>(body, new JsonSerializerOptions{PropertyNameCaseInsensitive = true});
+                var results = JsonSerializer.Deserialize<IEnumerable<DxInfo>>(body, new JsonSerializerOptions{PropertyNameCaseInsensitive = true})!.ToArray();
 #pragma warning restore CA1869
-                UpdateHrdFilterAsync(results!.ToArray());
+                var sortedResults = MassageResults(results);
+                UpdateHrdFilterAsync(sortedResults);
             }
         }
         catch (Exception e)
@@ -56,6 +57,19 @@ public class HostedService(ILogger<HostedService> logger, IHostApplicationLifeti
         }
 
         appLifeTime.StopApplication();
+    }
+
+    private static DxInfo[] MassageResults(IEnumerable<DxInfo> results)
+    {
+        var sorted = results.OrderBy(x => x.CallSign).ToArray();
+
+        foreach (var info in sorted.Where(x => x.CallSign.EndsWith(" PREFIX", StringComparison.OrdinalIgnoreCase)))
+        {
+            var arr = info.CallSign.Split(' ');
+            info.CallSign = $"{arr[0]}.*";
+        }
+
+        return sorted;
     }
 
     private void UpdateHrdFilterAsync(IReadOnlyCollection<DxInfo> results)
