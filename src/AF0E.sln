@@ -15,9 +15,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DX.Api", "AF0E.WebApi\DX\DX
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AF0E.Shared", "AF0E.Shared\AF0E.Shared.csproj", "{5857ECEF-071C-436E-B0B2-D5F46AFB631E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HrdDxFilter", "AF0E.App\HrdDxFilter\HrdDxFilter.csproj", "{9CE86FCD-CE3D-4FF2-A567-80B64C2467BB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HrdDxFilter", "AF0E.App\HrdDxFilter\HrdDxFilter.csproj", "{9CE86FCD-CE3D-4FF2-A567-80B64C2467BB}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "App", "App", "{029FCE95-6DAF-4679-84F2-F53DA4546FF2}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HamMarket", "AF0E.App\HamMarket\HamMarket.csproj", "{FE9B05EC-4D45-4AA7-BF85-358A08B164C1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -41,12 +43,17 @@ Global
 		{9CE86FCD-CE3D-4FF2-A567-80B64C2467BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9CE86FCD-CE3D-4FF2-A567-80B64C2467BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9CE86FCD-CE3D-4FF2-A567-80B64C2467BB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FE9B05EC-4D45-4AA7-BF85-358A08B164C1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FE9B05EC-4D45-4AA7-BF85-358A08B164C1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FE9B05EC-4D45-4AA7-BF85-358A08B164C1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FE9B05EC-4D45-4AA7-BF85-358A08B164C1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{9CE86FCD-CE3D-4FF2-A567-80B64C2467BB} = {029FCE95-6DAF-4679-84F2-F53DA4546FF2}
+		{FE9B05EC-4D45-4AA7-BF85-358A08B164C1} = {029FCE95-6DAF-4679-84F2-F53DA4546FF2}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {0D788AA1-DC58-4331-BE46-D2F849F5C33E}
