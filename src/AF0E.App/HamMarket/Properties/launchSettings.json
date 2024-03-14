@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "HamMarket": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "NETCOREAPP_ENVIRONMENT": "Development"
+      },
+      "remoteDebugEnabled": true,
+      "remoteDebugMachine": "dc2019"
+    }
+  }
+}
