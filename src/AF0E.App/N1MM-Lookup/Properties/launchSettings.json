@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "N1MM-Lookup": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "development"
+      }
+    }
+  }
+}

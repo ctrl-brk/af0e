@@ -82,4 +82,5 @@ dotnet_diagnostic.CA1307.severity = silent
 dotnet_diagnostic.CA1416.severity = silent
 dotnet_diagnostic.CA2007.severity = silent
 dotnet_diagnostic.CA2201.severity = silent
+dotnet_diagnostic.CA2234.severity = silent
 dotnet_diagnostic.ASP0018.severity = silent #unused route parameter
