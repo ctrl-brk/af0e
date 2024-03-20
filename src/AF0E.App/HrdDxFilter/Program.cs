@@ -10,7 +10,8 @@ var host = new HostBuilder()
     {
         ctx.HostingEnvironment.EnvironmentName = Environment.GetEnvironmentVariable("NETCOREAPP_ENVIRONMENT") ?? "production";
 
-        cfg.SetBasePath(Directory.GetCurrentDirectory())
+        //cfg.SetBasePath(Directory.GetCurrentDirectory()) // this will give current working directory, not the .exe file location
+        cfg.SetBasePath(AppContext.BaseDirectory) // .exe file location, alternative is AppDomain.CurrentDomain.BaseDirectory
             .AddJsonFile("appsettings.json", false)
             .AddJsonFile($"appsettings.{ctx.HostingEnvironment.EnvironmentName}.json", true)
             .AddEnvironmentVariables();
@@ -30,7 +31,7 @@ var host = new HostBuilder()
             .AddSerilog(new LoggerConfiguration()
                 .ReadFrom.Configuration(ctx.Configuration)
                 .WriteTo.Console()
-                .WriteTo.File("HrdDxFilter-.log", rollingInterval: RollingInterval.Month)
+                .WriteTo.File(Path.Combine(AppContext.BaseDirectory, "HrdDxFilter-.log"), rollingInterval: RollingInterval.Month)
                 .CreateLogger());
 
     })
