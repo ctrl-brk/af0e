@@ -75,7 +75,7 @@ public sealed class MergeAndSaveActivity(ILogger<MergeAndSaveActivity> logger)
                 if (result.EndDate < minDate) // already ended
                     continue;
 
-                var endDate = new DateOnly(result.EndDate.Year, result.EndDate.Month, 1);
+                var endDate = new DateOnly(result.EndDate.Year, result.EndDate.Month, 1).AddMonths(1).AddDays(-1);
                 var iterator = result.BeginDate > minDate
                     ? new DateOnly(result.BeginDate.Year, result.BeginDate.Month, 1)
                     : new DateOnly(minDate.Year, minDate.Month, minDate.Day);
