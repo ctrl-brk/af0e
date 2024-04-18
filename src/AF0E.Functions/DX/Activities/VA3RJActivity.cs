@@ -46,7 +46,7 @@ public sealed class Va3RjActivity(ILoggerFactory loggerFactory, IHttpClientFacto
 
     private static List<DxInfo> ParseDxData(string html)
     {
-        List<DxInfo> results = new();
+        List<DxInfo> results = [];
 
         var rows = html.Split("<tr ").Where(x => !string.IsNullOrEmpty(x));
         foreach (var row in rows)
@@ -64,8 +64,18 @@ public sealed class Va3RjActivity(ILoggerFactory loggerFactory, IHttpClientFacto
             startIdx = cells[4].IndexOf('>');
             var beginDate = ParseDate(cells[4][(startIdx + 1)..], out var beginDateSet);
 
+
+            DateTime endDate;
+            var endDateSet = false;
             startIdx = cells[5].IndexOf('>');
-            var endDate = ParseDate(cells[5][(startIdx + 1)..], out var endDateSet);
+            try
+            {
+                endDate = ParseDate(cells[5][(startIdx + 1)..], out endDateSet);
+            }
+            catch
+            {
+                endDate = DateTime.Now.AddMonths(1);
+            }
 
             if (endDate > DateTime.Now.AddMonths(1))
             {
@@ -98,12 +108,24 @@ public sealed class Va3RjActivity(ILoggerFactory loggerFactory, IHttpClientFacto
         var startIdx = dateStr.IndexOf('>'); // <td><font color="gray">2023-12-31?</font>
 
         if (startIdx < 0)
-            return DateTime.Parse(dateStr);
+            return TryParseDate(dateStr);
 
         var endIdx = dateStr.IndexOf('?', startIdx);
         dateStr = dateStr.Substring(startIdx+1, endIdx - startIdx - 1);
         isSet = false;
 
+        return TryParseDate(dateStr);
+    }
+
+    private static DateTime TryParseDate(string dateStr)
+    {
+        if (DateTime.TryParse(dateStr, out var parsedDate))
+            return parsedDate;
+
+        //seen dates like 2024-31-12
+
+        var dateParts = dateStr.Split('-');
+        dateStr = $"{dateParts[0]}-{dateParts[2]}-{dateParts[1]}";
         return DateTime.Parse(dateStr);
     }
 }

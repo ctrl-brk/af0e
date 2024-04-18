@@ -15,8 +15,8 @@ public sealed class DxScraperOrchestrator
 
         var activities = new List<Task<ScrapeActivityResult>>
         {
-            context.CallActivityAsync<ScrapeActivityResult>(DxInfoDotNetActivity.ActivityName),
-            context.CallActivityAsync<ScrapeActivityResult>(DxMapsDotComActivity.ActivityName),
+            //context.CallActivityAsync<ScrapeActivityResult>(DxInfoDotNetActivity.ActivityName),
+            //context.CallActivityAsync<ScrapeActivityResult>(DxMapsDotComActivity.ActivityName),
             context.CallActivityAsync<ScrapeActivityResult>(Va3RjActivity.ActivityName),
         };
 
