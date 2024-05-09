@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Serilog;
 
 var host = new HostBuilder()
     .ConfigureAppConfiguration((ctx, cfg) =>
@@ -25,8 +26,11 @@ var host = new HostBuilder()
     {
         cfg.ClearProviders()
             .AddConfiguration(ctx.Configuration.GetSection("Logging"))
-            .AddConsole()
-            .AddDebug();
+            .AddSerilog(new LoggerConfiguration()
+                .ReadFrom.Configuration(ctx.Configuration)
+                .WriteTo.Console()
+                .WriteTo.File(Path.Combine(AppContext.BaseDirectory, "HamMarket-.log"), rollingInterval: RollingInterval.Month)
+                .CreateLogger());
     })
     .UseConsoleLifetime()
     .Build();
