@@ -113,11 +113,11 @@ public partial class EhamHandler(ILogger<HostedService> logger, IOptions<AppSett
 
             var adEndIndex = msg.IndexOf(AD_START, adStartIndex, StringComparison.Ordinal);
             if (adEndIndex < 0) adEndIndex = msg.IndexOf("<ul class=\"pagination\">", adStartIndex, StringComparison.Ordinal);
-                
+
             if (adEndIndex < 0) throw new ApplicationException("Invalid response format");
 
             var body = msg.Substring(adStartIndex, adEndIndex - adStartIndex);
-                
+
             if (scanType == ScanType.Keyword)
             {
                 var found = keys.Any(key => body.Contains(key, StringComparison.OrdinalIgnoreCase));
@@ -165,7 +165,7 @@ public partial class EhamHandler(ILogger<HostedService> logger, IOptions<AppSett
         if (post.Title.StartsWith("WTB ", true, null) || post.Title.StartsWith("WTB:", true, null) || post.Title.StartsWith("WTB-", true, null)) return null;
 
         post.Price = Utils.GetPrice(post);
-        if (!string.IsNullOrEmpty(post.Category)) post.Category = post.Category.ToLower();
+        if (!string.IsNullOrEmpty(post.Category)) post.Category = post.Category.ToLowerInvariant();
 
         return post;
     }
