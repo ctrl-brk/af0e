@@ -155,9 +155,7 @@ public sealed class DxInfoDotNetActivity(ILoggerFactory loggerFactory, IHttpClie
 
                 token = @"<a href=\""";
                 startIdx = tt.IndexOf(token, endIdx, StringComparison.OrdinalIgnoreCase) + token.Length;
-                token = @"/\";
-                endIdx = tt.IndexOf(token, startIdx + token.Length, StringComparison.OrdinalIgnoreCase);
-
+                endIdx = tt.IndexOfAny(['/', '\\'], startIdx + token.Length); //url can end in any of these
                 result.Add((location, tt[startIdx..endIdx]));
             }
 
