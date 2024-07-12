@@ -29,7 +29,7 @@ public sealed class DxMapsDotComActivity(ILoggerFactory loggerFactory, IHttpClie
 
             body = ExtractTableBody(body);
 
-            var ret = string.IsNullOrEmpty(body) ? new List<DxInfo>() : ParseDxData(body);
+            var ret = string.IsNullOrEmpty(body) ? [] : ParseDxData(body);
 
             _logger.LogSourceStats(DxInfoSource.DxMapsCom, ret.Count);
 
@@ -57,7 +57,7 @@ public sealed class DxMapsDotComActivity(ILoggerFactory loggerFactory, IHttpClie
 
     private static List<DxInfo> ParseDxData(string html)
     {
-        Dictionary<string, DxInfo> callsWithData = new();
+        Dictionary<string, DxInfo> callsWithData = [];
 
         var rows = html.Split("<tr>").Where(x => !string.IsNullOrEmpty(x));
         foreach (var row in rows)
