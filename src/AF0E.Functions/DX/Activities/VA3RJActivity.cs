@@ -2,7 +2,7 @@
 
 namespace AF0E.Functions.DX.Activities;
 
-public sealed class Va3RjActivity(ILoggerFactory loggerFactory, IHttpClientFactory httpClientFactory)
+internal sealed class Va3RjActivity(ILoggerFactory loggerFactory, IHttpClientFactory httpClientFactory)
 {
     public const string ActivityName = nameof(Va3RjActivity);
 
@@ -44,7 +44,7 @@ public sealed class Va3RjActivity(ILoggerFactory loggerFactory, IHttpClientFacto
         return body[startIdx..endIdx];
     }
 
-    private static List<DxInfo> ParseDxData(string html)
+    private List<DxInfo> ParseDxData(string html)
     {
         List<DxInfo> results = [];
 
@@ -62,17 +62,17 @@ public sealed class Va3RjActivity(ILoggerFactory loggerFactory, IHttpClientFacto
             var iota = cells[3][(startIdx+1)..];
 
             startIdx = cells[4].IndexOf('>');
-            var beginDate = ParseDate(cells[4][(startIdx + 1)..], out var beginDateSet);
+            var dateStr = cells[4][(startIdx + 1)..];
+            var beginDate = ParseDate(dateStr, out var beginDateSet);
+            if (beginDate is null)
+                continue;
 
-
-            DateTime endDate;
             var endDateSet = false;
             startIdx = cells[5].IndexOf('>');
-            try
-            {
-                endDate = ParseDate(cells[5][(startIdx + 1)..], out endDateSet);
-            }
-            catch
+
+            var endDate = ParseDate(cells[5][(startIdx + 1)..], out endDateSet);
+
+            if (endDate is null)
             {
                 endDate = DateTime.Now.AddMonths(1);
             }
@@ -88,9 +88,9 @@ public sealed class Va3RjActivity(ILoggerFactory loggerFactory, IHttpClientFacto
 
             results.Add(new DxInfo(DxInfoSource.VA3RJ, callSign)
             {
-                BeginDate = beginDate,
+                BeginDate = beginDate.Value,
                 BeginDateSet = beginDateSet,
-                EndDate = endDate,
+                EndDate = endDate.Value,
                 EndDateSet = endDateSet,
                 DXCC = dxcc,
                 IOTA = iota,
@@ -101,7 +101,7 @@ public sealed class Va3RjActivity(ILoggerFactory loggerFactory, IHttpClientFacto
         return results;
     }
 
-    private static DateTime ParseDate(string dateStr, out bool isSet)
+    private DateTime? ParseDate(string dateStr, out bool isSet)
     {
         isSet = true;
 
@@ -111,21 +111,53 @@ public sealed class Va3RjActivity(ILoggerFactory loggerFactory, IHttpClientFacto
             return TryParseDate(dateStr);
 
         var endIdx = dateStr.IndexOf('?', startIdx);
-        dateStr = dateStr.Substring(startIdx+1, endIdx - startIdx - 1);
+        dateStr = dateStr.Substring(startIdx + 1, endIdx - startIdx - 1);
         isSet = false;
 
         return TryParseDate(dateStr);
     }
 
-    private static DateTime TryParseDate(string dateStr)
+    private DateTime? TryParseDate(string dateStr)
     {
+        //seen dates like 2024-31-12, 2024-11-31
+
         if (DateTime.TryParse(dateStr, out var parsedDate))
             return parsedDate;
 
-        //seen dates like 2024-31-12
-
         var dateParts = dateStr.Split('-');
-        dateStr = $"{dateParts[0]}-{dateParts[2]}-{dateParts[1]}";
-        return DateTime.Parse(dateStr);
+
+        if (dateParts.Length != 3)
+            return null;
+
+        var year = int.Parse(dateParts[0]);
+
+        if (!int.TryParse(dateParts[1], out var month) || !int.TryParse(dateParts[2], out var day))
+        {
+            _logger.LogDateError(DxInfoSource.VA3RJ, dateStr);
+            return null;
+        }
+
+        if (month > 12)
+        {
+            var tmp = month;
+            month = day;
+            day = tmp;
+        }
+
+        if (month > 12)
+        {
+            _logger.LogDateError(DxInfoSource.VA3RJ, dateStr);
+            return null;
+        }
+
+        if ((month is 4 or 6 or 9 or 11) && day > 30)
+            day = 30;
+
+        if (month == 2 && year % 4 == 0 && day > 29)
+            day = 29;
+        else if (month == 2 && day > 28)
+            day = 28;
+
+        return new DateTime(year, month, day);
     }
 }
