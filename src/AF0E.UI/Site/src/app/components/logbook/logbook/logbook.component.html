@@ -1,0 +1,69 @@
+<p-table
+  [value]="logEntries"
+  dataKey="id"
+  sortField="date"
+  [sortOrder]="-1"
+  [paginator]="true"
+  [showCurrentPageReport]="true"
+  currentPageReportTemplate="{first}-{last} of {totalRecords}"
+  [rows]="50"
+  [lazy]="true"
+  [lazyLoadOnInit]="false"
+  [totalRecords]="totalRecords"
+  [loading]=loading
+  (onLazyLoad)="onLazyLoad($event)"
+  stripedRows>
+  <ng-template pTemplate="caption">
+    <p-floatlabel variant="on">
+      <p-datePicker
+        selectionMode="range"
+        [(ngModel)]="qsoDateRange"
+        [minDate]="qsoMinDate"
+        [maxDate]="qsoMaxDate"
+        dateFormat="yy-mm-dd"
+        inputId="daterange"
+        [readonlyInput]="false"
+        (onFocus)="onDateRangeFocus(true)"
+        (onBlur)="onDateRangeFocus(false)"
+      />
+      <label for="daterange">{{dateRangeTitle}}</label>
+    </p-floatlabel>
+    <p-button severity="secondary" icon="pi pi-search" (onClick)="onDateRangeSearch()" />
+  </ng-template>
+
+  <ng-template pTemplate="header">
+    <tr>
+      <th pSortableColumn="date">UTC (ymd) <p-sortIcon field="date" /></th>
+      <th>Call</th>
+      <th>Band</th>
+      <th>Mode</th>
+      <th title="POTA activation">POTA</th>
+      <th title="Satellite name">SAT</th>
+    </tr>
+  </ng-template>
+
+  <ng-template pTemplate="body" let-qso>
+    <tr (click)="onQsoSelect(qso)">
+      <td>{{ qso.date | date:'yy-MM-dd hh:mm' }}</td>
+      <td>{{ qso.call }}</td>
+      <td>{{ qso.band }}</td>
+      <td><p-tag [value]="getMode(qso.mode)" [severity]="getModeSeverity(qso.mode)" /></td>
+      <td>
+        <mat-icon>{{getPotaIcon(qso)}}</mat-icon>
+<!--        @if (qso.potaCount) {-->
+<!--          <mat-icon>park</mat-icon>-->
+<!--        }-->
+      </td>
+      <td>{{qso.satName}}</td>
+    </tr>
+  </ng-template>
+</p-table>
+
+<p-scrollTop />
+
+<p-dialog header="{{myCallsign}} confirms the following QSO" [modal]="true" [(visible)]="qsoDetailsVisible" [style]="{ width: '25rem' }">
+  <app-qso [qsoId]="selectedId" />
+  <div class="qsl">
+    <p-button label="Close" severity="secondary" (click)="qsoDetailsVisible = false" />
+  </div>
+</p-dialog>

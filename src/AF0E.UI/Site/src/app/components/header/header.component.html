@@ -1,0 +1,23 @@
+<header [style.justify-content]="isLessThan1000px ? 'space-between' : 'space-evenly'">
+  <div>
+    @if (isLessThan1000px) {
+      <p-button severity="secondary" (click)="popupMenu.toggle($event)" icon="pi pi-bars" />
+      <p-menu #popupMenu [model]="menuItems" [popup]="true" />
+    }
+    <a href="/"><img src="logo.svg" alt="AFØE"></a>
+  </div>
+
+  <nav>
+    @if (!isLessThan1000px) {
+      <p-menubar [model]="menuItems" />
+    }
+  </nav>
+
+  <p-floatlabel variant="on">
+    <p-autoComplete [(ngModel)]="searchCall" [suggestions]="callsFound" [showClear]="true" (completeMethod)="search($event)" (onFocus)="onSearchFocus(true)" (onBlur)="onSearchFocus(false)" autofocus="false" emptyMessage="not in log" id="call-search" (onSelect)="onSelect($event)" />
+    <label for="call-search">{{searchTitle}}</label>
+  </p-floatlabel>
+
+  <div class='border'></div>
+
+</header>

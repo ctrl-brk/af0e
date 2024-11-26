@@ -22,7 +22,6 @@ csharp_style_expression_bodied_local_functions = false:silent
 csharp_style_expression_bodied_methods = false:silent
 csharp_style_expression_bodied_operators = false:silent
 csharp_style_expression_bodied_properties = true:silent
-csharp_style_namespace_declarations = file_scoped:error
 csharp_style_prefer_local_over_anonymous_function = true:suggestion
 csharp_style_prefer_method_group_conversion = true:silent
 csharp_style_prefer_null_check_over_type_check = true:suggestion
@@ -37,9 +36,14 @@ indent_size = 2
 
 # Code files
 [*.{cs,csx,vb,vbx}]
-charset = utf-8-bom
 indent_size = 4
 tab_width = 4
+# IDE0011: Add braces
+csharp_prefer_braces = when_multiline:warning
+# IDE0007: Use var instead of explicit type
+dotnet_diagnostic.IDE0007.severity = none
+# IDE0008: Use explicit type instead of var
+dotnet_diagnostic.IDE0008.severity = none
 csharp_style_namespace_declarations = file_scoped:error
 
 # Constants are PascalCase
