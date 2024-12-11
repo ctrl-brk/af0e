@@ -1,10 +1,44 @@
 main.home-content {
   flex: 1;
-  padding: 2rem;
+  padding: 5.5rem 2rem 2rem 2rem;
 
-  p-card {
-    div {
-      max-width: 30rem;
+  div.cards {
+    display: flex;
+    justify-content: start;
+    flex-wrap: wrap;
+    max-width: 105rem;
+    p-card {
+      margin: 0 1rem 1rem 0;
+      .p-card-body {border-radius: var(--p-border-radius-xl);}
+    }
+    p-card.logbook, p-card.qrz-small, p-card.dx-calendar, p-card.ham-alert {width: 31.2rem}
+    p-card.logbook {
+      .p-card-body {background-color: antiquewhite;}
+    }
+    p-card.dx-calendar {
+      .p-card-body {background-color: aliceblue;}
+    }
+    p-card.ham-alert {
+      .p-card-body {background-color: lightgray;}
+    }
+    p-card.rbn {
+      .p-card-body {background-color: honeydew;}
+    }
+    p-card.solar {
+      .p-card-body {background-color: black;}
+    }
+    p-card.qrz {
+      .p-card-body {background-color: lightcyan;}
+      img { width: 150px;}
+    }
+    p-card.qrz-small {
+      img { width: 150px;}
+    }
+
+    a.logbook, a.qrz, a.dx-calendar {
+      display: flex;
+      &:link, &:visited, &:active, &:hover {color: var(--text-color); text-decoration: none;}
+      img {margin-right: 0.8rem}
     }
   }
 }

@@ -10,12 +10,9 @@ import {Fieldset} from 'primeng/fieldset';
 @Component({
   selector: 'app-qso',
   standalone: true,
-  imports: [
-    DatePipe,
-    Fieldset
-  ],
   templateUrl: './qso.component.html',
-  styleUrl: './qso.component.scss'
+  styleUrl: './qso.component.scss',
+  imports: [DatePipe, Fieldset],
 })
 export class QsoComponent {
   private _logbookSvc = inject(LogbookService);
@@ -33,7 +30,7 @@ export class QsoComponent {
   }
 
   private loadQSO() {
-    this._logbookSvc.GetQso(this.qsoId()!).subscribe({
+    this._logbookSvc.getQso(this.qsoId()!).subscribe({
       next: r => {
         this.qsoDetails = r;
       },

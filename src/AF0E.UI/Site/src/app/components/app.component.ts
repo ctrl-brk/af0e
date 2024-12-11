@@ -1,24 +1,22 @@
 import {Component, inject, OnInit} from '@angular/core';
 import {RouterOutlet} from '@angular/router';
 import {Subscription} from 'rxjs';
+import {PrimeNG} from 'primeng/config';
 import {MessageService} from 'primeng/api';
 import {ToastModule} from 'primeng/toast';
-import {FooterComponent} from './footer/footer.component';
 import {HeaderComponent} from './header/header.component';
-import {HomeComponent} from './home/home.component';
 import {NotificationService} from '../shared/notification.service';
 import {NotificationMessageSeverity} from '../shared/notification-message.model';
-import {PrimeNG} from 'primeng/config';
+import {FooterComponent} from './footer/footer.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
   imports: [
-    FooterComponent,
     HeaderComponent,
-    HomeComponent,
     ToastModule,
-    RouterOutlet
+    RouterOutlet,
+    FooterComponent
   ],
   styles: `
     :host {

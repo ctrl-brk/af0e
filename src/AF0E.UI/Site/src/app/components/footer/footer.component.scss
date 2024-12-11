@@ -1,9 +1,10 @@
 footer {
-  background: var(--primary-color);
-  color: var(--accent-color);
+  background: gainsboro;
+  font-size: 0.7rem;
   text-align: center;
-  padding: 1rem 0;
-  position: relative;
+  padding: 0.5rem 0;
+  position: fixed;
   bottom: 0;
   width: 100%;
+  z-index: 5;
 }

@@ -1,21 +1,21 @@
-import {Component, DestroyRef, inject, OnInit} from '@angular/core';
+import {Component, DestroyRef, inject, OnInit, ViewEncapsulation} from '@angular/core';
 import {ActivatedRoute} from '@angular/router';
-import {SortIcon, TableLazyLoadEvent, TableModule} from 'primeng/table';
-import {LogbookService} from '../../../services/logbook.service';
-import {Utils} from '../../../shared/utils';
-import {QsoSummaryModel} from '../../../models/qso-summary.model';
-import {NotificationService} from '../../../shared/notification.service';
-import {LogService} from '../../../shared/log.service';
+import {TableLazyLoadEvent, TableModule} from 'primeng/table';
+import {LogbookService} from '../../services/logbook.service';
+import {Utils} from '../../shared/utils';
+import {QsoSummaryModel} from '../../models/qso-summary.model';
+import {NotificationService} from '../../shared/notification.service';
+import {LogService} from '../../shared/log.service';
 import {DatePipe} from '@angular/common';
 import {TagModule} from 'primeng/tag';
 import {CalendarModule} from 'primeng/calendar';
 import {FormsModule} from '@angular/forms';
 import {FloatLabelModule} from 'primeng/floatlabel';
-import {NotificationMessageModel, NotificationMessageSeverity} from '../../../shared/notification-message.model';
-import {SortDirection} from '../../../shared/sort-direction.enum';
+import {NotificationMessageModel, NotificationMessageSeverity} from '../../shared/notification-message.model';
+import {SortDirection} from '../../shared/sort-direction.enum';
 import {DatePickerModule} from 'primeng/datepicker';
 import {DialogModule} from 'primeng/dialog';
-import {QsoComponent} from '../../qso/qso.component';
+import {QsoComponent} from '../qso/qso.component';
 import {TooltipModule} from 'primeng/tooltip';
 import {MatIcon, MatIconRegistry} from '@angular/material/icon';
 import {Button} from 'primeng/button';
@@ -24,24 +24,24 @@ import {ScrollTop} from 'primeng/scrolltop';
 @Component({
   selector: 'app-logbook',
   standalone: true,
-  imports: [
-    TableModule,
-    DatePipe,
-    TagModule,
-    CalendarModule,
-    FormsModule,
-    FloatLabelModule,
-    DatePickerModule,
-    DialogModule,
-    QsoComponent,
-    TooltipModule,
-    MatIcon,
-    Button,
-    SortIcon,
-    ScrollTop
-  ],
   templateUrl: './logbook.component.html',
-  styleUrl: './logbook.component.scss'
+  styleUrl: './logbook.component.scss',
+  encapsulation: ViewEncapsulation.None,
+  imports: [
+    Button,
+    CalendarModule,
+    DatePickerModule,
+    DatePipe,
+    DialogModule,
+    FloatLabelModule,
+    FormsModule,
+    MatIcon,
+    QsoComponent,
+    ScrollTop,
+    TableModule,
+    TagModule,
+    TooltipModule,
+  ],
 })
 export class LogbookComponent implements OnInit{
   private _activatedRoute = inject(ActivatedRoute)
@@ -66,8 +66,9 @@ export class LogbookComponent implements OnInit{
   ngOnInit() {
     this._matIconReg.setDefaultFontSetClass('material-symbols-outlined');
 
+    const now = new Date();
     this.qsoMinDate = new Date(2009, 4);
-    this.qsoMaxDate = new Date();
+    this.qsoMaxDate = new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
     this.qsoDateRange = [this.qsoMinDate, this.qsoMaxDate];
     this.onDateRangeFocus(false);
 
@@ -103,7 +104,7 @@ export class LogbookComponent implements OnInit{
     let minDate = !dateRange || !dateRange[0] || !dateRange[1] ? this.qsoMinDate : dateRange[0];
     let maxDate = !dateRange || !dateRange[0] || !dateRange[1] ? this.qsoMaxDate : dateRange[1];
 
-    this._logbookSvc.GetQsoSummaries(call, skip, take, order, sortBy, [minDate!, maxDate!]).subscribe({
+    this._logbookSvc.getQsoSummaries(call, skip, take, order, sortBy, [minDate!, maxDate!]).subscribe({
       next: r => {
         this.totalRecords = r.length > 0 ? r[0].totalCount : 0;
         this.logEntries = r;
@@ -111,10 +112,6 @@ export class LogbookComponent implements OnInit{
       error: e=> Utils.showErrorMessage(e, this._ntfSvc, this._log),
       complete: () => this.loading = false
     });
-  }
-
-  getPotaIcon(qso: QsoSummaryModel) {
-    return qso.potaCount ? 'park' : '';
   }
 
   getMode(mode: string) {

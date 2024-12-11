@@ -1,9 +1,21 @@
 header {
   --p-autocomplete-option-padding: 0.2rem 0.5rem;
-  padding: 0.5rem 1rem;
+  position: fixed;
+  top: 0;
+  width: 100%;
+  padding: 0.5rem 1rem 0.5rem 1rem;
+  z-index: 5;
+  background: var(--p-content-background);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  border-bottom: 1px solid #f3f4f6;
+  box-shadow: var(--p-overlay-navigation-shadow);
+
+  input {
+    text-transform: uppercase;
+    max-width: 200px;
+  }
 
   img {
     width: 9rem;
@@ -11,13 +23,11 @@ header {
 
   p-button {margin-right: 1rem; margin-bottom: 0.5rem;}
 
-  .border {
-    width: 100%;
-    border-top: 1px solid #f3f4f6;
-    margin-top: 0.7rem;
-  }
-
   #call-search {
     font-family: var(--mono-font);
+  }
+
+  .p-menubar {
+    border: none;
   }
 }

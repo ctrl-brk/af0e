@@ -38,13 +38,6 @@ indent_size = 2
 [*.{cs,csx,vb,vbx}]
 indent_size = 4
 tab_width = 4
-# IDE0011: Add braces
-csharp_prefer_braces = when_multiline:warning
-# IDE0007: Use var instead of explicit type
-dotnet_diagnostic.IDE0007.severity = none
-# IDE0008: Use explicit type instead of var
-dotnet_diagnostic.IDE0008.severity = none
-csharp_style_namespace_declarations = file_scoped:error
 
 # Constants are PascalCase
 dotnet_naming_rule.constants_should_be_pascal_case.severity = silent
@@ -78,6 +71,17 @@ dotnet_style_prefer_is_null_check_over_reference_equality_method = true:suggesti
 dotnet_style_prefer_simplified_boolean_expressions = true:suggestion
 dotnet_style_prefer_simplified_interpolation = true:suggestion
 
+csharp_prefer_braces = false:warning # IDE0011: add braces
+dotnet_diagnostic.IDE0007.severity = none # use var instead of explicit type
+dotnet_diagnostic.IDE0008.severity = none # use explicit type instead of var
+dotnet_diagnostic.IDE0010.severity = none # add missing cases to switch statement
+csharp_style_namespace_declarations = file_scoped:error
+dotnet_diagnostic.IDE0047.severity = none # parentheses preferences
+dotnet_diagnostic.IDE0048.severity = none
+dotnet_diagnostic.IDE0072.severity = none # add missing cases to switch expression
+dotnet_diagnostic.IDE0160.severity = none # namespace scope
+dotnet_diagnostic.IDE0058.severity = none # remove unnecessary expression value
+
 #pragmas
 dotnet_diagnostic.CA1031.severity = silent
 dotnet_diagnostic.CA1062.severity = silent
@@ -88,3 +92,4 @@ dotnet_diagnostic.CA2007.severity = silent
 dotnet_diagnostic.CA2201.severity = silent
 dotnet_diagnostic.CA2234.severity = silent
 dotnet_diagnostic.ASP0018.severity = silent #unused route parameter
+dotnet_diagnostic.CA2007.severity = none # do not directly await a Task

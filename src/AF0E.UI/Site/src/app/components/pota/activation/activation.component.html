@@ -1,35 +1,33 @@
+<p-card>
+  @if (activation) {
+    <h3><a href="https://pota.app/#/park/{{activation.parkNum}}">{{activation.parkNum}} - {{activation.parkName}}</a></h3>
+    <p>
+      {{activation.count}} QSOs&nbsp;&nbsp;
+      <p-tag [value]="'CW: ' + activation.cwCount.toString()" severity="success" />&nbsp;
+      <p-tag [value]="'Digi: ' + activation.digiCount.toString()" severity="warn" />&nbsp;
+      <p-tag [value]="'Phone: ' + activation.phoneCount.toString()" severity="info" />
+    </p>
+    <p>
+      From: {{activation.startDate | date:'yy-MM-dd hh:mm'}}&nbsp;&nbsp;&nbsp;To: {{activation.endDate | date:'yy-MM-dd hh:mm'}}&nbsp;&nbsp;&nbsp;
+      Log submitted: {{activation.logSubmittedDate | date:'yy-MM-dd hh:mm'}}
+    </p>
+    <p class="comment">{{activation.siteComments}}</p>
+  }
+</p-card>
+
 <p-table
   [value]="logEntries"
-  dataKey="id"
+  dataKey="logId"
   sortField="date"
   [sortOrder]="-1"
   [paginator]="true"
   [showCurrentPageReport]="true"
   currentPageReportTemplate="{first}-{last} of {totalRecords}"
   [rows]="50"
-  [lazy]="true"
-  [lazyLoadOnInit]="false"
-  [totalRecords]="totalRecords"
-  [loading]=loading
-  (onLazyLoad)="onLazyLoad($event)"
+  [scrollable]="true"
+  scrollHeight="calc(100vh - 18.7rem)"
+  styleClass="tbl-act-log"
   stripedRows>
-  <ng-template pTemplate="caption">
-    <p-floatlabel variant="on">
-      <p-datePicker
-        selectionMode="range"
-        [(ngModel)]="qsoDateRange"
-        [minDate]="qsoMinDate"
-        [maxDate]="qsoMaxDate"
-        dateFormat="yy-mm-dd"
-        inputId="daterange"
-        [readonlyInput]="false"
-        (onFocus)="onDateRangeFocus(true)"
-        (onBlur)="onDateRangeFocus(false)"
-      />
-      <label for="daterange">{{dateRangeTitle}}</label>
-    </p-floatlabel>
-    <p-button severity="secondary" icon="pi pi-search" (onClick)="onDateRangeSearch()" />
-  </ng-template>
 
   <ng-template pTemplate="header">
     <tr>
@@ -37,7 +35,7 @@
       <th>Call</th>
       <th>Band</th>
       <th>Mode</th>
-      <th title="POTA activation">POTA</th>
+      <th>P2P</th>
       <th title="Satellite name">SAT</th>
     </tr>
   </ng-template>
@@ -48,18 +46,11 @@
       <td>{{ qso.call }}</td>
       <td>{{ qso.band }}</td>
       <td><p-tag [value]="getMode(qso.mode)" [severity]="getModeSeverity(qso.mode)" /></td>
-      <td>
-        <mat-icon>{{getPotaIcon(qso)}}</mat-icon>
-<!--        @if (qso.potaCount) {-->
-<!--          <mat-icon>park</mat-icon>-->
-<!--        }-->
-      </td>
+      <td>{{qso.p2p === 'Y' ? '✔' : ''}}</td>
       <td>{{qso.satName}}</td>
     </tr>
   </ng-template>
 </p-table>
-
-<p-scrollTop />
 
 <p-dialog header="{{myCallsign}} confirms the following QSO" [modal]="true" [(visible)]="qsoDetailsVisible" [style]="{ width: '25rem' }">
   <app-qso [qsoId]="selectedId" />

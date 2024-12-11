@@ -17,7 +17,4 @@
     <p-autoComplete [(ngModel)]="searchCall" [suggestions]="callsFound" [showClear]="true" (completeMethod)="search($event)" (onFocus)="onSearchFocus(true)" (onBlur)="onSearchFocus(false)" autofocus="false" emptyMessage="not in log" id="call-search" (onSelect)="onSelect($event)" />
     <label for="call-search">{{searchTitle}}</label>
   </p-floatlabel>
-
-  <div class='border'></div>
-
 </header>

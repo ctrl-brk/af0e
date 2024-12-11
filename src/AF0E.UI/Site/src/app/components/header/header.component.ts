@@ -1,4 +1,4 @@
-import {Component, DestroyRef, inject, OnInit, output} from '@angular/core';
+import {Component, DestroyRef, inject, OnInit, output, ViewEncapsulation} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {AutoCompleteCompleteEvent, AutoCompleteModule, AutoCompleteSelectEvent} from 'primeng/autocomplete';
 import {FloatLabelModule} from 'primeng/floatlabel';
@@ -14,19 +14,21 @@ import {ButtonModule} from 'primeng/button';
 import {MenuModule} from 'primeng/menu';
 import {filter} from 'rxjs';
 
+// noinspection JSIgnoredPromiseFromCall
 @Component({
   selector: 'app-header',
   standalone: true,
   templateUrl: './header.component.html',
+  styleUrl: './header.component.scss',
+  encapsulation: ViewEncapsulation.None,
   imports: [
-    FormsModule,
     AutoCompleteModule,
-    FloatLabelModule,
-    MenubarModule,
     ButtonModule,
-    MenuModule
+    FloatLabelModule,
+    FormsModule,
+    MenuModule,
+    MenubarModule,
   ],
-  styleUrl: './header.component.scss'
 })
 export class HeaderComponent implements OnInit {
   private _router = inject(Router);
@@ -60,7 +62,7 @@ export class HeaderComponent implements OnInit {
   }
 
   search(event: AutoCompleteCompleteEvent) {
-    this._logbookSvc.LookupPartial(event.query).subscribe({
+    this._logbookSvc.lookupPartial(event.query).subscribe({
       next: r => this.callsFound = r,
       error: e=> Utils.showErrorMessage(e, this._ntfSvc, this._log),
     })
@@ -103,25 +105,31 @@ export class HeaderComponent implements OnInit {
         items: [
           {
             label: 'Activations',
-            icon: 'pi pi-bolt'
+            icon: 'pi pi-bolt',
+            command: () => {
+              this._router.navigate(['/pota/activations']);
+            }
           },
           {
             label: 'Map',
-            icon: 'pi pi-map'
-          },
-          {
-            label: 'Stats',
-            icon: 'pi pi-chart-bar'
+            icon: 'pi pi-map',
+            disabled: true
           },
         ]
       },
       {
-        label: 'Contact',
-        icon: 'pi pi-envelope'
+        label: 'Stats',
+        icon: 'pi pi-chart-bar',
+        command: () => {
+          this._router.navigate(['/stats']);
+        }
       },
       {
         label: 'About',
-        icon: 'pi pi-face-smile'
+        icon: 'pi pi-face-smile',
+        command: () => {
+          this._router.navigate(['/about']);
+        }
       }
     ]
   }
