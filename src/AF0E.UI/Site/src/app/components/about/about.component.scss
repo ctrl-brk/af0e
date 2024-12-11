@@ -1,0 +1,10 @@
+main.about-content {
+  display: flex;
+  justify-content: center;
+  margin-top: 4.75rem;
+
+  .p-card {
+    min-width: 30rem;
+    background-color: aliceblue;
+  }
+}

@@ -1,0 +1,57 @@
+<main class="home-content">
+  <div class="cards">
+
+    <p-card header="My LogBook" class="logbook">
+      <a routerLink="/logbook" class="logbook">
+        <img src="logbook.jpg">
+        <p>
+          <strong>The only full and and trustful source</strong><br><br>
+          Online logbooks are picky but here you can find absolutely every single QSO I've ever logged. Correct/incorrect - whatever. Everything is here <b>in realtime</b>.<br>
+          If you find that I copied your call wrong, please let me know.
+        </p>
+      </a>
+    </p-card>
+
+    <p-card header="DX Calendar" class="dx-calendar">
+      <a href="https://af0e-dx-api.azurewebsites.net" target="_blank" class="dx-calendar">
+        <img src="rest-api.svg">
+        <p>
+          <strong>DX and events API</strong><br><br>
+          DX and events schedule is available for your automation needs in JSON format.
+          Check it out and let me know how it works for you. Data aggregated from different sources and those sources sometimes have incorrect entries due to human errors.
+        </p>
+      </a>
+    </p-card>
+
+    <p-card header="Am I on air?" class="ham-alert">
+      <a href="https://hamalert.org" target="_blank"><img src="https://hamalert.org/myspot?c=AF0E&amp;h=e098e09f02890414" srcset="https://hamalert.org/myspot?c=AF0E&amp;h=e098e09f02890414&amp;hr=1 2x"></a>
+    </p-card>
+
+    @if (!isLessThan1000px) {
+      <p-card class="qrz">
+        <iframe frameborder="0" height="407" scrolling="yes" src="https://logbook.qrz.com/lbstat/AF0E/" width="640"></iframe>
+      </p-card>
+    } @else {
+      <p-card class="qrz qrz-small">
+        <a href="https://www.qrz.com/db/af0e" target="_blank" class="qrz"><img src="qrz_com.svgz">
+          <p>
+            <strong>My QRZ page</strong><br><br>
+            That log might have things missing.<br>
+            Ping me if you need any updates there.
+          </p>
+        </a>
+      </p-card>
+    }
+
+    @if (!isLessThan1000px) {
+      <p-card class="rbn">
+        <a href="https://foc.dj1yfk.de/activity/AF0E" target="_blank"><img src="https://foc.dj1yfk.de/activity/image/AF0E"></a>
+      </p-card>
+    }
+
+    <p-card class="solar">
+      <a href="https://www.hamqsl.com/solar.html" title="Click to add Solar-Terrestrial Data to your website!"><img src="https://www.hamqsl.com/solar101vhf.php"></a>
+    </p-card>
+
+  </div>
+</main>

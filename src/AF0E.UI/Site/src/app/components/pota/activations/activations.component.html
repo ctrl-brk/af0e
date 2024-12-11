@@ -1,0 +1,45 @@
+<p-table
+  [value]="activations"
+  dataKey="id"
+  sortField="startDate"
+  [sortOrder]="-1"
+  [paginator]="true"
+  [showCurrentPageReport]="true"
+  currentPageReportTemplate="{first}-{last} of {totalRecords}"
+  [rows]="50"
+  [scrollable]="true"
+  scrollHeight="calc(100vh - 9.6rem)"
+  styleClass="tbl-activations"
+  stripedRows>
+
+  <ng-template pTemplate="header">
+    <tr class="top">
+      <th colspan="2">Date UTC (ymd)</th>
+      <th colspan="2">Park</th>
+      <th colspan="3">QSOs</th>
+    </tr>
+    <tr class="bottom">
+      <th pSortableColumn="startDate">Start <p-sortIcon field="startDate" /></th>
+      <th>End</th>
+      <th>Number</th>
+      <th>Name</th>
+      <th>CW</th>
+      <th>Digi</th>
+      <th>Ph</th>
+    </tr>
+  </ng-template>
+
+  <ng-template pTemplate="body" let-act>
+    <tr (click)="onActivationSelect(act)">
+      <td>{{ act.startDate | date:'yy-MM-dd hh:mm' }}</td>
+      <td>{{ act.endDate | date:'yy-MM-dd hh:mm' }}</td>
+      <td>{{act.parkNum}}</td>
+      <td>{{act.parkName}}</td>
+      <td>{{ act.cwCount > 0 ? act.cwCount : '-' }}</td>
+      <td>{{ act.digiCount > 0 ? act.digiCount : '-' }}</td>
+      <td>{{ act.phoneCount > 0 ? act.phoneCount : '-'}}</td>
+    </tr>
+  </ng-template>
+</p-table>
+
+<p-scrollTop />

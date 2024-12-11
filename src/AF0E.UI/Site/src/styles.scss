@@ -1,0 +1,63 @@
+@import "primeicons/primeicons.css";
+
+// Variables for Colors and Fonts
+:root {
+  // Earthy
+  --primary-color: #8B7765;
+  --secondary-color: #B5B682;
+  --accent-color: #FFCB00;
+  --text-color: #4A4A4A;
+  --background-color: #ffffff;
+  --header-font: 'Montserrat', sans-serif;
+
+  --body-font: 'Roboto', sans-serif;
+  --mono-font: 'Roboto Mono', monospace;
+  /* Navy
+  --primary-color: #1E3A5F;
+  --secondary-color: #14B8A6;
+  --accent-color: #F2F2F2;
+  --text-color: #333333;
+  --background-color: #ffffff;
+  --header-font: 'Montserrat', sans-serif;
+  --body-font: 'Roboto', sans-serif; */
+  /* Grey & Orange
+  --primary-color: #333;
+  --secondary-color: #f0ad4e;
+  --accent-color: #fff;
+  --text-color: #333333;
+  --background-color: #ffffff;
+  --header-font: 'Montserrat', sans-serif;
+  --body-font: 'Roboto', sans-serif; */
+  /* Cool blue
+  --primary-color: #2C3E50;
+  --secondary-color: #3498DB;
+  --accent-color: #F1C40F;
+  --text-color: #2C3E50;
+  --background-color: #fff;
+  --header-font: 'Montserrat', sans-serif;
+  --body-font: 'Roboto', sans-serif; */
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: var(--body-font);
+  font-size: var(--body-font-size);
+  color: var(--text-color);
+  background-color: var(--background-color);
+}
+
+body {
+  min-width: 35rem;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
