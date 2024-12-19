@@ -35,6 +35,15 @@ export const routes: Routes = [
     ]
   },
   {
+    path: 'map',
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('./components/map/map.component').then(m => m.MapComponent),
+      },
+    ]
+  },
+  {
     path: 'stats',
     component: StatsComponent,
   },

@@ -1,5 +1,5 @@
 using System.Text.Json.Serialization;
-using Log.Api.Models;
+using Logbook.Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,7 +24,7 @@ if (app.Environment.IsDevelopment())
 //app.UseHttpsRedirection();
 
 app.MapGet("/api/v1/logbook/lookup/{call}", (string call, HrdDbContext dbContext) =>
-    dbContext.Log.Where(x => x.ColCall == call).OrderByDescending(x => x.ColTimeOn)
+    dbContext.Log.Where(x => x.ColCall == call).OrderByDescending(x => x.ColTimeOn).ToListAsync()
 )
 .WithName("LookupCall")
 .WithOpenApi();
@@ -72,7 +72,7 @@ app.MapGet("/api/v1/logbook/{call?}", async (string? call, int? skip, int? take,
             logQuery = orderBy == 1 ? logQuery.OrderBy(x => x.ColTimeOn) : logQuery.OrderByDescending(x => x.ColTimeOn);
             logQuery = logQuery.Skip(skip.Value).Take(take.Value);
 
-            return logQuery
+            return await logQuery
                 .Select(x => new
                 {
                     TotalCount = cnt,
@@ -83,7 +83,7 @@ app.MapGet("/api/v1/logbook/{call?}", async (string? call, int? skip, int? take,
                     Mode = x.ColMode,
                     SatName = x.ColSatName,
                     POTACount = x.PotaContacts.Count,
-                });
+                }).ToListAsync();
         }
     )
     .WithName("Logbook")
@@ -96,6 +96,7 @@ app.MapGet("/api/v1/logbook/qso/{id:int}", async (int id, HrdDbContext dbContext
             .ThenInclude(c => c.Activation)
             .ThenInclude(p => p.Park)
             .SingleOrDefaultAsync(x => x.ColPrimaryKey == id);
+
         return res == null
             ? Results.NotFound()
             : Results.Ok(new
@@ -136,8 +137,8 @@ app.MapGet("/api/v1/logbook/qso/{id:int}", async (int id, HrdDbContext dbContext
     .WithName("QSO")
     .WithOpenApi();
 
-app.MapGet("/api/v1/pota/activations", async (HrdDbContext dbContext) =>
-        await dbContext.PotaActivations
+app.MapGet("/api/v1/pota/activations", (HrdDbContext dbContext) =>
+        dbContext.PotaActivations
             .Include(x => x.Park)
             .Include(x => x.PotaContacts)
             .ThenInclude(l => l.Log)
@@ -191,8 +192,8 @@ app.MapGet("/api/v1/pota/activations/{id:int}", async (int id, HrdDbContext dbCo
     .WithName("PotaActivation")
     .WithOpenApi();
 
-app.MapGet("/api/v1/pota/activations/{id:int}/log", async (int id, HrdDbContext dbContext) =>
-        await dbContext.PotaContacts
+app.MapGet("/api/v1/pota/activations/{id:int}/log", (int id, HrdDbContext dbContext) =>
+        dbContext.PotaContacts
             .Where(x => x.ActivationId == id)
             .Include(x => x.Log)
             .Select(x => new
@@ -209,6 +210,86 @@ app.MapGet("/api/v1/pota/activations/{id:int}/log", async (int id, HrdDbContext 
     .WithName("PotaActivationLog")
     .WithOpenApi();
 
+app.MapGet("/api/v1/logbook/pota/geojson/activations/{states}", async (string states, HrdDbContext dbContext) =>
+    {
+        string[] st = [];
+        if (states.Contains(','))
+            st = states.Split(',');
+        else if (states != "all") //single state or all
+            st = [states];
+
+        var actGrouped = await dbContext.PotaActivations
+            .Where(x => st.Length == 0 || st.Contains(x.State))
+            .Include(x => x.Park)
+            .GroupBy(x => new Tuple<decimal, decimal>(x.Long, x.Lat))
+            .ToListAsync();
+
+        return new
+        {
+            Type = "FeatureCollection",
+            Features = GetActivatedParks()
+        };
+
+        IEnumerable<object> GetActivatedParks()
+        {
+            foreach (var ag in actGrouped)
+                yield return new
+                {
+                    Type = "Feature",
+                    Geometry = new
+                    {
+                        Type = "Point",
+                        Coordinates = new[] { ag.Key.Item1, ag.Key.Item2 }, //Long, Lat
+                    },
+                    Properties = ag.Select(x => new
+                    {
+                        x.ActivationId,
+                        x.StartDate,
+                        x.Park.ParkNum,
+                        x.Park.ParkName,
+                    }).OrderByDescending(x => x.StartDate).ThenBy(x => x.ParkNum)
+                };
+        }
+    })
+    .WithName("GeoJsonActivations")
+    .WithOpenApi();
+
+app.MapGet("/api/v1/logbook/pota/geojson/parks/not-activated/{states}", async (string states, HrdDbContext dbContext) =>
+    {
+        string[] st = [];
+        if (states.Contains(','))
+            st = states.Split(',').Select(x => $"US-{x}").ToArray();
+        else if (states != "all") //single state or all
+            st = [states];
+
+        // TODO: without awaiting "result" property (Task.Result?) gets added to json
+        var parks = await dbContext.PotaParks
+            .Include(x => x.PotaActivations)
+            .Where(x => !x.PotaActivations.Any() && (st.Length == 0 || st.Any(y => x.Location!.Contains(y))))
+            .Select(x => new
+            {
+                Type = "Feature",
+                Geometry = new
+                {
+                    Type = "Point",
+                    Coordinates = new[] { x.Long, x.Lat },
+                },
+                Properties = new
+                {
+                    x.ParkNum,
+                    x.ParkName,
+                }
+            }).ToListAsync();
+
+        return new
+        {
+            Type = "FeatureCollection",
+            Features = parks
+        };
+    })
+    .WithName("GeoJsonParks")
+    .WithOpenApi();
+
 app.MapGet("/api/v1/logbook/gridtracker/{call}", (string call, HrdDbContext dbContext) =>
         dbContext.Log
             .Where(x => x.ColCall == call)
@@ -219,7 +300,7 @@ app.MapGet("/api/v1/logbook/gridtracker/{call}", (string call, HrdDbContext dbCo
                 x.ColMode,
                 x.ColBand,
                 x.ColComment
-            })
+            }).ToListAsync()
     )
     .WithName("GridtrackerLookup")
     .WithOpenApi();
