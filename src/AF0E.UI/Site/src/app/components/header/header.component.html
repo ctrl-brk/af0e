@@ -2,7 +2,7 @@
   <div>
     @if (isLessThan1000px) {
       <p-button severity="secondary" (click)="popupMenu.toggle($event)" icon="pi pi-bars" />
-      <p-menu #popupMenu [model]="menuItems" [popup]="true" />
+      <p-tieredMenu #popupMenu [model]="menuItems" [popup]="true" />
     }
     <a href="/"><img src="logo.svg" alt="AFØE"></a>
   </div>

@@ -30,4 +30,9 @@ header {
   .p-menubar {
     border: none;
   }
+
+  //bug https://github.com/primefaces/primeng/issues/17131
+  .p-tieredmenu-mobile {
+    position: absolute;
+  }
 }

@@ -15,6 +15,7 @@ x86/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
+[Dd]ist/
 
 # IDEs
 .vs/

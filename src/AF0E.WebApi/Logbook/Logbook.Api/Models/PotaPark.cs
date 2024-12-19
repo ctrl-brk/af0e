@@ -1,4 +1,4 @@
-﻿namespace Log.Api.Models;
+﻿namespace Logbook.Api.Models;
 
 internal sealed class PotaPark
 {
