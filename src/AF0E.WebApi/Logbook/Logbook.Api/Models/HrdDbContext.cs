@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
-namespace Log.Api.Models;
+namespace Logbook.Api.Models;
+
 internal partial class HrdDbContext : DbContext
 {
     public HrdDbContext()
@@ -71,6 +72,8 @@ internal partial class HrdDbContext : DbContext
             entity.Property(e => e.State).HasMaxLength(2).IsFixedLength().IsUnicode(false);
             entity.Property(e => e.StartDate).HasColumnType("datetime");
             entity.Property(e => e.EndDate).HasColumnType("datetime");
+            entity.Property(e => e.Lat).HasColumnType("decimal(10,6)");
+            entity.Property(e => e.Long).HasColumnType("decimal(10,6)");
             entity.Property(e => e.LogSubmittedDate).HasColumnType("datetime");
             entity.Property(e => e.SiteComments).IsUnicode(false);
             entity.Property(e => e.Comments).IsUnicode(false);
@@ -92,8 +95,8 @@ internal partial class HrdDbContext : DbContext
             entity.Property(e => e.ParkNum).HasMaxLength(20).IsUnicode(false);
             entity.Property(e => e.ParkName).HasMaxLength(500);
             entity.Property(e => e.Grid).HasMaxLength(10).IsUnicode(false);
-            entity.Property(e => e.Lat).HasColumnType("decimal(7, 4)");
-            entity.Property(e => e.Long).HasColumnType("decimal(7, 4)");
+            entity.Property(e => e.Lat).HasColumnType("decimal(7,4)");
+            entity.Property(e => e.Long).HasColumnType("decimal(7,4)");
             entity.Property(e => e.Location).HasMaxLength(200).IsUnicode(false);
             entity.Property(e => e.Country).HasMaxLength(5).IsUnicode(false);
 

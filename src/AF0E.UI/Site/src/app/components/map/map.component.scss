@@ -1,0 +1,29 @@
+.map {
+  margin-top: 4.1rem;
+  height: calc(100vh - 6rem);
+}
+
+.mapboxgl-popup-close-button {
+  font-size: 1.2rem;
+}
+
+.mapboxgl-popup-content {
+  padding: 2px 0 5px 10px;
+}
+
+.map-popup-list {
+  max-height: 200px;
+  overflow-y: auto;
+  li {
+    padding-right: 2px;
+    a {
+      margin-right: 8px;
+    }
+  };
+}
+
+.map-popup-na {
+  padding-top: 12px;
+  padding-right: 10px;
+  text-align: center;
+}

@@ -13,6 +13,7 @@ import {BreakpointObserver} from '@angular/cdk/layout';
 import {ButtonModule} from 'primeng/button';
 import {MenuModule} from 'primeng/menu';
 import {filter} from 'rxjs';
+import {TieredMenu} from 'primeng/tieredmenu';
 
 // noinspection JSIgnoredPromiseFromCall
 @Component({
@@ -28,6 +29,7 @@ import {filter} from 'rxjs';
     FormsModule,
     MenuModule,
     MenubarModule,
+    TieredMenu,
   ],
 })
 export class HeaderComponent implements OnInit {
@@ -113,7 +115,9 @@ export class HeaderComponent implements OnInit {
           {
             label: 'Map',
             icon: 'pi pi-map',
-            disabled: true
+            command: () => {
+              this._router.navigate(['/map']);
+            }
           },
         ]
       },
