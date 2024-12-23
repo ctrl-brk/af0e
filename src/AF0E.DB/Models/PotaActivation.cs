@@ -1,11 +1,11 @@
-﻿namespace Logbook.Api.Models;
+﻿namespace AF0E.DB.Models;
 
-internal sealed class PotaActivation
+public sealed class PotaActivation
 {
     public int ActivationId { get; init; }
     public int ParkId { get; init; }
     public string Grid { get; init; } = null!;
-    public string? City { get; init; }
+    public string? City { get; init; } = null!;
     public string County { get; init; } = null!;
     public string State { get; init; } = null!;
     public DateTime StartDate { get; init; }
@@ -13,7 +13,6 @@ internal sealed class PotaActivation
     public DateTime? LogSubmittedDate { get; init; }
     // ReSharper disable once EntityFramework.ModelValidation.UnlimitedStringLength
     public string? SiteComments { get; init; }
-    public string? Comments { get; init; }
     public decimal Lat { get; init; }
     public decimal Long { get; init; }
 
