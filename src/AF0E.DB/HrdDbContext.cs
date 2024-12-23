@@ -1,17 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Diagnostics;
+using AF0E.DB.Models;
+using Microsoft.EntityFrameworkCore;
 
-namespace Logbook.Api.Models;
+namespace AF0E.DB;
 
-internal partial class HrdDbContext : DbContext
+public class HrdDbContext(string connectionString, QueryTrackingBehavior trackingBehavior = QueryTrackingBehavior.NoTracking) : DbContext
 {
-    public HrdDbContext()
-    {
-    }
-
-    public HrdDbContext(DbContextOptions<HrdDbContext> options) : base(options)
-    {
-    }
-
     public virtual DbSet<HrdLog> Log { get; set; }
     public virtual DbSet<PotaPark> PotaParks { get; set; }
     public virtual DbSet<PotaActivation> PotaActivations { get; set; }
@@ -20,10 +14,11 @@ internal partial class HrdDbContext : DbContext
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         optionsBuilder
-            .UseSqlServer("Name=ConnectionStrings:HrdLog")
-            .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking)
+            .UseSqlServer(connectionString)
+            .UseQueryTrackingBehavior(trackingBehavior)
 #if DEBUG
             .EnableSensitiveDataLogging()
+            .LogTo(e => Debug.WriteLine(e))
 #endif
             ;
     }
@@ -46,6 +41,9 @@ internal partial class HrdDbContext : DbContext
             entity.HasIndex(e => e.LogId, "IX_PotaContacts_LogId");
 
             entity.Property(e => e.P2P).HasMaxLength(100).IsUnicode(false);
+            entity.Property(e => e.Lat).HasColumnType("decimal(10, 6)");
+            entity.Property(e => e.Long).HasColumnType("decimal(10, 6)");
+            entity.Property(e => e.QrzGeoLoc).HasMaxLength(10).IsUnicode(false);
 
             entity.HasOne(d => d.Activation).WithMany(p => p.PotaContacts)
                 .HasForeignKey(d => d.ActivationId)
@@ -72,11 +70,8 @@ internal partial class HrdDbContext : DbContext
             entity.Property(e => e.State).HasMaxLength(2).IsFixedLength().IsUnicode(false);
             entity.Property(e => e.StartDate).HasColumnType("datetime");
             entity.Property(e => e.EndDate).HasColumnType("datetime");
-            entity.Property(e => e.Lat).HasColumnType("decimal(10,6)");
-            entity.Property(e => e.Long).HasColumnType("decimal(10,6)");
             entity.Property(e => e.LogSubmittedDate).HasColumnType("datetime");
             entity.Property(e => e.SiteComments).IsUnicode(false);
-            entity.Property(e => e.Comments).IsUnicode(false);
 
             entity.HasOne(d => d.Park).WithMany(p => p.PotaActivations)
                 .HasForeignKey(d => d.ParkId)
@@ -95,8 +90,8 @@ internal partial class HrdDbContext : DbContext
             entity.Property(e => e.ParkNum).HasMaxLength(20).IsUnicode(false);
             entity.Property(e => e.ParkName).HasMaxLength(500);
             entity.Property(e => e.Grid).HasMaxLength(10).IsUnicode(false);
-            entity.Property(e => e.Lat).HasColumnType("decimal(7,4)");
-            entity.Property(e => e.Long).HasColumnType("decimal(7,4)");
+            entity.Property(e => e.Lat).HasColumnType("decimal(7, 4)");
+            entity.Property(e => e.Long).HasColumnType("decimal(7, 4)");
             entity.Property(e => e.Location).HasMaxLength(200).IsUnicode(false);
             entity.Property(e => e.Country).HasMaxLength(5).IsUnicode(false);
 

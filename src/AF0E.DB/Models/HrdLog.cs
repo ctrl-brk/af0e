@@ -1,6 +1,6 @@
-﻿namespace Logbook.Api.Models;
+﻿namespace AF0E.DB.Models;
 
-internal sealed class HrdLog
+public sealed class HrdLog
 {
     public int ColPrimaryKey { get; init; }
     public string? ColAddress { get; init; }
@@ -13,7 +13,7 @@ internal sealed class HrdLog
     public string? ColBand { get; init; }
     public string? ColBandRx { get; init; }
     public string? ColBiography { get; init; }
-    public string? ColCall { get; init; }
+    public string ColCall { get; init; } = null!;
     public string? ColCheck { get; init; }
     public string? ColClass { get; init; }
     public string? ColCnty { get; init; }

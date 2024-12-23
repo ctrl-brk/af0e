@@ -1,5 +1,5 @@
 using System.Text.Json.Serialization;
-using Logbook.Api.Models;
+using AF0E.DB;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 

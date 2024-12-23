@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "QrzLookup": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "NETCOREAPP_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}

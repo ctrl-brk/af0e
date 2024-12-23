@@ -1,6 +1,6 @@
-﻿namespace Logbook.Api.Models;
+﻿namespace AF0E.DB.Models;
 
-internal sealed class PotaPark
+public sealed class PotaPark
 {
     public int ParkId { get; init; }
     public string ParkNum { get; init; } = null!;
