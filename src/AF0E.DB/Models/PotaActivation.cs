@@ -1,11 +1,11 @@
-﻿namespace Log.Api.Models;
+﻿namespace AF0E.DB.Models;
 
 public sealed class PotaActivation
 {
     public int ActivationId { get; init; }
     public int ParkId { get; init; }
     public string Grid { get; init; } = null!;
-    public string? City { get; init; }
+    public string? City { get; init; } = null!;
     public string County { get; init; } = null!;
     public string State { get; init; } = null!;
     public DateTime StartDate { get; init; }
