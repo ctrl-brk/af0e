@@ -16,7 +16,6 @@ import {LogService} from '../../../shared/log.service';
 import {Router} from '@angular/router';
 
 @Component({
-  standalone: true,
   templateUrl: './activations.component.html',
   styleUrl: './activations.component.scss',
   encapsulation: ViewEncapsulation.None,

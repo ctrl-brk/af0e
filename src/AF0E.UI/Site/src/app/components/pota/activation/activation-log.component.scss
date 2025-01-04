@@ -1,21 +1,7 @@
-app-logbook {
-  padding-top: 4.5rem;
-  .p-datepicker-input {width: 17rem;}
-  .p-datatable-header {
-    display: flex;
-    p-button {margin: 0.1rem 0 0 1rem;}
-  }
-}
-
-p-table {
+.tbl-act-log {
   font-family: var(--mono-font);
   font-size: 0.85rem;
-  table {
-    min-width: 33rem;
-  }
-}
 
-.tbl-log {
   table {
     tr td {
       cursor: pointer;

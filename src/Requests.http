@@ -8,7 +8,7 @@ View=30DAY&DXCC=0&CQ=ALL&Mode=ALL&Band=ALL
 
 ###
 
-// DX Scraper Starter
+// DX Scraper Starter. See /src/http-client.env.json.user for the key value
 GET https://af0e-functions-dev.azurewebsites.net/api/DxScraperHttpStarter?code={{DXScraperHttpStarterKey}}
 
 ###

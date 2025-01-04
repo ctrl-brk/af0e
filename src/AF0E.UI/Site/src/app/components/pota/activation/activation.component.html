@@ -2,7 +2,10 @@
   @if (activation) {
     <h3><a href="https://pota.app/#/park/{{activation.parkNum}}">{{activation.parkNum}} - {{activation.parkName}}</a></h3>
     <p>
-      {{activation.count}} QSOs&nbsp;&nbsp;
+      <b>{{activation.count}}</b> QSOs&nbsp;&nbsp;
+      @if (activation.p2pCount > 0) {
+        <b>{{activation.p2pCount}}</b> P2P &nbsp;
+      }
       <p-tag [value]="'CW: ' + activation.cwCount.toString()" severity="success" />&nbsp;
       <p-tag [value]="'Digi: ' + activation.digiCount.toString()" severity="warn" />&nbsp;
       <p-tag [value]="'Phone: ' + activation.phoneCount.toString()" severity="info" />
@@ -15,46 +18,17 @@
   }
 </p-card>
 
-<p-table
-  [value]="logEntries"
-  dataKey="logId"
-  sortField="date"
-  [sortOrder]="-1"
-  [paginator]="true"
-  [showCurrentPageReport]="true"
-  currentPageReportTemplate="{first}-{last} of {totalRecords}"
-  [rows]="50"
-  [scrollable]="true"
-  scrollHeight="calc(100vh - 18.7rem)"
-  styleClass="tbl-act-log"
-  stripedRows>
-
-  <ng-template pTemplate="header">
-    <tr>
-      <th pSortableColumn="date">UTC (ymd) <p-sortIcon field="date" /></th>
-      <th>Call</th>
-      <th>Band</th>
-      <th>Mode</th>
-      <th>P2P</th>
-      <th title="Satellite name">SAT</th>
-    </tr>
-  </ng-template>
-
-  <ng-template pTemplate="body" let-qso>
-    <tr (click)="onQsoSelect(qso)">
-      <td>{{ qso.date | date:'yy-MM-dd hh:mm' }}</td>
-      <td>{{ qso.call }}</td>
-      <td>{{ qso.band }}</td>
-      <td><p-tag [value]="getMode(qso.mode)" [severity]="getModeSeverity(qso.mode)" /></td>
-      <td>{{qso.p2p === 'Y' ? '✔' : ''}}</td>
-      <td>{{qso.satName}}</td>
-    </tr>
-  </ng-template>
-</p-table>
-
-<p-dialog header="{{myCallsign}} confirms the following QSO" [modal]="true" [(visible)]="qsoDetailsVisible" [style]="{ width: '25rem' }">
-  <app-qso [qsoId]="selectedId" />
-  <div class="qsl">
-    <p-button label="Close" severity="secondary" (click)="qsoDetailsVisible = false" />
-  </div>
-</p-dialog>
+<p-tabs value="log" (valueChange)="map.onTabChange()">
+  <p-tablist>
+    <p-tab value="log">Log</p-tab>
+    <p-tab value="map">Map</p-tab>
+  </p-tablist>
+  <p-tabpanels>
+    <p-tabpanel value="log">
+      <app-activation-log [logEntries]="logEntries"></app-activation-log>
+    </p-tabpanel>
+    <p-tabpanel value="map">
+      <app-activation-map #map [activation]="activation" [logEntries]="logEntries"></app-activation-map>
+    </p-tabpanel>
+  </p-tabpanels>
+</p-tabs>

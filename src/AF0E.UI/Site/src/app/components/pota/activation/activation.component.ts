@@ -1,10 +1,5 @@
 import {Component, DestroyRef, inject, OnInit, ViewEncapsulation} from '@angular/core';
 import {FormsModule} from '@angular/forms';
-import {AutoCompleteModule} from 'primeng/autocomplete';
-import {FloatLabelModule} from 'primeng/floatlabel';
-import {MenubarModule} from 'primeng/menubar';
-import {ButtonModule} from 'primeng/button';
-import {MenuModule} from 'primeng/menu';
 import {PotaActivationModel} from '../../../models/pota-activation.model';
 import {PotaService} from '../../../services/pota.service';
 import {Utils} from '../../../shared/utils';
@@ -12,31 +7,29 @@ import {NotificationService} from '../../../shared/notification.service';
 import {LogService} from '../../../shared/log.service';
 import {ActivatedRoute} from '@angular/router';
 import {DatePipe} from '@angular/common';
-import {Dialog} from 'primeng/dialog';
-import {QsoComponent} from '../../qso/qso.component';
-import {TableModule} from 'primeng/table';
 import {Tag} from 'primeng/tag';
-import {ActivationQsoModel} from '../../../models/activation-qso.model';
 import {Card} from 'primeng/card';
+import {Tab, TabList, TabPanel, TabPanels, Tabs} from 'primeng/tabs';
+import {PotaActivationLogComponent} from './activation-log.component';
+import {ActivationQsoModel} from '../../../models/activation-qso.model';
+import {PotaActivationMapComponent} from './activation-map.component';
 
 @Component({
-  standalone: true,
   templateUrl: './activation.component.html',
   styleUrl: './activation.component.scss',
   encapsulation: ViewEncapsulation.None,
   imports: [
-    AutoCompleteModule,
-    ButtonModule,
     Card,
-    DatePipe,
-    Dialog,
-    FloatLabelModule,
     FormsModule,
-    MenuModule,
-    MenubarModule,
-    QsoComponent,
-    TableModule,
+    Tabs,
+    TabList,
+    Tab,
+    TabPanels,
+    TabPanel,
+    PotaActivationLogComponent,
     Tag,
+    DatePipe,
+    PotaActivationMapComponent,
   ],
 })
 export class PotaActivationComponent implements OnInit {
@@ -45,17 +38,14 @@ export class PotaActivationComponent implements OnInit {
   private _potaSvc = inject(PotaService);
   private _ntfSvc= inject(NotificationService);
   private _log = inject(LogService);
-  private _id = 0;
 
+  protected activationId = 0;
   protected activation: PotaActivationModel = null!;
   protected logEntries: ActivationQsoModel[] = [];
-  protected myCallsign = '';
-  protected selectedId?: number;
-  protected qsoDetailsVisible = false;
 
   ngOnInit(): void {
     const sub = this._activatedRoute.paramMap.subscribe({
-      next: (x) => {this._id = parseInt(x.get('id')!); this.onActivationChange(this._id);}
+      next: (x) => {this.activationId = parseInt(x.get('id')!); this.onActivationChange(this.activationId);}
     });
 
     this._destroyRef.onDestroy(() => sub.unsubscribe());
@@ -73,46 +63,7 @@ export class PotaActivationComponent implements OnInit {
     });
   }
 
-  getMode(mode: string) {
-    switch (mode) {
-      case 'USB':
-      case 'LSB':
-        return 'SSB';
+  onTabChange(tab: unknown) {
 
-      case 'MFSK':
-        return 'FT4';
-    }
-    return mode;
-  }
-
-  getModeSeverity(mode: string) {
-    switch (mode) {
-      case 'CW':
-        return 'success';
-
-      case 'SSB':
-      case 'LSB':
-      case 'USB':
-        return 'info';
-
-      case 'FT8':
-      case 'MFSK':
-      case 'PSK31':
-      case 'JT65':
-        return 'warn';
-    }
-    return 'secondary';
-  }
-
-  onQsoSelect(qso: ActivationQsoModel) {
-    if (qso.date > new Date(Date.UTC(2011, 0, 6)))
-      this.myCallsign = 'AFØE';
-    else if (qso.date > new Date(2010, 10, 21))
-      this.myCallsign = 'K3OSO';
-    else
-      this.myCallsign = 'KDØHHE';
-
-    this.selectedId = qso.logId;
-    this.qsoDetailsVisible = true;
   }
 }

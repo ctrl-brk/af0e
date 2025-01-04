@@ -23,7 +23,6 @@ import {ScrollTop} from 'primeng/scrolltop';
 
 @Component({
   selector: 'app-logbook',
-  standalone: true,
   templateUrl: './logbook.component.html',
   styleUrl: './logbook.component.scss',
   encapsulation: ViewEncapsulation.None,

@@ -1,10 +1,8 @@
 import {Component, DestroyRef, inject, OnInit, ViewEncapsulation} from '@angular/core';
 import * as mapbox from 'mapbox-gl';
-import {MapMouseEvent} from 'mapbox-gl';
 import {environment} from "../../../environments/environment";
 
 @Component({
-  standalone: true,
   templateUrl: './map.component.html',
   styleUrl: './map.component.scss',
   encapsulation: ViewEncapsulation.None,
@@ -20,7 +18,7 @@ export class MapComponent implements OnInit {
   private setupMap() {
     this.map = new mapbox.Map({
       accessToken: environment.mapBoxKey,
-      container: 'map',
+      container: 'parks-map',
       style: 'mapbox://styles/mapbox/outdoors-v12',
       center: [-105.7821, 39.5501],
       zoom: 7,
@@ -111,7 +109,7 @@ export class MapComponent implements OnInit {
     this._destroyRef.onDestroy(() => this.map.remove());
   }
 
-  private showPopup(coordinates: any, e: MapMouseEvent, html: string) {
+  private showPopup(coordinates: any, e: mapbox.MapMouseEvent, html: string) {
     // Ensure that if the map is zoomed out such that multiple copies of the feature are visible, the popup appears over the copy being pointed to.
     if (['mercator', 'equirectangular'].includes(this.map.getProjection().name)) {
       while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
