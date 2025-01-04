@@ -7,7 +7,8 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddDbContext<HrdDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("HrdLog")));
+//builder.Services.AddDbContext<HrdDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("HrdLog")));
+builder.Services.AddScoped<HrdDbContext>(options => new HrdDbContext(builder.Configuration.GetConnectionString("HrdLog")!));
 builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options => options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 
 WebApplication app = builder.Build();
@@ -82,7 +83,7 @@ app.MapGet("/api/v1/logbook/{call?}", async (string? call, int? skip, int? take,
                     Band = x.ColBand,
                     Mode = x.ColMode,
                     SatName = x.ColSatName,
-                    POTACount = x.PotaContacts.Count,
+                    PotaCount = x.PotaContacts.Count,
                 }).ToListAsync();
         }
     )
@@ -187,6 +188,7 @@ app.MapGet("/api/v1/pota/activations/{id:int}", async (int id, HrdDbContext dbCo
                 CwCount = res.PotaContacts.Count(c => c.Log.ColMode is "CW"),
                 DigiCount = res.PotaContacts.Count(c => c.Log.ColMode is "FT8" or "MFSK"),
                 PhoneCount = res.PotaContacts.Count(c => c.Log.ColMode is "SSB" or "LSB" or "USB"),
+                P2pCount = res.PotaContacts.Count(c => c.P2P != null),
             });
     })
     .WithName("PotaActivation")
@@ -204,12 +206,15 @@ app.MapGet("/api/v1/pota/activations/{id:int}/log", (int id, HrdDbContext dbCont
                 Band = x.Log.ColBand,
                 Mode = x.Log.ColMode,
                 SatName = x.Log.ColSatName,
-                p2p = x.P2P,
+                p2p = x.P2P == null ? Array.Empty<string>() : x.P2P.Split(',', StringSplitOptions.None),
+                x.Lat,
+                x.Long,
             }).ToListAsync()
     )
     .WithName("PotaActivationLog")
     .WithOpenApi();
 
+// Returns locations for activations. Can filter by state(s)
 app.MapGet("/api/v1/logbook/pota/geojson/activations/{states}", async (string states, HrdDbContext dbContext) =>
     {
         string[] st = [];
@@ -254,6 +259,7 @@ app.MapGet("/api/v1/logbook/pota/geojson/activations/{states}", async (string st
     .WithName("GeoJsonActivations")
     .WithOpenApi();
 
+// Returns locations for not yet activated parks. Can filter by state(s)
 app.MapGet("/api/v1/logbook/pota/geojson/parks/not-activated/{states}", async (string states, HrdDbContext dbContext) =>
     {
         string[] st = [];
@@ -262,7 +268,7 @@ app.MapGet("/api/v1/logbook/pota/geojson/parks/not-activated/{states}", async (s
         else if (states != "all") //single state or all
             st = [states];
 
-        // TODO: without awaiting "result" property (Task.Result?) gets added to json
+        // TODO: without awaiting, "result" property (Task.Result ?) gets added to json
         var parks = await dbContext.PotaParks
             .Include(x => x.PotaActivations)
             .Where(x => !x.PotaActivations.Any() && (st.Length == 0 || st.Any(y => x.Location!.Contains(y))))

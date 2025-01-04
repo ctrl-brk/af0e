@@ -9,7 +9,6 @@ import {Fieldset} from 'primeng/fieldset';
 
 @Component({
   selector: 'app-qso',
-  standalone: true,
   templateUrl: './qso.component.html',
   styleUrl: './qso.component.scss',
   imports: [DatePipe, Fieldset],

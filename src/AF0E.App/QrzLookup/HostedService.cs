@@ -42,7 +42,7 @@ internal sealed class HostedService(ILogger<HostedService> logger, IHostApplicat
     {
         var contacts = await _dbContext!.PotaContacts
             .AsTracking()
-            .Where(x => x.Lat == null && x.P2P == null && (x.QrzLookupDate == null || EF.Functions.DateDiffMinute(x.QrzLookupDate, DateTime.UtcNow) > 43800)) //1 month
+            .Where(x => x.Lat == null && x.P2P == null && (x.QrzLookupDate == null || EF.Functions.DateDiffHour(x.QrzLookupDate, DateTime.UtcNow) > 720)) //1 month
             .Include(x => x.Log)
             .Include(x => x.Activation)
             .ThenInclude(x => x.Park)
