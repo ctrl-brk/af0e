@@ -18,7 +18,6 @@ import {TieredMenu} from 'primeng/tieredmenu';
 // noinspection JSIgnoredPromiseFromCall
 @Component({
   selector: 'app-header',
-  standalone: true,
   templateUrl: './header.component.html',
   styleUrl: './header.component.scss',
   encapsulation: ViewEncapsulation.None,

@@ -15,4 +15,5 @@ export interface PotaActivationModel {
   cwCount: number;
   digiCount: number;
   phoneCount: number;
+  p2pCount: number;
 }

@@ -17,7 +17,7 @@ internal sealed class HostedService(ILogger<HostedService> logger, IHostApplicat
     private HttpClient? _httpClient;
     private HrdDbContext? _dbContext;
     private readonly List<PotaPark> _newParks = [];
-    private readonly string[] _args = Environment.GetCommandLineArgs(); //args here are normal. args[0] is file name
+    private readonly string[] _args = Environment.GetCommandLineArgs(); //args here are normal. args[0] is the app file name
     private readonly JsonSerializerOptions _jsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
     [SuppressMessage("Performance", "CA1849:Call async methods when in an async method")]
@@ -80,8 +80,7 @@ internal sealed class HostedService(ILogger<HostedService> logger, IHostApplicat
             }
             contacts.AddRange(result.Entries);
             cnt = result.Count;
-            pageNum++;
-        } while (pageNum * PageSize < cnt);
+        } while (pageNum++ * PageSize < cnt);
 
         if (contacts.Count > 0)
         {
@@ -104,6 +103,7 @@ internal sealed class HostedService(ILogger<HostedService> logger, IHostApplicat
         if (_args.Length == 3)
             endDate = DateTime.Parse(_args[2]).AddDays(1);
 
+        // select existing activation contacts for a given date range
         var hrdLog = await _dbContext!.PotaContacts
             .AsTracking()
             .Include(x => x.Log)
@@ -114,6 +114,8 @@ internal sealed class HostedService(ILogger<HostedService> logger, IHostApplicat
         {
             var found = false;
 
+            // try to match by call, band and date, adding 5 min to each side of the date window, since time might not be in sync on both sides
+            // ideally there should be only one match but who knows, maybe there's a dupe or something
             foreach (var q in hrdLog.Where(hrdQso =>
                          hrdQso.Log.ColCall == potaQso.StationCallsign &&
                          hrdQso.Log.ColBand!.Equals(potaQso.Band, StringComparison.OrdinalIgnoreCase) &&
@@ -121,19 +123,33 @@ internal sealed class HostedService(ILogger<HostedService> logger, IHostApplicat
                          hrdQso.Log.ColTimeOn < potaQso.QsoDateTime.AddMinutes(5)))
             {
                 found = true;
-                logger.LogQso(potaQso.StationCallsign.PadRight(15), potaQso.Reference.PadRight(12), $"{potaQso.Name}{(q.P2P == null ? "" : " (exists)")}");
 
                 if (q.P2P != null)
-                    continue;
-
-                q.P2P = q.P2P == null ? potaQso.Reference : $"{q.P2P},{potaQso.Reference}";
+                {
+                    var parks = q.P2P.Split(',');
+                    if (parks.Any(x => x == potaQso.Reference))
+                    {
+                        logger.LogQso(potaQso.StationCallsign.PadRight(15), potaQso.Reference.PadRight(12), $"{potaQso.Name} (dupe)");
+                        continue;
+                    }
+                    q.P2P += $",{potaQso.Reference}";
+                    logger.LogQso(potaQso.StationCallsign.PadRight(15), potaQso.Reference.PadRight(12), $"{potaQso.Name} ({parks.Length + 1}-fer: {q.P2P})");
+                }
+                else
+                {
+                    q.P2P = potaQso.Reference;
+                    logger.LogQso(potaQso.StationCallsign.PadRight(15), potaQso.Reference.PadRight(12), $"{potaQso.Name}");
+                }
 
                 var park = _dbContext!.PotaParks.FirstOrDefault(x => x.ParkNum == potaQso.Reference) ?? await LoadPark(potaQso.Reference, ct);
-                if (park == null)
+                if (park == null) //this should never happen
                 {
                     logger.LogParkNotFound(potaQso.Reference);
                     continue;
                 }
+
+                // for N-fer it will always be the first park's location, but it doesn't matter - we don't know the exact location anyway
+                if (q.Lat != null) continue;
 
                 q.Lat = park.Lat;
                 q.Long = park.Long;
