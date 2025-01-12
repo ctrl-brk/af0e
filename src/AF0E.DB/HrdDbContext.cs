@@ -14,7 +14,7 @@ public class HrdDbContext(string connectionString, QueryTrackingBehavior trackin
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         optionsBuilder
-            .UseSqlServer(connectionString)
+            .UseSqlServer(connectionString, x => x.UseNetTopologySuite())
             .UseQueryTrackingBehavior(trackingBehavior)
 #if DEBUG
             .EnableSensitiveDataLogging()
@@ -88,6 +88,7 @@ public class HrdDbContext(string connectionString, QueryTrackingBehavior trackin
             entity.HasKey(e => e.ParkId);
             entity.HasIndex(e => e.Country, "IX_PotaParks_Country");
             entity.HasIndex(e => e.ParkNum, "IX_PotaParks_ParkNum").IsUnique();
+            entity.HasIndex(e => e.Active, "IX_PotaParks_Active");
 
             entity.Property(e => e.ParkNum).HasMaxLength(20).IsUnicode(false);
             entity.Property(e => e.ParkName).HasMaxLength(500);
@@ -96,7 +97,7 @@ public class HrdDbContext(string connectionString, QueryTrackingBehavior trackin
             entity.Property(e => e.Long).HasColumnType("decimal(7,4)");
             entity.Property(e => e.Location).HasMaxLength(200).IsUnicode(false);
             entity.Property(e => e.Country).HasMaxLength(5).IsUnicode(false);
-
+            entity.Property(e => e.GeoPoint).HasColumnType("geography");
         });
     }
 
