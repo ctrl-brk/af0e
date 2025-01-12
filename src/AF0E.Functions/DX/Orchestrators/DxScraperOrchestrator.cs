@@ -11,7 +11,7 @@ public sealed class DxScraperOrchestrator
     [Function(OrchestratorName)]
     public static async Task Orchestrator([OrchestrationTrigger] TaskOrchestrationContext context)
     {
-        var log = context.CreateReplaySafeLogger(typeof(DxScraperOrchestrator));
+        var log = context.CreateReplaySafeLogger<DxScraperOrchestrator>();
 
         var activities = new List<Task<ScrapeActivityResult>>
         {

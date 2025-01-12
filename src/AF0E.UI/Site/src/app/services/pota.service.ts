@@ -4,6 +4,7 @@ import {HttpService} from '../shared/http.service';
 import {map, Observable} from 'rxjs';
 import {PotaActivationModel} from '../models/pota-activation.model';
 import {ActivationQsoModel} from '../models/activation-qso.model';
+import {PotaParkModel} from '../models/pota-park.model';
 
 @Injectable({providedIn: 'root'})
 export class PotaService {
@@ -39,6 +40,29 @@ export class PotaService {
           m.date = new Date(m.date);
           return m;
         });
+      })
+    );
+  }
+
+  public getActivationsGeoJson(): Observable<any> {
+    return this._http.get(Configuration.potaUrl('geojson/activations/all'));
+  }
+
+  public getActivatedParksGeoJson(): Observable<any> {
+    return this._http.get(Configuration.potaUrl('geojson/parks/activated'));
+  }
+
+  public getGeoJsonByBoundary(swLong: number, swLat: number, neLong: number, neLat: number): Observable<any> {
+    return this._http.get(Configuration.potaUrl(`geojson/parks/not-activated/boundary?swLong=${swLong}&swLat=${swLat}&neLong=${neLong}&neLat=${neLat}`));
+  }
+
+  public searchPark(parkNum: string): Observable<PotaParkModel[]> {
+    return this._http.get(Configuration.potaUrl(`parks/search/${parkNum}`)).pipe(
+      map((x: PotaParkModel[]) => {
+        return x.map((m) => {
+          m.parkDesc = `${m.parkNum} - ${m.parkName}`;
+          return m;
+        })
       })
     );
   }
