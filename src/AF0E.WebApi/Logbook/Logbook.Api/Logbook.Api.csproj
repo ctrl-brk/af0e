@@ -30,6 +30,10 @@
 
   <ItemGroup>
     <None Remove="dist\**" />
+    <Content Remove=".secrets.json" />
+    <None Include=".secrets.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>

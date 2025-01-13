@@ -1,11 +1,9 @@
-$config = Get-Content -Path "secrets.json" -Raw | ConvertFrom-Json
+$config = Get-Content -Path ".secrets.json" -Raw | ConvertFrom-Json
 $serverName = $config.webServerMachineName
 $webSiteName = $config.webSiteName
 $srcPath = $config.srcPath
 $dstNetworkPath = $config.dstNetworkPath
 $dstLocalPath = $config.dstLocalPath
-
-Write-Host ("\\" + $serverName + "/" + $dstNetworkPath)
 
 Remove-Item ($srcPath + "/appsettings.json")
 Remove-Item ($srcPath + "/appsettings.Development.json")
@@ -17,6 +15,8 @@ Invoke-Command -Session $session -ScriptBlock {
     Import-Module WebAdministration
     Stop-WebSite -Name $websiteName
 } -ArgumentList $websiteName
+
+Start-Sleep -Seconds 5
 
 Invoke-Command -Session $session -ScriptBlock {
     param($siteRoot)
@@ -30,5 +30,7 @@ Invoke-Command -Session $session -ScriptBlock {
     Import-Module WebAdministration
     Start-WebSite -Name $websiteName
 } -ArgumentList $websiteName
+
+Start-Sleep -Seconds 5
 
 Remove-PSSession -Session $session
