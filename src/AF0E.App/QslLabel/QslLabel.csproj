@@ -39,4 +39,8 @@
       <Folder Include="Properties\" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\..\AF0E.DB\AF0E.DB.csproj" />
+    </ItemGroup>
+
 </Project>

@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using AF0E.DB;
 using Microsoft.EntityFrameworkCore;
 using QslLabel.Labels;
 using QslLabel.Models;
@@ -243,9 +244,6 @@ internal partial class MainForm : Form
             Width = 25,
         };
         gridLog.Columns.Add(revCol);
-        revCol.DefaultCellStyle.SelectionBackColor = revCol.DefaultCellStyle.BackColor;
-        revCol.DefaultCellStyle.SelectionForeColor = revCol.DefaultCellStyle.ForeColor;
-
     }
 
     private void ApplyGridStyle()
@@ -441,6 +439,15 @@ internal partial class MainForm : Form
         gridLog.Rows[e.RowIndex].DefaultCellStyle.BackColor = Color.LightBlue;
     }
 
+    private void gridLog_CellMouseDown(object sender, DataGridViewCellMouseEventArgs e)
+    {
+        if (e.ColumnIndex == gridLog.Columns["revCol"]!.Index && e.RowIndex >= 0)
+        {
+            // Prevent the default mouse down behavior (selecting the cell)
+            ((DataGridView)sender).CurrentCell = null;
+        }
+    }
+
     private void gridLog_CellClick(object sender, DataGridViewCellEventArgs e)
     {
         if (e.RowIndex < 0) return;
@@ -551,14 +558,5 @@ internal partial class MainForm : Form
     {
         _dbContext?.Dispose();
         _dbContext = null!;
-    }
-
-    private void gridLog_CellMouseDown(object sender, DataGridViewCellMouseEventArgs e)
-    {
-        if (e.ColumnIndex == gridLog.Columns["revCol"]!.Index && e.RowIndex >= 0)
-        {
-            // Prevent the default mouse down behavior (selecting the cell)
-            ((DataGridView)sender).CurrentCell = null;
-        }
     }
 }
