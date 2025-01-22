@@ -35,33 +35,47 @@ partial class MainForm
         btnSearch = new Button();
         tbCall = new TextBox();
         label1 = new Label();
+        btnAnalyze = new Button();
         groupBox2 = new GroupBox();
-        btnSave = new Button();
+        btnGenPdf = new Button();
         label3 = new Label();
         label2 = new Label();
         cmbTemplate = new ComboBox();
         cmbStartLabelNum = new ComboBox();
         saveDlg = new SaveFileDialog();
+        lblStatus = new Label();
+        gbAnalyze = new GroupBox();
+        cbIncludeUS = new CheckBox();
+        btnSave = new Button();
         ((System.ComponentModel.ISupportInitialize)gridLog).BeginInit();
         groupBox1.SuspendLayout();
         groupBox2.SuspendLayout();
+        gbAnalyze.SuspendLayout();
         SuspendLayout();
         // 
         // gridLog
         // 
+        gridLog.AllowUserToAddRows = false;
+        gridLog.AllowUserToDeleteRows = false;
         gridLog.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         gridLog.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
         gridLog.Location = new Point(10, 68);
         gridLog.Name = "gridLog";
-        gridLog.Size = new Size(1204, 492);
+        gridLog.Size = new Size(1577, 481);
         gridLog.TabIndex = 0;
         gridLog.TabStop = false;
         gridLog.Text = "dataGridView1";
+        gridLog.CellClick += gridLog_CellClick;
         gridLog.CellContentClick += gridLog_CellContentClick;
         gridLog.CellFormatting += gridLog_CellFormatting;
+        gridLog.CellMouseClick += gridLog_CellMouseClick;
+        gridLog.CellMouseDown += gridLog_CellMouseDown;
         gridLog.CellMouseEnter += gridLog_CellMouseEnter;
-        gridLog.CellMouseLeave += gridLog_CellMouseLeave;
+        gridLog.CellPainting += gridLog_CellPainting;
+        gridLog.ColumnAdded += gridLog_ColumnAdded;
+        gridLog.CurrentCellDirtyStateChanged += gridLog_CurrentCellDirtyStateChanged;
         gridLog.DataBindingComplete += gridLog_DataBindingComplete;
+        gridLog.EditingControlShowing += gridLog_EditingControlShowing;
         gridLog.SelectionChanged += gridLog_SelectionChanged;
         // 
         // groupBox1
@@ -72,7 +86,7 @@ partial class MainForm
         groupBox1.Controls.Add(label1);
         groupBox1.Location = new Point(10, 6);
         groupBox1.Name = "groupBox1";
-        groupBox1.Size = new Size(367, 56);
+        groupBox1.Size = new Size(368, 56);
         groupBox1.TabIndex = 1;
         groupBox1.TabStop = false;
         groupBox1.Text = "Filter";
@@ -103,7 +117,6 @@ partial class MainForm
         tbCall.Name = "tbCall";
         tbCall.Size = new Size(108, 23);
         tbCall.TabIndex = 0;
-        tbCall.KeyPress += tbCall_KeyPress;
         // 
         // label1
         // 
@@ -114,30 +127,40 @@ partial class MainForm
         label1.Text = "Callsign";
         label1.TextAlign = ContentAlignment.MiddleLeft;
         // 
+        // btnAnalyze
+        // 
+        btnAnalyze.Location = new Point(117, 16);
+        btnAnalyze.Name = "btnAnalyze";
+        btnAnalyze.Size = new Size(67, 28);
+        btnAnalyze.TabIndex = 1;
+        btnAnalyze.Text = "Analyze";
+        btnAnalyze.UseVisualStyleBackColor = true;
+        btnAnalyze.Click += btnAnalyze_Click;
+        // 
         // groupBox2
         // 
-        groupBox2.Controls.Add(btnSave);
+        groupBox2.Controls.Add(btnGenPdf);
         groupBox2.Controls.Add(label3);
         groupBox2.Controls.Add(label2);
         groupBox2.Controls.Add(cmbTemplate);
         groupBox2.Controls.Add(cmbStartLabelNum);
-        groupBox2.Location = new Point(404, 6);
+        groupBox2.Location = new Point(607, 6);
         groupBox2.Name = "groupBox2";
         groupBox2.Size = new Size(480, 56);
-        groupBox2.TabIndex = 2;
+        groupBox2.TabIndex = 3;
         groupBox2.TabStop = false;
         groupBox2.Text = "PDF";
         // 
-        // btnSave
+        // btnGenPdf
         // 
-        btnSave.Enabled = false;
-        btnSave.Location = new Point(381, 17);
-        btnSave.Name = "btnSave";
-        btnSave.Size = new Size(92, 28);
-        btnSave.TabIndex = 2;
-        btnSave.Text = "Save PDF";
-        btnSave.UseVisualStyleBackColor = true;
-        btnSave.Click += btnSave_Click;
+        btnGenPdf.Enabled = false;
+        btnGenPdf.Location = new Point(381, 17);
+        btnGenPdf.Name = "btnGenPdf";
+        btnGenPdf.Size = new Size(92, 28);
+        btnGenPdf.TabIndex = 2;
+        btnGenPdf.Text = "Generate";
+        btnGenPdf.UseVisualStyleBackColor = true;
+        btnGenPdf.Click += btnGenPdf_Click;
         // 
         // label3
         // 
@@ -154,7 +177,7 @@ partial class MainForm
         label2.Location = new Point(10, 19);
         label2.Name = "label2";
         label2.Size = new Size(60, 23);
-        label2.TabIndex = 2;
+        label2.TabIndex = 0;
         label2.Text = "Template";
         label2.TextAlign = ContentAlignment.MiddleLeft;
         // 
@@ -183,23 +206,71 @@ partial class MainForm
         saveDlg.DefaultExt = "pdf";
         saveDlg.Filter = "PDF|*.pdf|All files|*.*";
         // 
+        // lblStatus
+        // 
+        lblStatus.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+        lblStatus.Location = new Point(10, 552);
+        lblStatus.Name = "lblStatus";
+        lblStatus.Size = new Size(1577, 15);
+        lblStatus.TabIndex = 3;
+        lblStatus.Text = "Ready";
+        lblStatus.TextAlign = ContentAlignment.MiddleRight;
+        // 
+        // gbAnalyze
+        // 
+        gbAnalyze.Controls.Add(cbIncludeUS);
+        gbAnalyze.Controls.Add(btnAnalyze);
+        gbAnalyze.Location = new Point(393, 6);
+        gbAnalyze.Name = "gbAnalyze";
+        gbAnalyze.Size = new Size(197, 56);
+        gbAnalyze.TabIndex = 2;
+        gbAnalyze.TabStop = false;
+        gbAnalyze.Text = "Analyze";
+        // 
+        // cbIncludeUS
+        // 
+        cbIncludeUS.AutoSize = true;
+        cbIncludeUS.Location = new Point(10, 23);
+        cbIncludeUS.Name = "cbIncludeUS";
+        cbIncludeUS.Size = new Size(82, 19);
+        cbIncludeUS.TabIndex = 0;
+        cbIncludeUS.Text = "Include US";
+        cbIncludeUS.UseVisualStyleBackColor = true;
+        // 
+        // btnSave
+        // 
+        btnSave.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        btnSave.Enabled = false;
+        btnSave.Location = new Point(1513, 22);
+        btnSave.Name = "btnSave";
+        btnSave.Size = new Size(74, 28);
+        btnSave.TabIndex = 4;
+        btnSave.Text = "Save";
+        btnSave.UseVisualStyleBackColor = true;
+        // 
         // MainForm
         // 
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
-        ClientSize = new Size(1223, 568);
+        ClientSize = new Size(1596, 568);
+        Controls.Add(btnSave);
+        Controls.Add(gbAnalyze);
+        Controls.Add(lblStatus);
         Controls.Add(groupBox2);
         Controls.Add(groupBox1);
         Controls.Add(gridLog);
         Name = "MainForm";
         Text = "QSL Label";
         WindowState = FormWindowState.Maximized;
+        FormClosing += MainForm_FormClosing;
         Load += MainForm_Load;
         ((System.ComponentModel.ISupportInitialize)gridLog).EndInit();
         groupBox1.ResumeLayout(false);
         groupBox1.PerformLayout();
         groupBox2.ResumeLayout(false);
         groupBox2.PerformLayout();
+        gbAnalyze.ResumeLayout(false);
+        gbAnalyze.PerformLayout();
         ResumeLayout(false);
     }
 
@@ -218,7 +289,12 @@ partial class MainForm
 
     #endregion
 
-    private Button btnSave;
+    private Button btnGenPdf;
     private Label label3;
     private SaveFileDialog saveDlg;
+    private Button btnAnalyze;
+    private Label lblStatus;
+    private GroupBox gbAnalyze;
+    private CheckBox cbIncludeUS;
+    private Button btnSave;
 }

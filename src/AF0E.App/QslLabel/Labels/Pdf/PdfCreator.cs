@@ -107,7 +107,7 @@ internal static class PdfCreator
 
         foreach (var label in data)
         {
-            var pota = label.Contacts.Any(x => !string.IsNullOrWhiteSpace(x.POTA));
+            var pota = label.Contacts.Any(x => !string.IsNullOrWhiteSpace(x.Parks));
             var maxCountyLength = pota ? label.Contacts.Max(x => x.MyCounty?.Length ?? 0) + 3 : 0; //3 is for ,CO
 
             var startX = marginLeft + (col - 1) * (LabelWidth + HorizontalGap);
@@ -163,7 +163,7 @@ internal static class PdfCreator
 
                 if (pota)
                 {
-                    var grid = noGrid || string.IsNullOrWhiteSpace(q.POTA) ? "" : shortGrid ? q.MyGrid?[..4] : q.MyGrid;
+                    var grid = noGrid || string.IsNullOrWhiteSpace(q.Parks) ? "" : shortGrid ? q.MyGrid?[..4] : q.MyGrid;
                     var county = q.MyCounty;
                     if (county is { Length: <= 21 })
                         county += $",{q.MyState}";
@@ -175,7 +175,7 @@ internal static class PdfCreator
                         _ => county
                     };
 
-                    qsoStr = $"{q.UTC:yy-MM-dd} {q.UTC:hh:mm} {q.Mhz,-3} {q.Mode,-3}  {q.RST,-3} {q.ParkNum,-8} {county} {grid}";
+                    qsoStr = $"{q.UTC:yy-MM-dd} {q.UTC:hh:mm} {q.Mhz,-3} {q.Mode,-3}  {q.RST,-3} {q.Parks,-8} {county} {grid}";
                 }
                 else
                     qsoStr = $"{q.UTC:yyyy-MM-dd}   {q.UTC:hh:mm}     {q.Band,-4}      {q.Mode,3}       {q.RST}";
