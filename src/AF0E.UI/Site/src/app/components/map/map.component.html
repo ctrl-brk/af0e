@@ -1,2 +1,25 @@
-<div id='parks-map' style="height: calc(100vh - 6rem)">
+<div class="top-spacer"></div>
+<div class="controls">
+  @if (!isLessThan1000px) {
+    <p-fieldset legend="Total activations" styleClass="circle-color">
+      <p-color-picker [(ngModel)]="pointColors.first" (onChange)="onColorSelected()" /> ≤10
+      <p-color-picker [(ngModel)]="pointColors.second" (onChange)="onColorSelected()"/> 11-20
+      <p-color-picker [(ngModel)]="pointColors.third" (onChange)="onColorSelected()"/> 21-50
+      <p-color-picker [(ngModel)]="pointColors.fourth" (onChange)="onColorSelected()"/> 51-100
+      <p-color-picker [(ngModel)]="pointColors.default" (onChange)="onColorSelected()"/> &gt;100
+    </p-fieldset>
+  }
+  <p-fieldset legend="Map style"  styleClass="map-style">
+    <img src="map-out.png" alt="Outdoors" title="Outdoors" (click)="onMapStyle('outdoors')">
+    <img src="map-sat.png" alt="Satellite" title="Satellite" (click)="onMapStyle('satellite-streets')">
+  </p-fieldset>
+  <p-fieldset legend="Options"  styleClass="options">
+    <p-checkbox inputId="activations" [(ngModel)]="showActivations" [binary]="true" (onChange)="onActivationsChecked()" />
+    <label for="activations"> my activations</label>
+  </p-fieldset>
+  <p-fieldset legend="Park search"  styleClass="search">
+    <p-autoComplete [(ngModel)]="searchName" [suggestions]="parksFound" (completeMethod)="parkSearch($event.query)" (onSelect)="onParkSearchSelect($event.value)" delay="500" optionLabel="parkDesc" />
+  </p-fieldset>
+</div>
+<div id='parks-map' style="height: calc(100vh - 11.4rem)">
 </div>

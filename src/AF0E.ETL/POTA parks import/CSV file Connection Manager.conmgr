@@ -1,0 +1,107 @@
+﻿<?xml version="1.0"?>
+<DTS:ConnectionManager xmlns:DTS="www.microsoft.com/SqlServer/Dts"
+  DTS:ObjectName="CSV file Connection Manager"
+  DTS:DTSID="{CCBE9189-8F0F-48C5-84DE-FCDCC3F50D5F}"
+  DTS:CreationName="FLATFILE">
+  <DTS:ObjectData>
+    <DTS:ConnectionManager
+      DTS:Format="Delimited"
+      DTS:LocaleID="1033"
+      DTS:HeaderRowDelimiter="_x000D__x000A_"
+      DTS:ColumnNamesInFirstDataRow="True"
+      DTS:RowDelimiter=""
+      DTS:TextQualifier="_x0022_"
+      DTS:CodePage="1252"
+      DTS:ConnectionString="C:\Projects\AF0E\src\AF0E.ETL\POTA parks import\United States of America (US).csv">
+      <DTS:FlatFileColumns>
+        <DTS:FlatFileColumn
+          DTS:ColumnType="Delimited"
+          DTS:ColumnDelimiter="_x002C_"
+          DTS:MaximumWidth="20"
+          DTS:DataType="129"
+          DTS:ObjectName="reference"
+          DTS:DTSID="{6F3CF3B7-EC49-478E-85F6-CED9FF584A62}"
+          DTS:CreationName="" />
+        <DTS:FlatFileColumn
+          DTS:ColumnType="Delimited"
+          DTS:ColumnDelimiter="_x002C_"
+          DTS:MaximumWidth="500"
+          DTS:DataType="129"
+          DTS:TextQualified="True"
+          DTS:ObjectName="name"
+          DTS:DTSID="{6AEA50DF-7589-4274-B4D2-378BEB6139E8}"
+          DTS:CreationName="" />
+        <DTS:FlatFileColumn
+          DTS:ColumnType="Delimited"
+          DTS:ColumnDelimiter="_x002C_"
+          DTS:DataType="131"
+          DTS:DataPrecision="7"
+          DTS:DataScale="4"
+          DTS:ObjectName="latitude"
+          DTS:DTSID="{15637E20-1CFB-4993-AB08-8F45969A3193}"
+          DTS:CreationName="" />
+        <DTS:FlatFileColumn
+          DTS:ColumnType="Delimited"
+          DTS:ColumnDelimiter="_x002C_"
+          DTS:DataType="131"
+          DTS:DataPrecision="7"
+          DTS:DataScale="4"
+          DTS:ObjectName="longitude"
+          DTS:DTSID="{BF9465EE-6A0C-4CF0-86E9-70B98239D001}"
+          DTS:CreationName="" />
+        <DTS:FlatFileColumn
+          DTS:ColumnType="Delimited"
+          DTS:ColumnDelimiter="_x002C_"
+          DTS:MaximumWidth="6"
+          DTS:DataType="129"
+          DTS:ObjectName="grid"
+          DTS:DTSID="{3A258AC5-695C-4E71-BAFF-FBC865C87948}"
+          DTS:CreationName="" />
+        <DTS:FlatFileColumn
+          DTS:ColumnType="Delimited"
+          DTS:ColumnDelimiter="_x002C_"
+          DTS:MaximumWidth="200"
+          DTS:DataType="129"
+          DTS:TextQualified="True"
+          DTS:ObjectName="locationDesc"
+          DTS:DTSID="{C8BFB0FF-F28F-4B81-9D72-6896FBBA1384}"
+          DTS:CreationName="" />
+        <DTS:FlatFileColumn
+          DTS:ColumnType="Delimited"
+          DTS:ColumnDelimiter="_x002C_"
+          DTS:DataType="3"
+          DTS:ObjectName="attempts"
+          DTS:DTSID="{BDAFCD8A-7B45-4871-BB23-ED67DF971C86}"
+          DTS:CreationName="" />
+        <DTS:FlatFileColumn
+          DTS:ColumnType="Delimited"
+          DTS:ColumnDelimiter="_x002C_"
+          DTS:DataType="3"
+          DTS:ObjectName="activations"
+          DTS:DTSID="{BE105E63-1EBC-4869-937D-4D44A286F968}"
+          DTS:CreationName="" />
+        <DTS:FlatFileColumn
+          DTS:ColumnType="Delimited"
+          DTS:ColumnDelimiter="_x002C_"
+          DTS:DataType="3"
+          DTS:ObjectName="qsos"
+          DTS:DTSID="{02ADBC0A-55B3-452D-AA01-51D53D19BE5C}"
+          DTS:CreationName="" />
+        <DTS:FlatFileColumn
+          DTS:ColumnType="Delimited"
+          DTS:ColumnDelimiter="_x002C_"
+          DTS:DataType="3"
+          DTS:ObjectName="my_activations"
+          DTS:DTSID="{016EF847-7E16-474F-907B-70295B94DF46}"
+          DTS:CreationName="" />
+        <DTS:FlatFileColumn
+          DTS:ColumnType="Delimited"
+          DTS:ColumnDelimiter="_x000A_"
+          DTS:DataType="3"
+          DTS:ObjectName="my_hunted_qsos"
+          DTS:DTSID="{E2B5FB90-B156-40CA-A079-4023007EF63B}"
+          DTS:CreationName="" />
+      </DTS:FlatFileColumns>
+    </DTS:ConnectionManager>
+  </DTS:ObjectData>
+</DTS:ConnectionManager>

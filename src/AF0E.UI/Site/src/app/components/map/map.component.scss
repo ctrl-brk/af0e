@@ -1,6 +1,42 @@
+.top-spacer {margin-top: 4.1rem;}
+
+.controls {
+  display: flex;
+  justify-content: center;
+}
+
+p-fieldset {
+  margin-right:5px;
+  fieldset.circle-color {
+    padding-top: 8px;
+    padding-bottom: 12px;
+  }
+  fieldset.map-style {
+    padding-bottom: 0;
+    width: 8.75rem;
+    img {
+      cursor: pointer;
+      width: 40px;
+      height: 40px;
+      &:first-of-type {
+        margin-right: 20px;
+      }
+    }
+  }
+  fieldset.options {
+    padding-top: 8px;
+    padding-bottom: 16px;
+  }
+  fieldset.search {
+    padding-bottom: 7px;
+  }
+  .p-fieldset-legend-label {font-weight: normal}
+}
+
+
+
 #parks-map {
-  margin-top: 4.1rem;
-  height: calc(100vh - 6rem);
+  margin-top: 5px;
 }
 
 .mapboxgl-popup-close-button {

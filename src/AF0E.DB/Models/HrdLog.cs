@@ -17,7 +17,7 @@ public sealed class HrdLog
     public string? ColCheck { get; init; }
     public string? ColClass { get; init; }
     public string? ColCnty { get; init; }
-    public string? ColComment { get; init; }
+    public string? ColComment { get; set; }
     public string? ColCont { get; init; }
     public string? ColContactedOp { get; init; }
     public string? ColContestId { get; init; }
@@ -78,12 +78,12 @@ public sealed class HrdLog
     public string? ColPublicKey { get; init; }
     public string? ColQslmsg { get; init; }
     public DateTime? ColQslrdate { get; init; }
-    public DateTime? ColQslsdate { get; init; }
+    public DateTime? ColQslsdate { get; set; }
     public string? ColQslRcvd { get; init; }
     public string? ColQslRcvdVia { get; init; }
-    public string? ColQslSent { get; init; }
-    public string? ColQslSentVia { get; init; }
-    public string? ColQslVia { get; init; }
+    public string? ColQslSent { get; set; }
+    public string? ColQslSentVia { get; set; }
+    public string? ColQslVia { get; set; }
     public string? ColQsoComplete { get; init; }
     public double? ColQsoRandom { get; init; }
     public string? ColQth { get; init; }
@@ -108,10 +108,10 @@ public sealed class HrdLog
     public DateTime? ColTimeOn { get; init; }
     public double? ColTxPwr { get; init; }
     public string? ColWeb { get; init; }
-    public string? ColUserDefined0 { get; init; }
-    public string? ColUserDefined1 { get; init; }
-    public string? ColUserDefined2 { get; init; }
-    public string? ColUserDefined3 { get; init; }
+    public string? SiteComment { get; set; }
+    public string? QslMgrCall { get; set; }
+    public string? QslComment { get; set; }
+    public string? Metadata { get; set; }
     public string? ColUserDefined4 { get; init; }
     public string? ColUserDefined5 { get; init; }
     public string? ColUserDefined6 { get; init; }

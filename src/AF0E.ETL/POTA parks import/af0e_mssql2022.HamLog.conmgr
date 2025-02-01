@@ -1,0 +1,10 @@
+﻿<?xml version="1.0"?>
+<DTS:ConnectionManager xmlns:DTS="www.microsoft.com/SqlServer/Dts"
+  DTS:ObjectName="af0e_mssql2022.HamLog"
+  DTS:DTSID="{16D7DC14-FA8D-4ED0-873A-397439673BB8}"
+  DTS:CreationName="ADO.NET:System.Data.SqlClient.SqlConnection, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+  <DTS:ObjectData>
+    <DTS:ConnectionManager
+      DTS:ConnectionString="Data Source=af0e\mssql2022;Initial Catalog=HamLog;Integrated Security=True;TrustServerCertificate=True;Application Name=SSIS-{16D7DC14-FA8D-4ED0-873A-397439673BB8}af0e_mssql2022.HamLog;" />
+  </DTS:ObjectData>
+</DTS:ConnectionManager>

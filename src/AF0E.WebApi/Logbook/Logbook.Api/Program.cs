@@ -2,13 +2,15 @@ using System.Text.Json.Serialization;
 using AF0E.DB;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using NetTopologySuite;
+using NetTopologySuite.Geometries;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 //builder.Services.AddDbContext<HrdDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("HrdLog")));
-builder.Services.AddScoped<HrdDbContext>(options => new HrdDbContext(builder.Configuration.GetConnectionString("HrdLog")!));
+builder.Services.AddScoped<HrdDbContext>(_ => new HrdDbContext(builder.Configuration.GetConnectionString("HrdLog")!));
 builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options => options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 
 WebApplication app = builder.Build();
@@ -58,15 +60,18 @@ app.MapGet("/api/v1/logbook/{call?}", async (string? call, int? skip, int? take,
             skip ??= 0;
             if (take is null or > MAX_PAGE_SIZE) take = DEFAULT_PAGE_SIZE;
 
+#pragma warning disable CA1305
             var countQuery = begin is null || end is null ?
                 dbContext.Log.CountAsync(x => call == null || x.ColCall == call) :
                 dbContext.Log.CountAsync(x => (call == null || x.ColCall == call) && x.ColTimeOn >= DateTime.Parse(begin) && x.ColTimeOn <= DateTime.Parse(end).AddDays(1));
+
 
             var cnt = await countQuery;
 
             var logQuery = begin is null || end is null ?
                 dbContext.Log.Where(x => call == null || x.ColCall == call) :
                 dbContext.Log.Where(x => (call == null || x.ColCall == call) && x.ColTimeOn >= DateTime.Parse(begin) && x.ColTimeOn <= DateTime.Parse(end).AddDays(1));
+#pragma warning restore CA1305
 
             logQuery = logQuery.Include(c => c.PotaContacts);
 
@@ -125,13 +130,12 @@ app.MapGet("/api/v1/logbook/qso/{id:int}", async (int id, HrdDbContext dbContext
                 QslRcvd = res.ColQslRcvd,
                 QslRcvdDate = res.ColQslrdate,
                 QslRcvdVia = res.ColQslRcvdVia,
-                //POTA = res.PotaContacts.Count == 0 ? string.Empty : string.Join(',', res.PotaContacts.Select(x => x.Activation.Park.ParkNum)),
                 POTA = res.PotaContacts.Select(x => x.Activation.Park.ParkNum),
                 p2p = res.PotaContacts.Count > 0 && !string.IsNullOrEmpty(res.PotaContacts.First().P2P),
                 SatName = res.ColSatName,
                 SatMode = res.ColSatMode,
                 Contest = res.ColContestId,
-                Comment = res.ColUserDefined0
+                Comment = res.SiteComment
             }
         );
     })
@@ -214,8 +218,36 @@ app.MapGet("/api/v1/pota/activations/{id:int}/log", (int id, HrdDbContext dbCont
     .WithName("PotaActivationLog")
     .WithOpenApi();
 
-// Returns locations for activations. Can filter by state(s)
-app.MapGet("/api/v1/logbook/pota/geojson/activations/{states}", async (string states, HrdDbContext dbContext) =>
+app.MapGet("/api/v1/pota/parks/search/{parkNum}", async (string parkNum, [FromQuery(Name = "max-results")] int? maxResults, HrdDbContext dbContext) =>
+    {
+        if (string.IsNullOrEmpty(parkNum))
+            return [];
+
+        maxResults ??= 25;
+
+        if (parkNum[0] >= '0' && parkNum[0] <= '9')
+            parkNum = $"US-{parkNum}";
+
+        return await dbContext.PotaParks
+            .Where(x => x.Active && x.ParkNum.StartsWith(parkNum) || EF.Functions.Like(x.ParkName, $"%{parkNum}%"))
+            .OrderBy(x => x.ParkNum)
+            .Take(maxResults.Value)
+            .Select( x => new
+            {
+                x.ParkNum,
+                x.ParkName,
+                x.Lat,
+                x.Long,
+                x.TotalActivationCount,
+                x.TotalQsoCount
+            })
+            .ToListAsync();
+    })
+    .WithName("ParkSearch")
+    .WithOpenApi();
+
+// Returns points of activations. Can filter by state(s)
+app.MapGet("/api/v1/pota/geojson/activations/{states}", async (string states, HrdDbContext dbContext) =>
     {
         string[] st = [];
         if (states.Contains(','))
@@ -259,19 +291,11 @@ app.MapGet("/api/v1/logbook/pota/geojson/activations/{states}", async (string st
     .WithName("GeoJsonActivations")
     .WithOpenApi();
 
-// Returns locations for not yet activated parks. Can filter by state(s)
-app.MapGet("/api/v1/logbook/pota/geojson/parks/not-activated/{states}", async (string states, HrdDbContext dbContext) =>
+// Returns activated parks with pota.app locations, not the activation locations like the method above
+app.MapGet("/api/v1/pota/geojson/parks/activated", async (HrdDbContext dbContext) =>
     {
-        string[] st = [];
-        if (states.Contains(','))
-            st = states.Split(',').Select(x => $"US-{x}").ToArray();
-        else if (states != "all") //single state or all
-            st = [states];
-
-        // TODO: without awaiting, "result" property (Task.Result ?) gets added to json
         var parks = await dbContext.PotaParks
-            .Include(x => x.PotaActivations)
-            .Where(x => !x.PotaActivations.Any() && (st.Length == 0 || st.Any(y => x.Location!.Contains(y))))
+            .Where( p => dbContext.PotaActivations.Any(a => a.ParkId == p.ParkId))
             .Select(x => new
             {
                 Type = "Feature",
@@ -284,6 +308,8 @@ app.MapGet("/api/v1/logbook/pota/geojson/parks/not-activated/{states}", async (s
                 {
                     x.ParkNum,
                     x.ParkName,
+                    x.TotalActivationCount,
+                    x.TotalQsoCount,
                 }
             }).ToListAsync();
 
@@ -293,7 +319,90 @@ app.MapGet("/api/v1/logbook/pota/geojson/parks/not-activated/{states}", async (s
             Features = parks
         };
     })
-    .WithName("GeoJsonParks")
+    .WithName("GeoJsonActivatedParks")
+    .WithOpenApi();
+
+// Returns locations for not yet activated parks. Can filter by state(s)
+// Not in use since using dynamic data (method below)
+app.MapGet("/api/v1/pota/geojson/parks/not-activated/{states}", async (string states, HrdDbContext dbContext) =>
+    {
+        string[] st = [];
+        if (states.Contains(','))
+            st = states.Split(',').Select(x => $"US-{x}").ToArray();
+        else if (states != "all") //single state or all
+            st = [states];
+
+        // TODO: without awaiting, "result" property (Task.Result ?) gets added to json
+        var parks = await dbContext.PotaParks
+            .Include(x => x.PotaActivations)
+            .Where(x => x.Active && !x.PotaActivations.Any() && (st.Length == 0 || st.Any(y => x.Location!.Contains(y))))
+            .Select(x => new
+            {
+                Type = "Feature",
+                Geometry = new
+                {
+                    Type = "Point",
+                    Coordinates = new[] { x.Long, x.Lat },
+                },
+                Properties = new
+                {
+                    x.ParkNum,
+                    x.ParkName,
+                    x.TotalActivationCount,
+                    x.TotalQsoCount,
+                }
+            }).ToListAsync();
+
+        return new
+        {
+            Type = "FeatureCollection",
+            Features = parks
+        };
+    })
+    .WithName("GeoJsonNotActivatedParks")
+    .WithOpenApi();
+
+// Returns locations for not yet activated parks by boundary
+app.MapGet("/api/v1/pota/geojson/parks/not-activated/boundary", async (double swLat, double swLong, double neLat, double neLong, HrdDbContext dbContext) =>
+    {
+        var geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
+        var polygon = geometryFactory.CreatePolygon([
+            new Coordinate(swLong, swLat),
+            new Coordinate(neLong, swLat),
+            new Coordinate(neLong, neLat),
+            new Coordinate(swLong, neLat),
+            new Coordinate(swLong, swLat)
+        ]);
+
+        var parks = await dbContext.PotaParks
+            .Include(x => x.PotaActivations)
+            .Where(x => x.Active && !x.PotaActivations.Any() && x.GeoPoint.Intersects(polygon))
+            .OrderByDescending(x => x.TotalQsoCount) //so they color circles don't jump around on UI and least activated come on top
+            .ThenBy(x => x.ParkId) // and newer parks on top of the others with the same qso count
+            .Select(x => new
+            {
+                Type = "Feature",
+                Geometry = new
+                {
+                    Type = "Point",
+                    Coordinates = new[] { x.Long, x.Lat },
+                },
+                Properties = new
+                {
+                    x.ParkNum,
+                    x.ParkName,
+                    x.TotalActivationCount,
+                    x.TotalQsoCount,
+                }
+            }).ToListAsync();
+
+        return new
+        {
+            Type = "FeatureCollection",
+            Features = parks
+        };
+    })
+    .WithName("GeoJsonSpatialParks")
     .WithOpenApi();
 
 app.MapGet("/api/v1/logbook/gridtracker/{call}", (string call, HrdDbContext dbContext) =>

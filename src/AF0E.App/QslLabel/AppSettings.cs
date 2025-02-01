@@ -1,6 +1,6 @@
 ﻿namespace QslLabel;
 
-internal class AppSettings
+internal sealed class AppSettings
 {
     public static string ConnectionString { get; set; } = null!;
 }

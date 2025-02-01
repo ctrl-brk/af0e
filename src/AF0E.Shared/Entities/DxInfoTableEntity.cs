@@ -1,10 +1,12 @@
 ﻿using Azure;
 using Azure.Data.Tables;
+using System.Diagnostics.CodeAnalysis;
 // ReSharper disable PropertyCanBeMadeInitOnly.Global
 // ReSharper disable MemberCanBeProtected.Global
 
 namespace AF0E.Shared.Entities;
 
+[SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
 public class DxInfoTableEntity : ITableEntity
 {
     public string? Name { get; set; }

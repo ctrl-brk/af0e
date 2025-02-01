@@ -1,24 +1,48 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
-    <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
-        <Nullable>enable</Nullable>
-        <ImplicitUsings>enable</ImplicitUsings>
-    </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" />
+    <PackageReference Include="Swashbuckle.AspNetCore" />
+  </ItemGroup>
 
-    <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.0" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.0" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0">
-          <PrivateAssets>all</PrivateAssets>
-          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-        </PackageReference>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.0" />
-        <PackageReference Include="Swashbuckle.AspNetCore" Version="7.0.0" />
-    </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\AF0E.DB\AF0E.DB.csproj" />
+  </ItemGroup>
 
-    <ItemGroup>
-      <ProjectReference Include="..\..\..\AF0E.DB\AF0E.DB.csproj" />
-    </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="dist\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Remove="dist\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Remove="dist\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="dist\**" />
+    <Content Remove=".secrets.json" />
+    <None Include=".secrets.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="dist\web.config" />
+    <_ContentIncludedByDefault Remove="dist\appsettings.Development.json" />
+    <_ContentIncludedByDefault Remove="dist\appsettings.json" />
+    <_ContentIncludedByDefault Remove="dist\Logbook.Api.deps.json" />
+    <_ContentIncludedByDefault Remove="dist\Logbook.Api.runtimeconfig.json" />
+    <_ContentIncludedByDefault Remove="dist\Logbook.Api.staticwebassets.endpoints.json" />
+  </ItemGroup>
 
 </Project>

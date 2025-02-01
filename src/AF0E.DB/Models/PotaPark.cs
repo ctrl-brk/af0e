@@ -1,4 +1,7 @@
-﻿namespace AF0E.DB.Models;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+using NetTopologySuite.Geometries;
+
+namespace AF0E.DB.Models;
 
 public sealed class PotaPark
 {
@@ -10,6 +13,12 @@ public sealed class PotaPark
     public string? Grid { get; init; }
     public string? Location { get; init; }
     public string Country { get; init; } = null!;
+    [Column("Activations")]
+    public int TotalActivationCount { get; init; }
+    [Column("QSOs")]
+    public int TotalQsoCount { get; init; }
+    public bool Active { get; init; }
+    public Geometry GeoPoint { get; init; } = null!;
 
     // ReSharper disable once CollectionNeverUpdated.Global
     public ICollection<PotaActivation> PotaActivations { get; init; } = [];
