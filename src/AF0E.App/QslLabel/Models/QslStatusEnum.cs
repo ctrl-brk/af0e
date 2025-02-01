@@ -2,8 +2,12 @@
 
 internal enum QslStatus
 {
-    ReceivedBandMode = 1,
-    ReceivedBand = 2,
-    SentBandMode = 3,
-    SentBand = 4,
+    None = 0,
+    Unknown = 1,
+    ReceivedBandMode = 14,
+    ReceivedBand = 6,
+    ReceivedCountry = 2,
+    SentBandMode = 112,
+    SentBand = 48,
+    SentCountry = 16,
 }

@@ -135,7 +135,7 @@ app.MapGet("/api/v1/logbook/qso/{id:int}", async (int id, HrdDbContext dbContext
                 SatName = res.ColSatName,
                 SatMode = res.ColSatMode,
                 Contest = res.ColContestId,
-                Comment = res.ColUserDefined0
+                Comment = res.SiteComment
             }
         );
     })

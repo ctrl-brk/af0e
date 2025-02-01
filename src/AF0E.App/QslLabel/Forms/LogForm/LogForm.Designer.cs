@@ -38,7 +38,7 @@
             lvLog.GridLines = true;
             lvLog.Location = new Point(3, 5);
             lvLog.Name = "lvLog";
-            lvLog.Size = new Size(476, 452);
+            lvLog.Size = new Size(536, 452);
             lvLog.TabIndex = 0;
             lvLog.UseCompatibleStateImageBehavior = false;
             lvLog.View = View.Details;
@@ -49,7 +49,7 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(484, 461);
+            ClientSize = new Size(544, 461);
             Controls.Add(lvLog);
             MinimizeBox = false;
             Name = "LogForm";

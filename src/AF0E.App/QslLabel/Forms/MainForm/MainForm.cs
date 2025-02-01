@@ -1,21 +1,24 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using AF0E.DB;
 using Microsoft.EntityFrameworkCore;
+using QslLabel.Forms;
 using QslLabel.Labels;
 using QslLabel.Models;
 
 namespace QslLabel;
 
-internal partial class MainForm : Form
+internal sealed partial class MainForm : Form
 {
+    private const string CallColumnName = "CallLink";
     [SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Disposed on closing")]
     private HrdDbContext _dbContext = null!;
     private BindingList<LogGridModel> _contacts = null!;
-    private static object _sQslDataSource = new[] { "Q", "N", "R", "Y", "I" };
-    private static object _viaDataSource = new[] { new { Name = "", Value = "" }, new { Name = "Direct", Value = "D" }, new { Name = "Bureau", Value = "B" }, new { Name = "Manager", Value = "M" }, new { Name = "Electronic", Value = "E" } }.ToList();
+    private static readonly object _sQslDataSource = new[] { "Q", "N", "R", "Y", "I" };
+    private static readonly object _viaDataSource = new[] { new { Name = "", Value = "" }, new { Name = "Direct", Value = "D" }, new { Name = "Bureau", Value = "B" }, new { Name = "Manager", Value = "M" }, new { Name = "Electronic", Value = "E" } }.ToList();
     private int _dirtyRowsCount;
+    private int _printCount;
 
     public MainForm()
     {
@@ -26,6 +29,7 @@ internal partial class MainForm : Form
     private void MainForm_Load(object sender, EventArgs e)
     {
         _dbContext = new HrdDbContext(AppSettings.ConnectionString);
+        gridLog.SetDoubleBuffered();
         SetupContextMenu();
         tbCall.Focus();
     }
@@ -44,11 +48,13 @@ internal partial class MainForm : Form
         cmbStartLabelNum.SelectedIndex = 0;
 
         btnGenPdf.Enabled = gridLog.SelectedRows.Count > 0;
+        if (gridLog.SelectedRows.Count == 0) btnMarkSent.Enabled = false;
     }
 
     private async void btnSearch_Click(object sender, EventArgs e)
     {
         tbCall.SelectAll();
+        btnMarkSent.Enabled = false;
         await DoSearch(false);
     }
 
@@ -57,13 +63,31 @@ internal partial class MainForm : Form
         await DoSearch(true);
     }
 
-    private void gridLog_SelectionChanged(object sender, EventArgs e)
+    private void btnSave_Click(object sender, EventArgs e)
+    {
+        foreach (DataGridViewRow row in gridLog.Rows)
+        {
+            if (row.DataBoundItem == null) continue;
+
+            ((LogGridModel)row.DataBoundItem!).SaveChanges(_dbContext);
+            row.Cells["revCol"].Value = "";
+            btnSave.Enabled = false;
+            _dirtyRowsCount = 0;
+        }
+    }
+
+    private void gridLog_SelectionChanged(object sender, EventArgs? e)
     {
         btnGenPdf.Enabled = gridLog.SelectedRows.Count > 0 && cmbTemplate.SelectedItem != null;
     }
 
     private async Task DoSearch(bool analyze)
     {
+        if (btnSave.Enabled && MessageBox.Show("Reload anyway?", "There are unsaved changes", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+            return;
+
+        _printCount = 0;
+
         if (!analyze && string.IsNullOrEmpty(tbCall.Text))
             cbQueued.Checked = true;
 
@@ -72,15 +96,17 @@ internal partial class MainForm : Form
         Cursor = Cursors.WaitCursor;
 
         var contacts = await _dbContext.Database.SqlQueryRaw<LogGridModel>(
-            $@"exec GetQslLabelData
-            @Call={(string.IsNullOrEmpty(tbCall.Text) ? "null" : $"'{tbCall.Text}'")},
-            @QueuedOnly={(cbQueued.Checked ? 1 : 0)},
-            @Analyze={(analyze ? 1 : 0)},
-            @IncludeUS={(cbIncludeUS.Checked ? 1 : 0)}"
-            ).ToListAsync();
+            $"""
+             exec GetQslLabelData
+                  @Call={(string.IsNullOrEmpty(tbCall.Text) ? "null" : $"'{tbCall.Text}'")},
+                  @QueuedOnly={(cbQueued.Checked ? 1 : 0)},
+                  @Analyze={(analyze ? 1 : 0)},
+                  @DxOnly={(cbDxOnly.Checked ? 1 : 0)}
+             """
+        ).ToListAsync();
 
         if (analyze)
-            contacts = [.. contacts.OrderBy(x => x.Country).ThenBy(x => x.Call).ThenBy(x => x.Band).ThenBy(x => x.Mode).ThenByDescending(x => x.UTC)];
+            contacts = [.. contacts.OrderBy(x => x.Country).ThenBy(x => x.Call).ThenByDescending(x => x.sQSL).ThenByDescending(x => x.UTC)];
 
         foreach (var q in contacts)
         {
@@ -100,12 +126,17 @@ internal partial class MainForm : Form
                 "70cm" => "420",
                 _ => ""
             };
+
+            if (q.Metadata!.Equals("P", StringComparison.OrdinalIgnoreCase) || q.Metadata!.Equals("Print", StringComparison.OrdinalIgnoreCase))
+                _printCount++;
         }
 
         _contacts = new BindingList<LogGridModel>(contacts);
         _contacts.ListChanged += ContactChanged;
         gridLog.DataSource = _contacts;
-        lblStatus.Text = $"{_contacts.Count:#,##0} records";
+        lblStatus.Text = $"{_contacts.Count:#,##0} ({_contacts.DistinctBy(x => x.Call).Count():#,##0} calls) qso's";
+        if (_printCount > 0)
+            lblStatus.Text += $". {_printCount:#,##0} labels";
         Cursor = Cursors.Default;
         //styles applied in gridLog_DataBindingComplete()
     }
@@ -126,11 +157,47 @@ internal partial class MainForm : Form
         btnSave.Enabled = true;
     }
 
+    private void btnSelectPrint_Click(object sender, EventArgs e)
+    {
+        var callIdx = gridLog.Columns[CallColumnName]!.Index;
+        var metaIdx = gridLog.Columns["Metadata"]!.Index;
+        var selectionChanged = false;
+
+        for (var idx = 0; idx < gridLog.Rows.Count;)
+        {
+            var row = gridLog.Rows[idx];
+
+            //if (row.IsNewRow) continue;  // skip new rows, but I don't have them :)
+
+            var meta = row.Cells[metaIdx].Value?.ToString() ?? "";
+
+            if (meta.Equals("P", StringComparison.OrdinalIgnoreCase) || meta.Equals("Print", StringComparison.OrdinalIgnoreCase))
+            {
+                row.Selected = true;
+                selectionChanged = true;
+
+                var call = row.Cells[callIdx].Value!.ToString();
+                while (idx < gridLog.Rows.Count && gridLog.Rows[++idx].Cells[callIdx].Value!.ToString() == call)
+                {
+                    gridLog.Rows[idx].Selected = true;
+                }
+            }
+            else
+                idx++;
+        }
+
+        if (selectionChanged)
+            gridLog_SelectionChanged(gridLog, null);
+    }
+
     private void btnGenPdf_Click(object sender, EventArgs e)
     {
+        var res = MessageBox.Show("Print Ⓑ / Ⓓ ?", "Delivery method", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+        if (res == DialogResult.Cancel) return;
+
         saveDlg.FileName = cmbTemplate.SelectedItem switch
         {
-            "1.3 x 4" => "!QSL Labels 1.3x4", //exclamation sign is to keep it on top of the file list sorted by name
+            "1.3 x 4" => "!QSL Labels 1.3x4", //exclamation sign is to keep it on top of the explorer's file list sorted by name
             "2.0 x 4" => "!QSL Labels 2x4",
         };
 
@@ -140,10 +207,11 @@ internal partial class MainForm : Form
         if (saveDlg.ShowDialog() == DialogResult.Cancel)
             return;
 
-        GeneratePdf(saveDlg.FileName);
+        GeneratePdf(res == DialogResult.Yes, saveDlg.FileName);
+        btnMarkSent.Enabled = true;
     }
 
-    private void GeneratePdf(string fileName)
+    private void GeneratePdf(bool printDeliveryMethod, string fileName)
     {
         TemplateType templateType = cmbTemplate.SelectedItem switch
         {
@@ -151,20 +219,33 @@ internal partial class MainForm : Form
             "2.0 x 4" => TemplateType.TwoByFour,
         };
 
-        LabelCreator.CreateLabels(from DataGridViewRow row in gridLog.SelectedRows select (LogGridModel)row.DataBoundItem!, templateType, int.Parse(cmbStartLabelNum.SelectedItem!.ToString()!), FileType.PDF, fileName);
+        LabelCreator.CreateLabels(from DataGridViewRow row in gridLog.SelectedRows select (LogGridModel)row.DataBoundItem!, templateType, int.Parse(cmbStartLabelNum.SelectedItem!.ToString()!), printDeliveryMethod, FileType.PDF, fileName);
+    }
+
+    private void btnMarkSent_Click(object sender, EventArgs e)
+    {
+        foreach (DataGridViewRow row in gridLog.SelectedRows)
+        {
+            ((LogGridModel)row.DataBoundItem!).sQSL = "Y";
+        }
+    }
+
+    private void cbViewMyLocation_Click(object sender, EventArgs e)
+    {
+        gridLog.Columns["MyGrid"]!.Visible = gridLog.Columns["MyState"]!.Visible = gridLog.Columns["MyCity"]!.Visible = gridLog.Columns["MyCounty"]!.Visible = cbViewMyLocation.Checked;
     }
 
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope")]
     private void ConvertCallColumnToLink()
     {
-        if (gridLog.Columns["CallLink"] != null)
+        if (gridLog.Columns[CallColumnName] != null)
             return;
 
         var column = gridLog.Columns["Call"]!;
 
         DataGridViewLinkColumn linkColumn = new()
         {
-            Name = "CallLink",
+            Name = CallColumnName,
             HeaderText = column.HeaderText,
             DataPropertyName = column.DataPropertyName,
             LinkColor = Color.DarkBlue,
@@ -209,15 +290,15 @@ internal partial class MainForm : Form
         var cbCol = new DataGridViewComboBoxColumn
         {
             Width = 80,
-            HeaderText = "Via",
+            HeaderText = "Delivery",
             Name = "cbQslViaCol",
-            DataPropertyName = "Via",
+            DataPropertyName = "QslDeliveryMethod",
             ValueMember = "Value",
             DisplayMember = "Name",
             DataSource = _viaDataSource,
         };
 
-        var idx = gridLog.Columns["Via"]!.Index;
+        var idx = gridLog.Columns["QslDeliveryMethod"]!.Index;
         gridLog.Columns.RemoveAt(idx);
         gridLog.Columns.Insert(idx, cbCol);
         return true;
@@ -248,11 +329,24 @@ internal partial class MainForm : Form
 
     private void ApplyGridStyle()
     {
+        //gridLog.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells;
+        //gridLog.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft;
         gridLog.CellBorderStyle = DataGridViewCellBorderStyle.SingleVertical;
         gridLog.Columns["UTC"]!.DefaultCellStyle.Format = "yy-MM-dd HH:mm:ss";
+
+        gridLog.Columns["ID"]!.ReadOnly = gridLog.Columns["Country"]!.ReadOnly = true;
         gridLog.Columns["UTC"]!.Width = 105;
         gridLog.Columns["rQSL"]!.Width = gridLog.Columns["lQSL"]!.Width = gridLog.Columns["Mode"]!.Width = gridLog.Columns["Band"]!.Width = gridLog.Columns["Mhz"]!.Width = gridLog.Columns["RST"]!.Width = 40;
-        gridLog.Columns["CountryQslStatus"]!.Visible = false;
+        gridLog.Columns["Sat"]!.Width = gridLog.Columns["MyState"]!.Width = gridLog.Columns["ID"]!.Width = 50;
+        gridLog.Columns["CountryQslStatus"]!.Visible = gridLog.Columns["IsDirty"]!.Visible = false;
+        ((DataGridViewTextBoxColumn)gridLog.Columns["QrzQslInfo"]!).MaxInputLength = 64;
+        ((DataGridViewTextBoxColumn)gridLog.Columns["SiteComment"]!).MaxInputLength = 64;
+        ((DataGridViewTextBoxColumn)gridLog.Columns["QslComment"]!).MaxInputLength = 64;
+        ((DataGridViewTextBoxColumn)gridLog.Columns["QslMgrCall"]!).MaxInputLength = 64;
+        ((DataGridViewTextBoxColumn)gridLog.Columns["Comment"]!).DefaultCellStyle.WrapMode = DataGridViewTriState.True;
+        ((DataGridViewTextBoxColumn)gridLog.Columns["Comment"]!).MaxInputLength = 4000;
+        ((DataGridViewTextBoxColumn)gridLog.Columns["Comment"]!).AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+        ((DataGridViewTextBoxColumn)gridLog.Columns["Metadata"]!).MaxInputLength = 64;
     }
 
     private void ApplyRowStyles()
@@ -298,101 +392,156 @@ internal partial class MainForm : Form
 
         switch (gridLog.Columns[e.ColumnIndex].Name)
         {
-            case "Band": curCol = "B"; break;
-            case "Mode": curCol = "M"; break;
-            case "Country": curCol = "C"; break;
+            case "Band": curCol = "Band"; break;
+            case "Mode": curCol = "Mode"; break;
+            case "Country": curCol = "Country"; break;
             case "lQSL": curCol = "LoTW"; break;
+            case "rQSL": curCol = "RcvQsl"; break;
+            case "Metadata": curCol = "Meta"; break;
             default: return;
         }
 
         var statusIdx = gridLog.Columns["CountryQslStatus"]!.Index;
         var status = Enum.Parse<QslStatus>(gridLog.Rows[e.RowIndex].Cells[statusIdx].Value!.ToString()!);
         var lotwStatus = gridLog.Rows[e.RowIndex].Cells[gridLog.Columns["lQSL"]!.Index].Value!.ToString()!;
+        var rcvQsl = gridLog.Rows[e.RowIndex].Cells[gridLog.Columns["rQSL"]!.Index].Value!.ToString()!;
+        var meta = gridLog.Rows[e.RowIndex].Cells[gridLog.Columns["Metadata"]!.Index].Value as string ?? ""; //value is null when cell is empty
         var cell = gridLog.Rows[e.RowIndex].Cells[e.ColumnIndex]!;
 
-        if (curCol == "B")
+        switch (curCol)
         {
-            if (status == QslStatus.ReceivedBandMode || status == QslStatus.ReceivedBand)
-            {
-                cell.Style.BackColor = Color.DarkGreen;
-                cell.Style.ForeColor = Color.LimeGreen;
-            }
-            else if (status == QslStatus.SentBandMode || status == QslStatus.SentBand)
-            {
-                cell.Style.BackColor = Color.Yellow;
-                cell.Style.ForeColor = Color.Black;
-            }
-            else
-            {
-                cell.Style.BackColor = Color.DarkRed;
-                cell.Style.ForeColor = Color.Yellow;
-            }
-        }
-        else if (curCol == "M")
-        {
-            if (status == QslStatus.ReceivedBandMode)
-            {
-                cell.Style.BackColor = Color.DarkGreen;
-                cell.Style.ForeColor = Color.LimeGreen;
-            }
-            else if (status == QslStatus.SentBandMode)
-            {
-                cell.Style.BackColor = Color.Yellow;
-                cell.Style.ForeColor = Color.Black;
-            }
-            else
-            {
-                cell.Style.BackColor = Color.DarkRed;
-                cell.Style.ForeColor = Color.Yellow;
-            }
-        }
-        else if (curCol == "C")
-        {
-            var callIdx = gridLog.Columns["CallLink"]!.Index;
-            var call = gridLog.Rows[e.RowIndex].Cells[callIdx].Value!.ToString()!;
-            var specialCall = call.Length == 3; //only 1x1 for now
+            case "Band":
+                switch (status)
+                {
+                    case QslStatus.ReceivedBandMode:
+                    case QslStatus.ReceivedBand:
+                        cell.Style.BackColor = Color.DarkGreen;
+                        cell.Style.ForeColor = Color.LimeGreen;
+                        break;
+                    case QslStatus.SentBandMode:
+                    case QslStatus.SentBand:
+                        cell.Style.BackColor = Color.Yellow;
+                        cell.Style.ForeColor = Color.Black;
+                        break;
+                    case QslStatus.None:
+                        cell.Style.BackColor = Color.DarkRed;
+                        cell.Style.ForeColor = Color.Yellow;
+                        break;
+                }
 
-            if (specialCall)
-            {
-                cell.Style.BackColor = Color.DarkRed;
-                cell.Style.ForeColor = Color.Yellow;
-                cell.ToolTipText = "1x1";
-            }
-            else if (status == QslStatus.ReceivedBandMode)
-            {
+                break;
+            case "Mode":
+                switch (status)
+                {
+                    case QslStatus.ReceivedBandMode:
+                        cell.Style.BackColor = Color.DarkGreen;
+                        cell.Style.ForeColor = Color.LimeGreen;
+                        break;
+                    case QslStatus.SentBandMode:
+                        cell.Style.BackColor = Color.Yellow;
+                        cell.Style.ForeColor = Color.Black;
+                        break;
+                    case QslStatus.None:
+                        cell.Style.BackColor = Color.DarkRed;
+                        cell.Style.ForeColor = Color.Yellow;
+                        break;
+                }
+
+                break;
+            case "Country":
+                {
+                    var callIdx = gridLog.Columns[CallColumnName]!.Index;
+                    var call = gridLog.Rows[e.RowIndex].Cells[callIdx].Value!.ToString()!;
+                    var specialCall = call.Length == 3; //only 1x1 for now
+
+                    if (specialCall)
+                    {
+                        cell.Style.BackColor = Color.DarkRed;
+                        cell.Style.ForeColor = Color.Yellow;
+                        cell.ToolTipText = "1X1";
+                    }
+                    else switch (status)
+                        {
+                            case QslStatus.ReceivedBandMode:
+                                cell.Style.BackColor = Color.DarkGreen;
+                                cell.Style.ForeColor = Color.LimeGreen;
+                                cell.ToolTipText = "Rcvd band & mode";
+                                break;
+                            case QslStatus.ReceivedBand:
+                                cell.Style.BackColor = Color.DarkGreen;
+                                cell.Style.ForeColor = Color.Yellow;
+                                cell.ToolTipText = "Rcvd band only";
+                                break;
+                            case QslStatus.ReceivedCountry:
+                                cell.Style.BackColor = Color.DarkGreen;
+                                cell.Style.ForeColor = Color.Red;
+                                cell.ToolTipText = "Rcvd other band";
+                                break;
+                            case QslStatus.SentBandMode:
+                                cell.Style.BackColor = Color.Yellow;
+                                cell.Style.ForeColor = Color.Green;
+                                cell.ToolTipText = "Sent band & mode";
+                                break;
+                            case QslStatus.SentBand:
+                                cell.Style.BackColor = Color.Yellow;
+                                cell.Style.ForeColor = Color.Black;
+                                cell.ToolTipText = "Sent band only";
+                                break;
+                            case QslStatus.SentCountry:
+                                cell.Style.BackColor = Color.Yellow;
+                                cell.Style.ForeColor = Color.Red;
+                                cell.ToolTipText = "Sent other band";
+                                break;
+                            case QslStatus.None:
+                                cell.Style.BackColor = Color.DarkRed;
+                                cell.Style.ForeColor = Color.Yellow;
+                                cell.ToolTipText = "New country";
+                                break;
+                        }
+
+                    break;
+                }
+            case "LoTW" when (lotwStatus == "Y" || lotwStatus == "V"):
                 cell.Style.BackColor = Color.DarkGreen;
                 cell.Style.ForeColor = Color.LimeGreen;
-                cell.ToolTipText = "Rcvd band & mode";
-            }
-            else if (status == QslStatus.ReceivedBand)
-            {
-                cell.Style.BackColor = Color.DarkGreen;
-                cell.Style.ForeColor = Color.Yellow;
-                cell.ToolTipText = "Rcvd band only";
-            }
-            else if (status == QslStatus.SentBandMode)
-            {
-                cell.Style.BackColor = Color.Yellow;
-                cell.Style.ForeColor = Color.Black;
-                cell.ToolTipText = "Sent band & mode";
-            }
-            else if (status == QslStatus.SentBand)
-            {
-                cell.Style.BackColor = Color.Yellow;
-                cell.Style.ForeColor = Color.Red;
-                cell.ToolTipText = "Sent band only";
-            }
-            else
-            {
+                break;
+            case "RcvQsl" when (rcvQsl == "Y" || rcvQsl == "V"):
                 cell.Style.BackColor = Color.DarkRed;
-                cell.Style.ForeColor = Color.Yellow;
-                cell.ToolTipText = "New country";
-            }
+                cell.Style.ForeColor = Color.White;
+                break;
+            case "Meta":
+                {
+                    if (meta.Equals("P", StringComparison.OrdinalIgnoreCase) || meta.Equals("Print", StringComparison.OrdinalIgnoreCase))
+                    {
+                        cell.Style.BackColor = Color.MediumAquamarine;
+                        cell.Style.ForeColor = Color.Black;
+                    }
+                    else if (meta.Equals("W", StringComparison.OrdinalIgnoreCase) || meta.Equals("Wait", StringComparison.OrdinalIgnoreCase))
+                    {
+                        cell.Style.BackColor = Color.Khaki;
+                        cell.Style.ForeColor = Color.Black;
+                    }
+
+                    ColorizeCallSiblings(e.RowIndex, gridLog.Columns["Metadata"]!.Index);
+                    break;
+                }
         }
-        else if (curCol == "LoTW" && (lotwStatus == "Y" || lotwStatus == "V"))
+    }
+
+    private void ColorizeCallSiblings(int rowIdx, int colIdx)
+    {
+        if (rowIdx >= gridLog.RowCount - 1) return;
+
+        var row = gridLog.Rows[rowIdx];
+        var callIdx = gridLog.Columns[CallColumnName]!.Index;
+        var call = row.Cells[callIdx].Value!.ToString()!;
+        var backColor = row.Cells[colIdx].Style.BackColor;
+        var foreColor = row.Cells[colIdx].Style.ForeColor;
+
+        while (++rowIdx < gridLog.Rows.Count && call == gridLog.Rows[rowIdx].Cells[callIdx].Value!.ToString()!)
         {
-            cell.Style.BackColor = Color.Yellow;
-            cell.Style.ForeColor = Color.Black;
+            gridLog.Rows[rowIdx].Cells[colIdx].Style.BackColor = backColor;
+            gridLog.Rows[rowIdx].Cells[colIdx].Style.ForeColor = foreColor;
         }
     }
 
@@ -405,23 +554,34 @@ internal partial class MainForm : Form
 
         var text = e.FormattedValue!.ToString();
         var textColor = Color.Black; //default color
-        switch (text)
+        var bkgColor = text switch
         {
-            case "Q":
-                textColor = Color.Red;
-                break;
-            case "Y":
-                textColor = Color.DarkGreen;
-                break;
-        }
+            "Q" => Color.Tomato,
+            "Y" => Color.MediumAquamarine,
+            "R" => Color.Khaki,
+            _ => SystemColors.Window
+        };
 
-        // Draw the text in the specified color
-        using (Brush textBrush = new SolidBrush(textColor))
-        {
+        using (var backgroundBrush = new SolidBrush(bkgColor))
+            e.Graphics!.FillRectangle(backgroundBrush, e.CellBounds.X + 2, e.CellBounds.Y + 2, e.CellBounds.Width - 20, e.CellBounds.Height - 4);
+
+        using (var textBrush = new SolidBrush(textColor))
             e.Graphics!.DrawString(text, e.CellStyle!.Font, textBrush, e.CellBounds.X + 2, e.CellBounds.Y + 2);
-        }
 
         e.Handled = true;
+    }
+
+    private void gridLog_CellValueChanged(object sender, DataGridViewCellEventArgs e)
+    {
+        var colIdx = gridLog.Columns["Metadata"]!.Index;
+
+        if (e.ColumnIndex != colIdx || e.RowIndex == 0) return;
+
+        var meta = gridLog.Rows[e.RowIndex].Cells[colIdx].Value?.ToString() ?? "";
+        if (!meta.Equals("P", StringComparison.OrdinalIgnoreCase) && !meta.Equals("Print", StringComparison.OrdinalIgnoreCase) && !meta.Equals("W", StringComparison.OrdinalIgnoreCase) && !meta.Equals("Wait", StringComparison.OrdinalIgnoreCase))
+        {
+            gridLog.Rows[e.RowIndex].Cells[colIdx].Style = new DataGridViewCellStyle();
+        }
     }
 
     private Color _prevRowColor;
@@ -470,18 +630,17 @@ internal partial class MainForm : Form
 
     private void gridLog_CellContentClick(object sender, DataGridViewCellEventArgs e)
     {
-        if (e.ColumnIndex >= 0 && gridLog.Columns[e.ColumnIndex] is DataGridViewLinkColumn)
-        {
-            var url = $"https://www.qrz.com/db/{gridLog[e.ColumnIndex, e.RowIndex].Value}";
+        if (e.ColumnIndex < 0 || gridLog.Columns[e.ColumnIndex] is not DataGridViewLinkColumn) return;
 
-            try
-            {
-                Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true });
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Unable to open link: {ex.Message}");
-            }
+        var url = $"https://www.qrz.com/db/{gridLog[e.ColumnIndex, e.RowIndex].Value}";
+
+        try
+        {
+            Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Unable to open link: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -507,6 +666,23 @@ internal partial class MainForm : Form
         HandleContextMenu(e);
     }
 
+    private void gridLog_RowPostPaint(object sender, DataGridViewRowPostPaintEventArgs e)
+    {
+        if (e.RowIndex < 1) return;
+
+        var callIdx = gridLog.Columns[CallColumnName]!.Index;
+        var curCall = gridLog.Rows[e.RowIndex].Cells[callIdx].Value!.ToString();
+        var prevCall = gridLog.Rows[e.RowIndex - 1].Cells[callIdx].Value!.ToString();
+        if (curCall == prevCall) return;
+
+        var startX = gridLog.RowHeadersVisible ? gridLog.RowHeadersWidth : 0;
+        var endX = startX + gridLog.Columns.GetColumnsWidth(DataGridViewElementStates.Visible) - 1;
+        var rowTop = e.RowBounds.Top - 1;
+
+        using var pen = new Pen(Color.Black, 1);
+        e.Graphics.DrawLine(pen, startX, rowTop, endX, rowTop);
+    }
+
     private void comboBox_DrawItem(object? sender, DrawItemEventArgs e)
     {
         if (sender is not ComboBox cb || e.Index < 0)
@@ -514,25 +690,20 @@ internal partial class MainForm : Form
 
         // Set the color based on the item
         var text = cb.Items[e.Index]!.ToString();
-        var textColor = Color.Black;
-        switch (text)
+        var textColor = text switch
         {
-            case "Q":
-                textColor = Color.Red;
-                break;
-            case "Y":
-                textColor = Color.DarkGreen;
-                break;
-        }
+            "Q" => Color.Red,
+            "Y" => Color.DarkGreen,
+            "R" => Color.Yellow,
+            _ => Color.Black
+        };
 
         // draw the background (highlights selected item)
         e.DrawBackground();
 
         // draw the text
         using (Brush textBrush = new SolidBrush(textColor))
-        {
             e.Graphics.DrawString(text, e.Font!, textBrush, e.Bounds);
-        }
 
         e.DrawFocusRectangle();
     }
@@ -552,11 +723,27 @@ internal partial class MainForm : Form
         if (ConvertQslSentColumnToComboBox()) //first grid load, returns false if column already exists
             ApplyGridStyle();
         ApplyRowStyles();
+
+        foreach (DataGridViewRow row in gridLog.Rows)
+        {
+            if (row.DataBoundItem is LogGridModel model)
+                model.Hydrated = true;
+        }
     }
 
     private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
     {
-        _dbContext?.Dispose();
-        _dbContext = null!;
+        var close = true;
+
+        if (btnSave.Enabled)
+            close = MessageBox.Show("Exit anyway?", "There are unsaved changes", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes;
+
+        if (close)
+        {
+            _dbContext.Dispose();
+            _dbContext = null!;
+        }
+        else
+            e.Cancel = true;
     }
 }

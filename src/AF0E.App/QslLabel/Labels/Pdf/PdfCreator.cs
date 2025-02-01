@@ -9,13 +9,15 @@ namespace QslLabel.Labels.Pdf;
 
 internal static class PdfCreator
 {
-    private const string FontFamily = "Consolas";
+    private const string DefaultFontFamily = "Consolas";
+    private const string SymbolsFontFamily = "Symbols";
     private const double CharWidth = 7;
 
     private static readonly XFont _titleFont;
     private static readonly XFont _toFont;
     private static readonly XFont _confirmFont;
     private static readonly XFont _tableFont;
+    private static readonly XFont _symbolsFont;
 
 #pragma warning disable CA1810 // Initialize reference type static fields inline. Doesn't work, need to set the FontResolver first.
     [SuppressMessage("ReSharper", "ArrangeObjectCreationWhenTypeNotEvident")]
@@ -24,13 +26,14 @@ internal static class PdfCreator
     {
         GlobalFontSettings.FontResolver = new FontResolver();
 
-        _titleFont = new(FontFamily, 12, XFontStyleEx.Bold);
-        _toFont = new(FontFamily, 12, XFontStyleEx.Bold);
-        _confirmFont = new(FontFamily, 10, XFontStyleEx.Regular);
-        _tableFont = new(FontFamily, 8, XFontStyleEx.Regular);
+        _titleFont = new(DefaultFontFamily, 12, XFontStyleEx.Bold);
+        _toFont = new(DefaultFontFamily, 12, XFontStyleEx.Bold);
+        _confirmFont = new(DefaultFontFamily, 10, XFontStyleEx.Regular);
+        _tableFont = new(DefaultFontFamily, 8, XFontStyleEx.Regular);
+        _symbolsFont = new(SymbolsFontFamily, 6, XFontStyleEx.Regular);
     }
 
-    public static bool Generate(List<LabelData> data, TemplateType templateType, int startLabelNum, string fileName)
+    public static bool Generate(List<LabelData> data, TemplateType templateType, int startLabelNum, bool printDeliveryMethod, string fileName)
     {
         if (!CheckFitment(data, templateType)) return false;
 
@@ -55,7 +58,7 @@ internal static class PdfCreator
             if (labelsPerPage > data.Count - printedLabels)
                 labelsPerPage = data.Count - printedLabels;
 
-            GeneratePage(gfx, data.Slice(printedLabels, labelsPerPage), templateType, pageNum == 1 ? startLabelNum : 1);
+            GeneratePage(gfx, data.Slice(printedLabels, labelsPerPage), templateType, pageNum == 1 ? startLabelNum : 1, printDeliveryMethod);
             printedLabels += labelsPerPage;
             pageNum++;
         }
@@ -78,7 +81,7 @@ internal static class PdfCreator
         return true;
     }
 
-    private static void GeneratePage(XGraphics gfx, List<LabelData> data, TemplateType templateType, int startLabelNum)
+    private static void GeneratePage(XGraphics gfx, List<LabelData> data, TemplateType templateType, int startLabelNum, bool printDeliveryMethod)
     {
         const double LabelWidth = 271; // 4 inches + 1pt
         const double HorizontalGap = 32;
@@ -120,11 +123,22 @@ internal static class PdfCreator
             curX += 65;
             Draw(label.Call.Replace('0', 'Ø'), _toFont);
 
-            var via = label.Contacts.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x.Via));
+            var via = label.Contacts.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x.QslMgrCall));
             if (via != null)
             {
                 curX += (label.Call.Length + 1) * CharWidth; // call plus space
-                Draw(via.Via!.Replace('0', 'Ø'), _titleFont); //should be "via XXX"
+                if (!via.QslMgrCall!.StartsWith("via ", StringComparison.OrdinalIgnoreCase))
+                {
+                    Draw("via ", _titleFont);
+                    curX += 4 * CharWidth;
+                }
+                Draw(via.QslMgrCall!.Replace('0', 'Ø'), _titleFont);
+            }
+
+            if (printDeliveryMethod && !string.IsNullOrEmpty(label.Delivery) && (label.Delivery == "B" || label.Delivery == "D")) //buro or direct
+            {
+                curX = startX + 262;
+                Draw(label.Delivery == "B" ? "Ⓑ" : "Ⓓ", _symbolsFont, brush: XBrushes.Gray);
             }
 
             curX = startX; curY = startY + 13;
@@ -208,7 +222,7 @@ internal static class PdfCreator
 
             continue;
 
-            void Draw(string msg, XFont? font = null, double? lineLength = null)
+            void Draw(string msg, XFont? font = null, double? lineLength = null, XBrush? brush = null)
             {
                 if (lineLength != null)
                 {
@@ -219,7 +233,8 @@ internal static class PdfCreator
                 }
                 else
                 {
-                    gfx.DrawString(msg, font ?? _tableFont, XBrushes.Black, curX, curY, XStringFormats.TopLeft);
+                    brush ??= XBrushes.Black;
+                    gfx.DrawString(msg, font ?? _tableFont, brush, curX, curY, XStringFormats.TopLeft);
 #if DEBUG
                     Debug.WriteLine(msg);
 #endif
