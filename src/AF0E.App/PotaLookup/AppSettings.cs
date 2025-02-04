@@ -6,5 +6,6 @@ public class AppSettings
     public Uri PotaApiUrl { get; init; } = null!;
     public string LogbookRoute { get; init; } = null!;
     public string ParkInfoRoute { get; init; } = null!;
+    public string ParkStatsRoute { get; init; } = null!;
     public string AuthTokenFileName { get; init; } = null!;
 }
