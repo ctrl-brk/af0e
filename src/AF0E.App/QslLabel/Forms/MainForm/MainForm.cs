@@ -11,14 +11,15 @@ namespace QslLabel;
 
 internal sealed partial class MainForm : Form
 {
-    private const string CallColumnName = "CallLink";
+    private const string CallColName = "CallLink";
+    private const string QslSentColName = "cbQslSentCol";
+    private const string QslDeliveryColName = "cbQslDeliveryCol";
     [SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Disposed on closing")]
     private HrdDbContext _dbContext = null!;
     private BindingList<LogGridModel> _contacts = null!;
     private static readonly object _sQslDataSource = new[] { "Q", "N", "R", "Y", "I" };
     private static readonly object _viaDataSource = new[] { new { Name = "", Value = "" }, new { Name = "Direct", Value = "D" }, new { Name = "Bureau", Value = "B" }, new { Name = "Manager", Value = "M" }, new { Name = "Electronic", Value = "E" } }.ToList();
     private int _dirtyRowsCount;
-    private int _printCount;
 
     public MainForm()
     {
@@ -48,7 +49,6 @@ internal sealed partial class MainForm : Form
         cmbStartLabelNum.SelectedIndex = 0;
 
         btnGenPdf.Enabled = gridLog.SelectedRows.Count > 0;
-        if (gridLog.SelectedRows.Count == 0) btnMarkSent.Enabled = false;
     }
 
     private async void btnSearch_Click(object sender, EventArgs e)
@@ -79,6 +79,7 @@ internal sealed partial class MainForm : Form
     private void gridLog_SelectionChanged(object sender, EventArgs? e)
     {
         btnGenPdf.Enabled = gridLog.SelectedRows.Count > 0 && cmbTemplate.SelectedItem != null;
+        btnMarkSent.Enabled = gridLog.SelectedRows.Count > 0;
     }
 
     private async Task DoSearch(bool analyze)
@@ -86,7 +87,7 @@ internal sealed partial class MainForm : Form
         if (btnSave.Enabled && MessageBox.Show("Reload anyway?", "There are unsaved changes", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
             return;
 
-        _printCount = 0;
+        int printCountB = 0, printCountD = 0;
 
         if (!analyze && string.IsNullOrEmpty(tbCall.Text))
             cbQueued.Checked = true;
@@ -128,15 +129,18 @@ internal sealed partial class MainForm : Form
             };
 
             if (q.Metadata!.Equals("P", StringComparison.OrdinalIgnoreCase) || q.Metadata!.Equals("Print", StringComparison.OrdinalIgnoreCase))
-                _printCount++;
+            {
+                if (q.QslDeliveryMethod == "B") printCountB++;
+                else if (q.QslDeliveryMethod == "D") printCountD++;
+            }
         }
 
         _contacts = new BindingList<LogGridModel>(contacts);
         _contacts.ListChanged += ContactChanged;
         gridLog.DataSource = _contacts;
         lblStatus.Text = $"{_contacts.Count:#,##0} ({_contacts.DistinctBy(x => x.Call).Count():#,##0} calls) qso's";
-        if (_printCount > 0)
-            lblStatus.Text += $". {_printCount:#,##0} labels";
+        if (printCountB + printCountD > 0)
+            lblStatus.Text += $". {printCountB + printCountD:#,##0} labels: {printCountB:#,##0} buro, {printCountD:#,##0} direct";
         Cursor = Cursors.Default;
         //styles applied in gridLog_DataBindingComplete()
     }
@@ -159,7 +163,7 @@ internal sealed partial class MainForm : Form
 
     private void btnSelectPrint_Click(object sender, EventArgs e)
     {
-        var callIdx = gridLog.Columns[CallColumnName]!.Index;
+        var callIdx = gridLog.Columns[CallColName]!.Index;
         var metaIdx = gridLog.Columns["Metadata"]!.Index;
         var selectionChanged = false;
 
@@ -192,7 +196,7 @@ internal sealed partial class MainForm : Form
 
     private void btnGenPdf_Click(object sender, EventArgs e)
     {
-        var res = MessageBox.Show("Print Ⓑ / Ⓓ ?", "Delivery method", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+        var res = MessageBox.Show("Print emojis?", "Delivery method", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
         if (res == DialogResult.Cancel) return;
 
         saveDlg.FileName = cmbTemplate.SelectedItem switch
@@ -208,7 +212,6 @@ internal sealed partial class MainForm : Form
             return;
 
         GeneratePdf(res == DialogResult.Yes, saveDlg.FileName);
-        btnMarkSent.Enabled = true;
     }
 
     private void GeneratePdf(bool printDeliveryMethod, string fileName)
@@ -238,14 +241,14 @@ internal sealed partial class MainForm : Form
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope")]
     private void ConvertCallColumnToLink()
     {
-        if (gridLog.Columns[CallColumnName] != null)
+        if (gridLog.Columns[CallColName] != null)
             return;
 
         var column = gridLog.Columns["Call"]!;
 
         DataGridViewLinkColumn linkColumn = new()
         {
-            Name = CallColumnName,
+            Name = CallColName,
             HeaderText = column.HeaderText,
             DataPropertyName = column.DataPropertyName,
             LinkColor = Color.DarkBlue,
@@ -263,14 +266,14 @@ internal sealed partial class MainForm : Form
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope")]
     private bool ConvertQslSentColumnToComboBox()
     {
-        if (gridLog.Columns["cbQslSentCol"] != null)
+        if (gridLog.Columns[QslSentColName] != null)
             return false;
 
         var cbCol = new DataGridViewComboBoxColumn
         {
             Width = 50,
             HeaderText = "sQSL",
-            Name = "cbQslSentCol",
+            Name = QslSentColName,
             DataPropertyName = "sQSL",
             DataSource = _sQslDataSource
         };
@@ -284,14 +287,14 @@ internal sealed partial class MainForm : Form
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope")]
     private bool ConvertViaColumnToComboBox()
     {
-        if (gridLog.Columns["cbQslViaCol"] != null)
+        if (gridLog.Columns[QslDeliveryColName] != null)
             return false;
 
         var cbCol = new DataGridViewComboBoxColumn
         {
             Width = 80,
             HeaderText = "Delivery",
-            Name = "cbQslViaCol",
+            Name = QslDeliveryColName,
             DataPropertyName = "QslDeliveryMethod",
             ValueMember = "Value",
             DisplayMember = "Name",
@@ -347,6 +350,7 @@ internal sealed partial class MainForm : Form
         ((DataGridViewTextBoxColumn)gridLog.Columns["Comment"]!).MaxInputLength = 4000;
         ((DataGridViewTextBoxColumn)gridLog.Columns["Comment"]!).AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
         ((DataGridViewTextBoxColumn)gridLog.Columns["Metadata"]!).MaxInputLength = 64;
+        gridLog.Columns[QslDeliveryColName]!.HeaderCell.ToolTipText = "Ctrl - single cell";
     }
 
     private void ApplyRowStyles()
@@ -376,7 +380,7 @@ internal sealed partial class MainForm : Form
         switch (e.Column.Name)
         {
             case "lQSL": txt = "LoTW QSL Status"; break;
-            case "cbQslSentCol": txt = "QSL Status"; break;
+            case QslSentColName: txt = "QSL Status"; break;
             case "rQSL": txt = "QSL Received"; break;
             case "QslComment": txt = "Printed on Label"; break;
             case "ID": txt = "HRD ID"; break;
@@ -450,7 +454,7 @@ internal sealed partial class MainForm : Form
                 break;
             case "Country":
                 {
-                    var callIdx = gridLog.Columns[CallColumnName]!.Index;
+                    var callIdx = gridLog.Columns[CallColName]!.Index;
                     var call = gridLog.Rows[e.RowIndex].Cells[callIdx].Value!.ToString()!;
                     var specialCall = call.Length == 3; //only 1x1 for now
 
@@ -533,7 +537,7 @@ internal sealed partial class MainForm : Form
         if (rowIdx >= gridLog.RowCount - 1) return;
 
         var row = gridLog.Rows[rowIdx];
-        var callIdx = gridLog.Columns[CallColumnName]!.Index;
+        var callIdx = gridLog.Columns[CallColName]!.Index;
         var call = row.Cells[callIdx].Value!.ToString()!;
         var backColor = row.Cells[colIdx].Style.BackColor;
         var foreColor = row.Cells[colIdx].Style.ForeColor;
@@ -547,7 +551,7 @@ internal sealed partial class MainForm : Form
 
     private void gridLog_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
     {
-        if (e.ColumnIndex != gridLog.Columns["cbQslSentCol"]!.Index || e.RowIndex < 0)
+        if (e.ColumnIndex != gridLog.Columns[QslSentColName]!.Index || e.RowIndex < 0)
             return;
 
         e.Paint(e.CellBounds, DataGridViewPaintParts.All & ~DataGridViewPaintParts.ContentForeground);
@@ -573,14 +577,42 @@ internal sealed partial class MainForm : Form
 
     private void gridLog_CellValueChanged(object sender, DataGridViewCellEventArgs e)
     {
-        var colIdx = gridLog.Columns["Metadata"]!.Index;
+        var metaColIdx = gridLog.Columns["Metadata"]!.Index;
+        var deliveryColIdx = gridLog.Columns[QslDeliveryColName]!.Index;
 
-        if (e.ColumnIndex != colIdx || e.RowIndex == 0) return;
+        if (e.RowIndex == 0) return;
 
-        var meta = gridLog.Rows[e.RowIndex].Cells[colIdx].Value?.ToString() ?? "";
-        if (!meta.Equals("P", StringComparison.OrdinalIgnoreCase) && !meta.Equals("Print", StringComparison.OrdinalIgnoreCase) && !meta.Equals("W", StringComparison.OrdinalIgnoreCase) && !meta.Equals("Wait", StringComparison.OrdinalIgnoreCase))
+        if (e.ColumnIndex == metaColIdx)
         {
-            gridLog.Rows[e.RowIndex].Cells[colIdx].Style = new DataGridViewCellStyle();
+            var meta = gridLog.Rows[e.RowIndex].Cells[metaColIdx].Value?.ToString() ?? "";
+            if (!meta.Equals("P", StringComparison.OrdinalIgnoreCase) && !meta.Equals("Print", StringComparison.OrdinalIgnoreCase) && !meta.Equals("W", StringComparison.OrdinalIgnoreCase) && !meta.Equals("Wait", StringComparison.OrdinalIgnoreCase))
+            {
+                gridLog.Rows[e.RowIndex].Cells[metaColIdx].Style = new DataGridViewCellStyle();
+            }
+        }
+        else if (e.ColumnIndex == deliveryColIdx)
+        {
+            if ((Control.ModifierKeys & Keys.Control) != Keys.Control)
+            {
+                var delivery = gridLog.Rows[e.RowIndex].Cells[deliveryColIdx].Value?.ToString() ?? "";
+                ApplyDeliveryToSiblings(e.RowIndex, deliveryColIdx, delivery, 1);
+                ApplyDeliveryToSiblings(e.RowIndex, deliveryColIdx, delivery, -1);
+            }
+        }
+    }
+
+    private void ApplyDeliveryToSiblings(int rowIdx, int colIdx, string value, int step)
+    {
+        var callIdx = gridLog.Columns[CallColName]!.Index;
+        var call =  gridLog.Rows[rowIdx].Cells[callIdx].Value!.ToString();
+
+        rowIdx += step;
+
+        while (rowIdx < gridLog.RowCount && rowIdx >= 0)
+        {
+            if (gridLog.Rows[rowIdx].Cells[callIdx].Value!.ToString() != call) break;
+            gridLog.Rows[rowIdx].Cells[colIdx].Value = value;
+            rowIdx += step;
         }
     }
 
@@ -612,7 +644,7 @@ internal sealed partial class MainForm : Form
     {
         if (e.RowIndex < 0) return;
 
-        if (e.ColumnIndex == gridLog.Columns["cbQslSentCol"]!.Index || e.ColumnIndex == gridLog.Columns["cbQslViaCol"]!.Index)
+        if (e.ColumnIndex == gridLog.Columns[QslSentColName]!.Index || e.ColumnIndex == gridLog.Columns[QslDeliveryColName]!.Index)
         {
             gridLog.CurrentCell = gridLog.Rows[e.RowIndex].Cells[e.ColumnIndex];
             gridLog.BeginEdit(false);
@@ -651,7 +683,7 @@ internal sealed partial class MainForm : Form
 
         cb.DrawItem -= comboBox_DrawItem;
 
-        if (gridLog.CurrentCell!.ColumnIndex != gridLog.Columns["cbQslSentCol"]!.Index)
+        if (gridLog.CurrentCell!.ColumnIndex != gridLog.Columns[QslSentColName]!.Index)
         {
             cb.DrawMode = DrawMode.Normal;
             return;
@@ -670,7 +702,7 @@ internal sealed partial class MainForm : Form
     {
         if (e.RowIndex < 1) return;
 
-        var callIdx = gridLog.Columns[CallColumnName]!.Index;
+        var callIdx = gridLog.Columns[CallColName]!.Index;
         var curCall = gridLog.Rows[e.RowIndex].Cells[callIdx].Value!.ToString();
         var prevCall = gridLog.Rows[e.RowIndex - 1].Cells[callIdx].Value!.ToString();
         if (curCall == prevCall) return;

@@ -9,6 +9,12 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <Compile Remove="dist\**" />
+      <EmbeddedResource Remove="dist\**" />
+      <None Remove="dist\**" />
+    </ItemGroup>
+
+    <ItemGroup>
       <None Remove="appsettings.Development.json" />
       <None Remove="appsettings.json" />
     </ItemGroup>
