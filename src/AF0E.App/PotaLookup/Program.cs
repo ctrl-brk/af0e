@@ -48,7 +48,7 @@ var host = new HostBuilder()
             .AddSerilog(new LoggerConfiguration()
                 .ReadFrom.Configuration(ctx.Configuration)
                 .WriteTo.Console()
-                .WriteTo.File(Path.Combine(AppContext.BaseDirectory, "QrzLookup-.log"), rollingInterval: RollingInterval.Month)
+                .WriteTo.File(Path.Combine(AppContext.BaseDirectory, "PotaLookup-.log"), rollingInterval: RollingInterval.Month)
                 .CreateLogger());
 
     })

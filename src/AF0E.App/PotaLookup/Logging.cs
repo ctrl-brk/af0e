@@ -5,6 +5,9 @@ namespace PotaLookup;
 
 internal static partial class Logging
 {
+    [LoggerMessage(Level = LogLevel.Information, Message = "Lookup started for {startDate}{endDate}")]
+    public static partial void LogAppStarted(this ILogger logger, string startDate, string endDate);
+
     [LoggerMessage(Level = LogLevel.Debug, Message = "{callSign} {parkNum} {parkName}")]
     public static partial void LogQso(this ILogger logger, string callSign, string parkNum, string parkName);
 
