@@ -106,6 +106,13 @@ internal sealed partial class MainForm : Form
              """
         ).ToListAsync();
 
+        if (contacts.Count == 0)
+        {
+            Cursor = Cursors.Default;
+            MessageBox.Show("Not in log!", "Not found", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+            return;
+        }
+
         if (analyze)
             contacts = [.. contacts.OrderBy(x => x.Country).ThenBy(x => x.Call).ThenByDescending(x => x.sQSL).ThenByDescending(x => x.UTC)];
 
