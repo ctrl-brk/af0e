@@ -12,7 +12,7 @@ if (@Analyze = 0) begin
     if (@Call is null ) begin
       insert into @CallsTbl select distinct COL_CALL from TABLE_HRD_CONTACTS_V01 where COL_QSL_SENT = 'Q'
     end else begin
-      insert into @CallsTbl select top 1 COL_CALL from TABLE_HRD_CONTACTS_V01 where COL_CALL = @Call and COL_QSL_SENT <> 'I'
+      insert into @CallsTbl select top 1 COL_CALL from TABLE_HRD_CONTACTS_V01 where COL_CALL like @Call and COL_QSL_SENT <> 'I'
     end
 end
 

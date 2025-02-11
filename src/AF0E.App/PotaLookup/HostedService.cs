@@ -59,7 +59,7 @@ internal sealed class HostedService(ILogger<HostedService> logger, IHostApplicat
         var contacts = new List<PotaLogEntry>();
         int cnt;
 
-        logger.LogAppStarted(_args[1], _args.Length > 2 ? _args[2] : DateTime.UtcNow.ToString("dd-MM-yyyy HH:mm:ss"));
+        logger.LogAppStarted(_args[1], _args.Length > 2 ? $" - {_args[2]}" : $" - {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}");
 
         do
         {
