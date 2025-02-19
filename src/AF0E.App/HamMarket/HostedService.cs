@@ -1,13 +1,16 @@
-﻿using System.Net.Mail;
-using Microsoft.Extensions.Hosting;
+﻿using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using MailKit.Net.Smtp;
+using MimeKit;
 using SendGrid;
 using SendGrid.Helpers.Mail;
-using Attachment = System.Net.Mail.Attachment;
 
 namespace HamMarket;
 
 #pragma warning disable CA1001
+#pragma warning disable CA1849
+// ReSharper disable MethodHasAsyncOverload
+
 public class HostedService : IHostedService
 #pragma warning restore CA1001
 {
@@ -64,21 +67,41 @@ public class HostedService : IHostedService
     {
         var results = new List<ScanResult>();
 
-        var keyRes = await _qthHandler.ProcessKeywordsAsync(_httpClient, null, token);
-        if (keyRes != null)
-            results.Add(keyRes);
+        if (_settings.QthCom.Enabled)
+        {
+            try
+            {
+                var keyRes = await _qthHandler.ProcessKeywordsAsync(_httpClient, null, token);
+                if (keyRes != null)
+                    results.Add(keyRes);
 
-        var catRes = await _qthHandler.ProcessCategoriesAsync(_httpClient, null, token);
-        if (catRes != null)
-            results.AddRange(catRes.Where(x => x != null));
+                var catRes = await _qthHandler.ProcessCategoriesAsync(_httpClient, null, token);
+                if (catRes != null)
+                    results.AddRange(catRes.Where(x => x != null));
+            }
+            catch (Exception e)
+            {
+                _logger.LogException(e);
+            }
+        }
 
-        keyRes = await _ehamHandler.ProcessKeywordsAsync(_httpClient, _cookies, token);
-        if (keyRes != null)
-            results.Add(keyRes);
+        if (_settings.EhamNet.Enabled)
+        {
+            try
+            {
+                var keyRes = await _ehamHandler.ProcessKeywordsAsync(_httpClient, _cookies, token);
+                if (keyRes != null)
+                    results.Add(keyRes);
 
-        catRes = await _ehamHandler.ProcessCategoriesAsync(_httpClient, _cookies, token);
-        if (catRes != null)
-            results.AddRange(catRes.Where(x => x != null));
+                var catRes = await _ehamHandler.ProcessCategoriesAsync(_httpClient, _cookies, token);
+                if (catRes != null)
+                    results.AddRange(catRes.Where(x => x != null));
+            }
+            catch (Exception e)
+            {
+                _logger.LogException(e);
+            }
+        }
 
         await SendResults(results);
         _appLifeTime.StopApplication();
@@ -95,7 +118,7 @@ public class HostedService : IHostedService
                                      <style>
                                        * {box-sizing: border-box}
                                        html, body {margin:0; padding:0}
-                                   
+
                                        .ext-link {text-align: right; width: 100%;}
                                        .ext-link a {color: #aaa;}
                                        .source {width: 100%; font-size: 2rem; font-weight: bold; text-align: center; color: cadetblue; }
@@ -141,42 +164,59 @@ public class HostedService : IHostedService
         if (_settings.Email.Smtp.Enabled)
         {
             _logger.LogSendingSmtpEmail("Smtp", _settings.Email.To);
-        
-            using var client = new SmtpClient(_settings.Email.Smtp.SmtpServer);
-            
-            using var msg = new MailMessage(_settings.Email.From, _settings.Email.To);
+
+            using var msg = new MimeMessage();
+            msg.From.Add(new MailboxAddress("Ham Market", _settings.Email.From));
+            msg.To.Add(new MailboxAddress("AFØE", _settings.Email.To));
 
             msg.Subject = results.Count > 0 ?
                 string.Format(_settings.Email.SubjectResultsFormat, results.Sum(x => x.Items), results.Min(x => x.LastScan)) :
                 _settings.Email.SubjectEmptyFormat;
-            msg.SubjectEncoding = Encoding.UTF8;
-            msg.BodyEncoding = Encoding.UTF8;
-            msg.IsBodyHtml = true;
-            msg.Body = sb.ToString();
 
-            if (!string.IsNullOrWhiteSpace(_settings.Email.Smtp.User))
-                client.Credentials = new NetworkCredential(_settings.Email.Smtp.User, _settings.Email.Smtp.Password);
+            var body = new TextPart("html") {Text = sb.ToString()};
 
             if (_settings.Email.AttachFile && !string.IsNullOrEmpty(_settings.Email.BodyFileName))
-                msg.Attachments.Add(new Attachment(_settings.Email.BodyFileName));
+            {
+                var attachment = new MimePart("application", "octet-stream")
+                {
+                    Content = new MimeContent(File.OpenRead(_settings.Email.BodyFileName)),
+                    ContentDisposition = new ContentDisposition(ContentDisposition.Attachment),
+                    ContentTransferEncoding = ContentEncoding.Base64,
+                    FileName = $"Listings {DateTime.Now:yy-MM-dd t}.html"
+                };
+
+                msg.Body = new Multipart("mixed") { body, attachment };
+            }
+            else
+                msg.Body = body;
+
+            using var client = new SmtpClient {CheckCertificateRevocation = false};
 
             try
             {
+                client.Connect(_settings.Email.Smtp.SmtpServer, _settings.Email.Smtp.Port == 0 ? 25 : _settings.Email.Smtp.Port);
+
+                if (!string.IsNullOrWhiteSpace(_settings.Email.Smtp.User))
+                    client.Authenticate(_settings.Email.Smtp.User, _settings.Email.Smtp.Password);
+
                 client.Send(msg);
             }
             catch (Exception e)
             {
                 _logger.LogException(e);
             }
+            finally
+            {
+                client.Disconnect(true);
+            }
         }
 
         if (_settings.Email.SendGrid.Enabled)
         {
-
             _logger.LogSendingSmtpEmail("Sendgrid", _settings.Email.To);
-            
+
             var client = new SendGridClient(_settings.Email.SendGrid.ApiKey);
-            
+
             var msg = new SendGridMessage
             {
                 From = new EmailAddress(_settings.Email.From),
@@ -185,7 +225,7 @@ public class HostedService : IHostedService
                     _settings.Email.SubjectEmptyFormat,
                 HtmlContent = sb.ToString(),
             };
-            
+
             msg.AddTo(new EmailAddress(_settings.Email.To));
 
             if (_settings.Email.AttachFile && !string.IsNullOrEmpty(_settings.Email.BodyFileName))
