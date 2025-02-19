@@ -414,7 +414,11 @@ app.MapGet("/api/v1/logbook/gridtracker/{call}", (string call, HrdDbContext dbCo
                 x.ColTimeOn,
                 x.ColMode,
                 x.ColBand,
-                x.ColComment
+                x.ColComment,
+                x.ColQslsdate,
+                x.ColQslSentVia,
+                x.ColQslRcvd,
+                x.ColLotwQslRcvd
             }).ToListAsync()
     )
     .WithName("GridtrackerLookup")

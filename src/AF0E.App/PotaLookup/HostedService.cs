@@ -59,6 +59,8 @@ internal sealed class HostedService(ILogger<HostedService> logger, IHostApplicat
         var contacts = new List<PotaLogEntry>();
         int cnt;
 
+        logger.LogAppStarted(_args[1], _args.Length > 2 ? $" - {_args[2]}" : $" - {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}");
+
         do
         {
             var url = $"/{settings.Value.LogbookRoute}?hunterOnly=1&page={pageNum}&size={PageSize}&p2pOnly=1&startDate={_args[1]}";
@@ -162,10 +164,10 @@ internal sealed class HostedService(ILogger<HostedService> logger, IHostApplicat
 
         if (notFoundCalls.Count > 0)
         {
-            var calls = string.Join(',', notFoundCalls);
+            var calls = string.Join(',', notFoundCalls.Select(x => x.StationCallsign));
             var color = Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine($"The following {notFoundCalls.Count} calls were not found, probably time mismatch:");
+            Console.WriteLine($"The following {notFoundCalls.Count} call(s) were not found, probably time mismatch - compare the time below with HRD:");
             Console.ForegroundColor = ConsoleColor.DarkYellow;
             foreach (var q in notFoundCalls)
             {
@@ -184,7 +186,14 @@ internal sealed class HostedService(ILogger<HostedService> logger, IHostApplicat
         if (!_dbContext.ChangeTracker.HasChanges())
             logger.LogNoNewQsos();
         else
-            await _dbContext.SaveChangesAsync(CancellationToken.None);
+            try
+            {
+                await _dbContext.SaveChangesAsync(CancellationToken.None);
+            }
+            catch (Exception e)
+            {
+                logger.LogException(e);
+            }
     }
 
     private async Task<PotaPark?> LoadPark(string parkNum, CancellationToken ct)
@@ -203,8 +212,8 @@ internal sealed class HostedService(ILogger<HostedService> logger, IHostApplicat
         }
 
         var res = await response.Content.ReadAsStringAsync(ct);
-        var result = JsonSerializer.Deserialize<PotaParkInfo>(res, _jsonOptions);
-        if (result == null)
+        var parkRes = JsonSerializer.Deserialize<PotaParkInfo>(res, _jsonOptions);
+        if (parkRes == null)
         {
             logger.LogJsonError(url);
             return null;
@@ -213,13 +222,33 @@ internal sealed class HostedService(ILogger<HostedService> logger, IHostApplicat
         park = new PotaPark
         {
             ParkNum = parkNum,
-            ParkName = result.Name,
-            Lat = result.Latitude,
-            Long = result.Longitude,
-            Grid = result.Grid6,
-            Location = result.LocationDesc,
-            Country = result.ReferencePrefix
+            ParkName = parkRes.Name,
+            Lat = parkRes.Latitude,
+            Long = parkRes.Longitude,
+            Grid = parkRes.Grid6,
+            Location = parkRes.LocationDesc,
+            Country = parkRes.ReferencePrefix
         };
+
+        url = $"/{settings.Value.ParkStatsRoute}/{parkNum}";
+        response = await _httpClient!.GetAsync(url, ct);
+        if (!response.IsSuccessStatusCode)
+        {
+            logger.LogHttpError(response.StatusCode);
+            appLifeTime.StopApplication();
+            return null;
+        }
+
+        res = await response.Content.ReadAsStringAsync(ct);
+        var statsRes = JsonSerializer.Deserialize<PotaParkStats>(res, _jsonOptions);
+        if (statsRes == null)
+        {
+            logger.LogJsonError(url);
+            return null;
+        }
+
+        park.TotalActivationCount = statsRes.Activations;
+        park.TotalQsoCount = statsRes.Contacts;
 
         _newParks.Add(park);
         logger.LogNewPark(park.ParkNum, park.ParkName);

@@ -30,7 +30,7 @@ internal static class PdfCreator
         _toFont = new(DefaultFontFamily, 12, XFontStyleEx.Bold);
         _confirmFont = new(DefaultFontFamily, 10, XFontStyleEx.Regular);
         _tableFont = new(DefaultFontFamily, 8, XFontStyleEx.Regular);
-        _symbolsFont = new(SymbolsFontFamily, 6, XFontStyleEx.Regular);
+        _symbolsFont = new(SymbolsFontFamily, 8, XFontStyleEx.Regular);
     }
 
     public static bool Generate(List<LabelData> data, TemplateType templateType, int startLabelNum, bool printDeliveryMethod, string fileName)
@@ -137,8 +137,8 @@ internal static class PdfCreator
 
             if (printDeliveryMethod && !string.IsNullOrEmpty(label.Delivery) && (label.Delivery == "B" || label.Delivery == "D")) //buro or direct
             {
-                curX = startX + 262;
-                Draw(label.Delivery == "B" ? "Ⓑ" : "Ⓓ", _symbolsFont, brush: XBrushes.Gray);
+                curX = startX + 262; curY = startY + 2;
+                Draw(label.Delivery == "B" ? "A" : "i", _symbolsFont);
             }
 
             curX = startX; curY = startY + 13;

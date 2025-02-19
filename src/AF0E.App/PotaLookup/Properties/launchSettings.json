@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "PotaLookup": {
+      "commandName": "Project",
+      "commandLineArgs": "2025-01-30T11:00",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}

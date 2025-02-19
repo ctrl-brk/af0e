@@ -14,10 +14,11 @@ public sealed class PotaPark
     public string? Location { get; init; }
     public string Country { get; init; } = null!;
     [Column("Activations")]
-    public int TotalActivationCount { get; init; }
+    public int TotalActivationCount { get; set; }
     [Column("QSOs")]
-    public int TotalQsoCount { get; init; }
+    public int TotalQsoCount { get; set; }
     public bool Active { get; init; }
+    [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
     public Geometry GeoPoint { get; init; } = null!;
 
     // ReSharper disable once CollectionNeverUpdated.Global

@@ -6,7 +6,7 @@ internal sealed class FontResolver : IFontResolver
 {
     private static readonly byte[] _regularFontData = LoadFontData("consola.ttf");
     private static readonly byte[] _boldFontData = LoadFontData("consolab.ttf");
-    private static readonly byte[] _symbolsFontData = LoadFontData("arialuni.ttf");
+    private static readonly byte[] _symbolsFontData = LoadFontData("GoogleEmojis-Regular.ttf");
     private static string DefaultFontName => "Consolas";
     private static string SymbolsFontName => "Symbols";
 

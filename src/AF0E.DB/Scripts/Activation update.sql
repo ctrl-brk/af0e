@@ -1,20 +1,19 @@
-/* 
+/*
   Activation Update Script Start
-  (some of it is duplicated lower in the file, but this is the one to use with new activations
+  (some of this is duplicated lower in the file, but this is the one to use with new activations
   Don't forget to run QrzLookup and PotaLookup
 */
 truncate table #tmp
 create table #tmp (id int, call varchar(32))
 -- CHECK IF THERE ARE TWO ACTIVATIONS BECAUSE OF THE UTC DAY
-declare @parkId int, @grid varchar(10), @city nvarchar(100), @county nvarchar(200), @state char(2)
+declare @parkId int, @parkNum varchar(64), @grid varchar(10), @city nvarchar(100), @county nvarchar(200), @state char(2)
 declare @startDate varchar(20), @endDate varchar(20), @submitDate varchar(20)
 declare @lat decimal(10,6), @long decimal(10,6)
-select @parkId = 2997, @grid = 'DM78nr', @city = 'Colorado Springs', @county = 'El Paso', @state = 'CO', @lat = 38.738533, @long = -104.823813
---select @parkId = 168, @grid = 'DN779jv', @city = null, @county = 'Jefferson', @state = 'CO', @lat = 39.911110, @long = -105.183235 -- US-0225 (Rocky Flats NWR)
+select @parkId = 168, @parkNum = 'US-0225', @grid = 'DN79jv', @city = null, @county = 'Jefferson', @state = 'CO', @lat = 39.911110, @long = -105.183235 -- US-0225 (Rocky Flats NWR)
 --select @parkId = 11269, @grid = 'DM70ja', @city = 'Boulder', @county = 'Boulder', @state = 'CO', @lat = 40.039693, @long = -105.184286 -- US-9669 (Sawhill Ponds SWA)
-																									   
+
 -- MAKE SURE ALL THREE ARE CORRECT!
-select @startDate = '2025-01-26 00:20', @endDate = '2025-01-26 17:55', @submitDate = '2025-01-27 07:10'
+select @startDate = '2025-02-09', @endDate = '2025-02-09 00:37', @submitDate = '2025-02-09 07:01'
 
 insert into #tmp select COL_PRIMARY_KEY, COL_CALL from [HamLog].[dbo].[TABLE_HRD_CONTACTS_V01] where COL_TIME_ON between @startDate and @endDate
 
@@ -26,23 +25,16 @@ select @activationId = max(activationid) from [HamLog].[dbo].[PotaActivations]
 --print 'Activation ID: ' + convert(varchar, @activationId)
 insert into [HamLog].[dbo].[PotaContacts](ActivationId, LogId) select @activationId, id from #tmp
 
-declare @logId int
-declare cSel cursor for
-select c.LogId, a.Grid, a.City, a.County, a.State from [HamLog].[dbo].[PotaContacts] c inner join [HamLog].[dbo].[PotaActivations] a on a.ActivationId = c.ActivationId where a.ActivationId = @activationId
-open cSel
-fetch next from cSel into @logId, @grid, @city, @county, @state
-while @@fetch_status = 0 begin
-  update [HamLog].[dbo].[TABLE_HRD_CONTACTS_V01] set COL_MY_GRIDSQUARE = @grid, COL_MY_CITY = @city, COL_MY_CNTY = @county, COL_MY_STATE = @state where COL_PRIMARY_KEY = @logId
-  fetch next from cSel into @logId, @grid, @city, @county, @state
-end
-close cSel
-deallocate cSel
+update [HamLog].[dbo].[TABLE_HRD_CONTACTS_V01]
+   set COL_MY_GRIDSQUARE = @grid, COL_MY_CITY = @city, COL_MY_CNTY = @county, COL_MY_STATE = @state, COL_SIG = isnull(COL_SIG, 'POTA'), COL_SIG_INFO = isnull(COL_SIG_INFO, @parkNum), COL_MY_LAT = @lat, COL_MY_LON = @long
+ where COL_PRIMARY_KEY in (select LogId from PotaContacts where ActivationId = @activationId)
 
 select * from PotaActivations where ActivationId = @activationId
 select a.*, l.col_call, l.COL_TIME_ON from PotaContacts a inner join TABLE_HRD_CONTACTS_V01 l on l.COL_PRIMARY_KEY = a.LogId where ActivationId = @activationId order by a.LogId desc
 
 -- rollback
 -- commit
+
 /* Activation Upate Script End */
 
 create table #tmp (id int, call varchar(32))
@@ -87,7 +79,7 @@ update TABLE_HRD_CONTACTS_V01 set COL_COMMENT = 'POTA activation US-9669(Sawhill
 update TABLE_HRD_CONTACTS_V01 set COL_USER_DEFINED_9 = 'Y' where COL_PRIMARY_KEY in (select id from #tmp)
 update TABLE_HRD_CONTACTS_V01 set COL_USER_DEFINED_9 = 'Y' where COL_PRIMARY_KEY in (select logid from PotaContacts where ActivationId between 30 and 33)
 
-select * from PotaParks where ParkNum = 'US-1214'
+select * from PotaParks where ParkNum = 'US-1241'
 
 -- US-0225: 168, 'DM79jv', 'Jefferson', 'CO', 39.911110, -105.183235
 -- 0227: 170, 'DM79ku', 'Jefferson', 'CO'
