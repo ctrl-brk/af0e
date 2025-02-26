@@ -3,9 +3,11 @@ namespace HamMarket;
 
 public partial class EhamHandler
 {
-    public async Task<IEnumerable<ScanResult>> ProcessCategoriesAsync(HttpClient httpClient, CookieContainer cookies, CancellationToken token)
+    public async Task<IEnumerable<ScanResult?>> ProcessCategoriesAsync(HttpClient httpClient, CookieContainer cookies, CancellationToken token)
     {
-        if (_settings.EhamNet.CategorySearch.MaxPosts <= 0) return null;
+        var res = new List<ScanResult?>();
+
+        if (_settings.EhamNet.CategorySearch.MaxPosts <= 0) return res;
 
         _thisScan = new ScanInfo { Ids = [] };
 #if DEBUG && CLEARHIST
@@ -13,11 +15,11 @@ public partial class EhamHandler
 #endif
         if (File.Exists(_settings.EhamNet.CategorySearch.ResultFile))
         {
-            _lastCategoryScan = JsonConvert.DeserializeObject<ScanInfo>(await File.ReadAllTextAsync(_settings.EhamNet.CategorySearch.ResultFile, token));
+            _lastCategoryScan = JsonConvert.DeserializeObject<ScanInfo>(await File.ReadAllTextAsync(_settings.EhamNet.CategorySearch.ResultFile, token))!;
             _lastCategoryScan.OtherIds = [.._lastKeywordScan.Ids];
         }
 
-        var res = new List<ScanResult>();
+
 
         foreach (var category in _settings.EhamNet.CategorySearch.Categories.Split(','))
         {
@@ -29,11 +31,11 @@ public partial class EhamHandler
         return res;
     }
 
-    private async Task<ScanResult> ProcessCategory(HttpClient httpClient, string category, CookieContainer cookies, CancellationToken token)
+    private async Task<ScanResult?> ProcessCategory(HttpClient httpClient, string category, CookieContainer cookies, CancellationToken token)
     {
         _logger.LogDebug("Fetching {Category} category from eHam.net", category);
 
-        var uri = new Uri($"https://www.eham.net/classifieds/view-category?id={_categories.First(x => x.Key == category.ToLower()).Value}");
+        var uri = new Uri($"https://www.eham.net/classifieds/view-category?id={_categories.First(x => x.Key.Equals(category, StringComparison.OrdinalIgnoreCase)).Value}");
 
         var sessionCookie = await GetSessionCookie(httpClient, cookies);
 
@@ -42,9 +44,12 @@ public partial class EhamHandler
         message.Headers.Add("Cookie", $"{sessionCookie.Name}={sessionCookie.Value}");
 
         var res = await httpClient.SendAsync(message, token);
-        if (token.IsCancellationRequested) return null;
+        if (token.IsCancellationRequested)
+            return null;
+
         var msg = await res.Content.ReadAsStringAsync(token);
-        if (!await ScanResults(msg, ScanType.Category, httpClient)) return null;
+        if (!await ScanResults(msg, ScanType.Category, httpClient))
+            return null;
 
         _newPosts.ForEach(x => _thisScan.Ids.Add(x.Id));
 

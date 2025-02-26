@@ -4,6 +4,8 @@ using Microsoft.Extensions.Options;
 // ReSharper disable once CheckNamespace
 namespace HamMarket;
 
+using HamMarket.Settings;
+
 public partial class QthHandler(ILogger<HostedService> logger, IOptions<AppSettings> settings) : IQthHandler
 {
     private const int PAGE_SIZE = 10;
@@ -13,8 +15,8 @@ public partial class QthHandler(ILogger<HostedService> logger, IOptions<AppSetti
 
     private ScanInfo _lastKeywordScan = new() { Date = DateTime.MinValue, Ids = [], OtherIds = [] };
     private ScanInfo _lastCategoryScan = new() { Date = DateTime.MinValue, Ids = [], OtherIds = [] };
-    private ScanInfo _thisScan;
-    private List<Post> _newPosts;
+    private ScanInfo _thisScan = null!;
+    private List<Post> _newPosts = null!;
 
     private async Task<bool> ScanResults(string msg, ScanType scanType, HttpClient httpClient)
     {
@@ -95,14 +97,14 @@ public partial class QthHandler(ILogger<HostedService> logger, IOptions<AppSetti
         return true;
     }
 
-    private static Post ProcessPost(string html, ScanType scanType)
+    private static Post? ProcessPost(string html, ScanType scanType)
     {
         //var title = scanType == ScanType.Keyword ? "<font size=2 face=arial> - " : "<font size=2 face=arial COLOR=\"#0000FF\">";
         const string title = "<font size=2 face=arial> - ";
         const string END = "</font>";
 
         var index = 0;
-        
+
 #pragma warning disable IDE0017
         var post = new Post
 #pragma warning restore IDE0017
@@ -112,12 +114,12 @@ public partial class QthHandler(ILogger<HostedService> logger, IOptions<AppSetti
         };
 
         post.Category = Utils.GetValue(html, """<font size=2 face=arial color=0000FF>""", END, ref index, false);
-        post.Title = Utils.GetValue(html, title, END, ref index);
-        post.Description = Utils.HighlightPrices(Utils.GetValue(html, "<DD><font size=2 face=arial>", END, ref index));
-        post.Id = int.Parse(Utils.GetValue(html, "<DD><i><font size=2 face=arial>Listing #", " -  ", ref index));
-        post.SubmittedOn = DateTime.Parse(Utils.GetValue(html, "Submitted on ", " by ", ref index));
+        post.Title = Utils.GetValue(html, title, END, ref index)!;
+        post.Description = Utils.HighlightPrices(Utils.GetValue(html, "<DD><font size=2 face=arial>", END, ref index)!);
+        post.Id = int.Parse(Utils.GetValue(html, "<DD><i><font size=2 face=arial>Listing #", " -  ", ref index)!);
+        post.SubmittedOn = DateTime.Parse(Utils.GetValue(html, "Submitted on ", " by ", ref index)!);
         post.CallSign = GetCallSign(html, ref index);
-        
+
         if (post.Title.StartsWith("WTB ", true, null) || post.Title.StartsWith("WTB:", true, null) || post.Title.StartsWith("WTB-", true, null))
             return null;
 
@@ -133,14 +135,14 @@ public partial class QthHandler(ILogger<HostedService> logger, IOptions<AppSetti
         return post;
     }
 
-    private static string GetCallSign(string src, ref int index)
+    private static string? GetCallSign(string src, ref int index)
     {
         var call = Utils.GetValue(src, "Callsign <a", "</a>", ref index, false);
         var ind = call?.IndexOf('>');
-        return call?[(ind.Value + 1)..];
+        return ind == null ? null : call?[(ind.Value + 1)..];
     }
 
-    private ScanResult BuildResults(ScanInfo lastScan)
+    private ScanResult? BuildResults(ScanInfo lastScan)
     {
         if (_newPosts.Count == 0)
         {

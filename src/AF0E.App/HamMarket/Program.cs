@@ -1,7 +1,10 @@
-﻿using HamMarket;
+﻿using FluentValidation;
+using HamMarket;
+using HamMarket.Settings;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Serilog;
 
 var host = new HostBuilder()
@@ -21,6 +24,15 @@ var host = new HostBuilder()
             .AddSingleton<IHostedService, HostedService>()
             .AddSingleton<IQthHandler, QthHandler>()
             .AddSingleton<IEhamHandler, EhamHandler>();
+
+        // Register FluentValidation validator
+        svc.AddSingleton<IValidator<AppSettings>, SettingsValidator>();
+        // Validate the configuration during startup
+        svc.AddSingleton<IValidateOptions<AppSettings>>(provider =>
+        {
+            var validator = provider.GetRequiredService<IValidator<AppSettings>>();
+            return new ValidationOptions<AppSettings>(validator);
+        });
     })
     .ConfigureLogging((ctx, cfg) =>
     {

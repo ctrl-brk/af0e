@@ -9,7 +9,7 @@ public enum ScanType
 public class ScanInfo
 {
     public DateTime Date { get; set; }
-    public List<int> Ids { get; set; }
+    public List<int> Ids { get; set; } = null!;
     [NonSerialized]
-    public List<int> OtherIds;
+    public List<int> OtherIds = null!;
 }

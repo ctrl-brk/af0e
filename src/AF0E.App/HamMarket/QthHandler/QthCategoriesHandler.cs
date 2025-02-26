@@ -3,9 +3,12 @@ namespace HamMarket;
 
 public partial class QthHandler
 {
-    public async Task<IEnumerable<ScanResult>> ProcessCategoriesAsync(HttpClient httpClient, CookieContainer cookies, CancellationToken token)
+    public async Task<IEnumerable<ScanResult?>> ProcessCategoriesAsync(HttpClient httpClient, CookieContainer? cookies, CancellationToken token)
     {
-        if (_settings.QthCom.CategorySearch.MaxPosts <= 0) return null;
+        var res = new List<ScanResult?>();
+
+        if (_settings.QthCom.CategorySearch.MaxPosts <= 0)
+            return res;
 
         _thisScan = new ScanInfo {Ids = []};
 #if DEBUG && CLEARHIST
@@ -13,11 +16,9 @@ public partial class QthHandler
 #endif
         if (File.Exists(_settings.QthCom.CategorySearch.ResultFile))
         {
-            _lastCategoryScan = JsonConvert.DeserializeObject<ScanInfo>(await File.ReadAllTextAsync(_settings.QthCom.CategorySearch.ResultFile, token));
+            _lastCategoryScan = JsonConvert.DeserializeObject<ScanInfo>(await File.ReadAllTextAsync(_settings.QthCom.CategorySearch.ResultFile, token))!;
             _lastCategoryScan.OtherIds = [.._lastKeywordScan.Ids];
         }
-
-        var res = new List<ScanResult>();
 
         foreach (var category in _settings.QthCom.CategorySearch.Categories.Split(','))
         {
@@ -29,14 +30,14 @@ public partial class QthHandler
         return res;
     }
 
-    private async Task<ScanResult> ProcessCategory(HttpClient httpClient, string category, CancellationToken token)
+    private async Task<ScanResult?> ProcessCategory(HttpClient httpClient, string category, CancellationToken token)
     {
         var postNum = 0;
 
         while (postNum < _settings.QthCom.CategorySearch.MaxPosts)
         {
             _logger.LogDebug("Fetching {Category} category. Page {PageSize} of maximum {CategorySearchMaxPosts} from qth.com", category, postNum/PAGE_SIZE + 1, _settings.QthCom.CategorySearch.MaxPosts/PAGE_SIZE);
-            
+
             //var uri = new Uri($"https://swap.qth.com/c_{category}.php?page={postNum/PAGE_SIZE + 1}");
             //var message = new HttpRequestMessage(HttpMethod.Get, uri);
             //message.Headers.Add("Cache-Control", "no-cache");
@@ -44,7 +45,8 @@ public partial class QthHandler
             var res = await httpClient.PostAsync("https://swap.qth.com/advsearchresults.php", new StringContent($"category%5B%5D={category}&startnum={postNum}", Encoding.Default, "application/x-www-form-urlencoded"), token);
             var msg = await res.Content.ReadAsStringAsync(token);
             postNum += PAGE_SIZE;
-            if (!await ScanResults(msg, ScanType.Category, httpClient)) break;
+            if (!await ScanResults(msg, ScanType.Category, httpClient))
+                break;
         }
 
         _newPosts.ForEach(x => _thisScan.Ids.Add(x.Id));
