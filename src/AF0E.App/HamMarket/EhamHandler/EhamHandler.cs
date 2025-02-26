@@ -4,6 +4,8 @@ using Microsoft.Extensions.Options;
 // ReSharper disable once CheckNamespace
 namespace HamMarket;
 
+using HamMarket.Settings;
+
 public partial class EhamHandler(ILogger<HostedService> logger, IOptions<AppSettings> settings) : IEhamHandler
 {
     [SuppressMessage("ReSharper", "StringLiteralTypo")]
@@ -58,15 +60,16 @@ public partial class EhamHandler(ILogger<HostedService> logger, IOptions<AppSett
     private readonly ILogger _logger = logger;
     private readonly AppSettings _settings = settings.Value;
 
-    private static Cookie _sessionCookie;
+    private static Cookie? _sessionCookie;
     private ScanInfo _lastKeywordScan = new() { Date = DateTime.MinValue, Ids = [], OtherIds = [] };
     private ScanInfo _lastCategoryScan = new() { Date = DateTime.MinValue, Ids = [], OtherIds = [] };
-    private ScanInfo _thisScan;
-    private List<Post> _newPosts;
+    private ScanInfo _thisScan = null!;
+    private List<Post> _newPosts = null!;
 
-    private static async Task<Cookie> GetSessionCookie(HttpClient httpClient, CookieContainer cookies)
+    private static async Task<Cookie> GetSessionCookie(HttpClient httpClient, CookieContainer? cookies)
     {
-        if (_sessionCookie != null) return _sessionCookie;
+        if (_sessionCookie != null)
+            return _sessionCookie;
 
         var uri = new Uri("https://www.eham.net/classifieds/?view=all");
 
@@ -75,7 +78,9 @@ public partial class EhamHandler(ILogger<HostedService> logger, IOptions<AppSett
         //var responseCookies = cookies.GetCookies(uri).Cast<Cookie>();
         //var sessionCookie = responseCookies.FirstOrDefault(x => x.Name == "ehamsid");
         var (key, value) = res.Headers.FirstOrDefault(x => x.Key == "Set-Cookie");
-        if (key == null) throw new ApplicationException("Invalid response format");
+        if (key == null)
+            throw new ApplicationException("Invalid response format");
+
         var val = value.First().Split(';')[0].Split('=');
         _sessionCookie = new Cookie(val[0], val[1]);
 
@@ -146,23 +151,24 @@ public partial class EhamHandler(ILogger<HostedService> logger, IOptions<AppSett
         return true;
     }
 
-    private static Post ProcessPost(string html, ScanType scanType)
+    private static Post? ProcessPost(string html, ScanType scanType)
     {
         var index = 0;
 
         var post = new Post
         {
             IsNew = true,
-            Id = int.Parse(Utils.GetValue(html, $"href=\"/classifieds/", "\"", ref index)),
-            Title = Utils.GetValue(html, ">", "</a>", ref index),
-            SubmittedOn = DateTime.Parse(Utils.GetValue(html, "User IP</th>\n\t\t</tr><tr><td>", scanType == ScanType.Keyword ? "</td>" : "<" , ref index)),
+            Id = int.Parse(Utils.GetValue(html, $"href=\"/classifieds/", "\"", ref index)!),
+            Title = Utils.GetValue(html, ">", "</a>", ref index)!,
+            SubmittedOn = DateTime.Parse(Utils.GetValue(html, "User IP</th>\n\t\t</tr><tr><td>", scanType == ScanType.Keyword ? "</td>" : "<" , ref index)!),
             //CallSign = Utils.GetValue(html, "profile/", "\"", ref index),
             Category = Utils.GetValue(html, "\">", "</a>", ref index),
             HasImage = html.IndexOf("<img alt style", index, StringComparison.Ordinal) < 0 && html.IndexOf(";base64,TUNRS1", index, StringComparison.Ordinal) < 0,
-            Description = Utils.HighlightPrices(Utils.GetValue(html, "float:right\">", "</div>", ref index)),
+            Description = Utils.HighlightPrices(Utils.GetValue(html, "float:right\">", "</div>", ref index)!),
         };
 
-        if (post.Title.StartsWith("WTB ", true, null) || post.Title.StartsWith("WTB:", true, null) || post.Title.StartsWith("WTB-", true, null)) return null;
+        if (post.Title.StartsWith("WTB ", true, null) || post.Title.StartsWith("WTB:", true, null) || post.Title.StartsWith("WTB-", true, null))
+            return null;
 
         post.Price = Utils.GetPrice(post);
         if (!string.IsNullOrEmpty(post.Category)) post.Category = post.Category.ToLowerInvariant();
@@ -170,7 +176,7 @@ public partial class EhamHandler(ILogger<HostedService> logger, IOptions<AppSett
         return post;
     }
 
-    private ScanResult BuildResults(ScanInfo lastScan)
+    private ScanResult? BuildResults(ScanInfo lastScan)
     {
         if (_newPosts.Count == 0)
         {

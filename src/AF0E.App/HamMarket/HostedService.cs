@@ -7,6 +7,8 @@ using SendGrid.Helpers.Mail;
 
 namespace HamMarket;
 
+using HamMarket.Settings;
+
 #pragma warning disable CA1001
 #pragma warning disable CA1849
 // ReSharper disable MethodHasAsyncOverload
@@ -21,11 +23,11 @@ public class HostedService : IHostedService
     private readonly IEhamHandler _ehamHandler;
     private readonly CookieContainer _cookies;
 
-    private HttpClientHandler _httpClientHandler;
-    private HttpClient _httpClient;
+    private HttpClientHandler _httpClientHandler = null!;
+    private HttpClient _httpClient = null!;
 
-    private Task _task;
-    private CancellationTokenSource _cts;
+    private Task _task = null!;
+    private CancellationTokenSource _cts = null!;
 
     public HostedService(ILogger<HostedService> logger, IHostApplicationLifetime appLifeTime, IOptions<AppSettings> settings, IQthHandler qthHandler, IEhamHandler ehamHandler)
     {
@@ -76,8 +78,7 @@ public class HostedService : IHostedService
                     results.Add(keyRes);
 
                 var catRes = await _qthHandler.ProcessCategoriesAsync(_httpClient, null, token);
-                if (catRes != null)
-                    results.AddRange(catRes.Where(x => x != null));
+                results.AddRange(catRes.Where(x => x != null)!);
             }
             catch (Exception e)
             {
@@ -94,8 +95,7 @@ public class HostedService : IHostedService
                     results.Add(keyRes);
 
                 var catRes = await _ehamHandler.ProcessCategoriesAsync(_httpClient, _cookies, token);
-                if (catRes != null)
-                    results.AddRange(catRes.Where(x => x != null));
+                results.AddRange(catRes.Where(x => x != null)!);
             }
             catch (Exception e)
             {
