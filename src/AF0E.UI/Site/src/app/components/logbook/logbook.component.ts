@@ -20,6 +20,7 @@ import {TooltipModule} from 'primeng/tooltip';
 import {MatIcon, MatIconRegistry} from '@angular/material/icon';
 import {Button} from 'primeng/button';
 import {ScrollTop} from 'primeng/scrolltop';
+import {ModeSeverityPipe, QsoModePipe} from '../../shared/pipes';
 
 @Component({
   selector: 'app-logbook',
@@ -40,6 +41,8 @@ import {ScrollTop} from 'primeng/scrolltop';
     TableModule,
     TagModule,
     TooltipModule,
+    ModeSeverityPipe,
+    QsoModePipe,
   ],
 })
 export class LogbookComponent implements OnInit{
@@ -111,37 +114,6 @@ export class LogbookComponent implements OnInit{
       error: e=> Utils.showErrorMessage(e, this._ntfSvc, this._log),
       complete: () => this.loading = false
     });
-  }
-
-  getMode(mode: string) {
-    switch (mode) {
-      case 'USB':
-      case 'LSB':
-        return 'SSB';
-
-      case 'MFSK':
-        return 'FT4';
-    }
-    return mode;
-  }
-
-  getModeSeverity(mode: string) {
-    switch (mode) {
-      case 'CW':
-        return 'success';
-
-      case 'SSB':
-      case 'LSB':
-      case 'USB':
-        return 'info';
-
-      case 'FT8':
-      case 'MFSK':
-      case 'PSK31':
-      case 'JT65':
-        return 'warn';
-    }
-    return 'secondary';
   }
 
   onQsoSelect(qso: QsoSummaryModel) {
