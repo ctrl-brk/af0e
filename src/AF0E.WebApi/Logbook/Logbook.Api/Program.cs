@@ -158,7 +158,7 @@ app.MapGet("/api/v1/pota/activations", (HrdDbContext dbContext) =>
                 x.PotaContacts.Count,
                 CwCount = x.PotaContacts.Count(c => c.Log.ColMode == "CW"),
                 DigiCount = x.PotaContacts.Count(c => c.Log.ColMode == "FT8" || c.Log.ColMode == "MFSK"),
-                PhoneCount = x.PotaContacts.Count(c => c.Log.ColMode == "SSB" || c.Log.ColMode == "LSB" || c.Log.ColMode == "USB"),
+                PhoneCount = x.PotaContacts.Count(c => c.Log.ColMode == "SSB" || c.Log.ColMode == "LSB" || c.Log.ColMode == "USB" || c.Log.ColMode == "FM" || c.Log.ColMode == "AM"),
             }).ToListAsync()
     )
     .WithName("PotaActivations")
@@ -191,7 +191,7 @@ app.MapGet("/api/v1/pota/activations/{id:int}", async (int id, HrdDbContext dbCo
                 res.PotaContacts.Count,
                 CwCount = res.PotaContacts.Count(c => c.Log.ColMode is "CW"),
                 DigiCount = res.PotaContacts.Count(c => c.Log.ColMode is "FT8" or "MFSK"),
-                PhoneCount = res.PotaContacts.Count(c => c.Log.ColMode is "SSB" or "LSB" or "USB"),
+                PhoneCount = res.PotaContacts.Count(c => c.Log.ColMode is "SSB" or "LSB" or "USB" or "FM" or "AM"),
                 P2pCount = res.PotaContacts.Count(c => c.P2P != null),
             });
     })
