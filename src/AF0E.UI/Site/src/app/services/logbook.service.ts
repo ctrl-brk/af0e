@@ -13,12 +13,12 @@ export class LogbookService {
   private _http = inject(HttpService);
 
   public lookupPartial(call: string): Observable<string[]> {
-    return this._http.get(`${this._svcUrl}/partial-lookup/${call}`);
+    return this._http.get(`${this._svcUrl}/partial-lookup/${encodeURIComponent(call)}`);
   }
 
   public getQsoSummaries(call: string | null, skip: number, take: number, order: SortDirection, sortBy: string, dateRange: Date[]): Observable<QsoSummaryModel[]> {
     const sortOrder = order === SortDirection.Ascending ? 1 : 0;
-    const url = `${this._svcUrl}${(call === null || call === undefined) ? '' : '/' + call}?skip=${skip}&take=${take}&orderBy=${sortOrder}&begin=${Utils.dateToSql(dateRange[0])}&end=${Utils.dateToSql(dateRange[1])}`
+    const url = `${this._svcUrl}${(call === null || call === undefined) ? '' : '/' + encodeURIComponent(call)}?skip=${skip}&take=${take}&orderBy=${sortOrder}&begin=${Utils.dateToSql(dateRange[0])}&end=${Utils.dateToSql(dateRange[1])}`
     return this._http.get(url).pipe(
       map((q: QsoSummaryModel[]) => {
         return q.map((s) => {

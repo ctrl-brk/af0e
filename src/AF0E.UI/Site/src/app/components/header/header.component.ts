@@ -50,8 +50,17 @@ export class HeaderComponent implements OnInit {
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe((event) => {
         let arr = event.url.split('/');
-        if (arr.length == 3 && arr[1].toLowerCase() == 'logbook')
-          this.searchCall = arr[2];
+        if (arr[1].toLowerCase() == 'logbook') {
+          switch (arr.length) {
+            case 3: this.searchCall = decodeURIComponent(arr[2]);
+              break;
+            case 4: this.searchCall = `${decodeURIComponent(arr[2])}/${decodeURIComponent(arr[3])}`;
+              break;
+            case 5: this.searchCall = `${decodeURIComponent(arr[2])}/${decodeURIComponent(arr[3])}/${decodeURIComponent(arr[4])}`;
+              break;
+              default: this.searchCall = '';
+          }
+        }
         else
           this.searchCall = '';
       });

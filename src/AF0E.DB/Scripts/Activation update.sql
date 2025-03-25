@@ -9,13 +9,17 @@ create table #tmp (id int, call varchar(32))
 declare @parkId int, @parkNum varchar(64), @grid varchar(10), @city nvarchar(100), @county nvarchar(200), @state char(2)
 declare @startDate varchar(20), @endDate varchar(20), @submitDate varchar(20)
 declare @lat decimal(10,6), @long decimal(10,6)
---select @parkId = 168,   @parkNum = 'US-0227',  @grid = 'DM79jv', @city = null,      @county = 'Jefferson', @state = 'CO', @lat = 39.911110, @long = -105.183235 -- US-0225 (Rocky Flats NWR)
---select @parkId = 11269, @parkNum = 'US-9669',  @grid = 'DM70ja', @city = 'Boulder', @county = 'Boulder',   @state = 'CO', @lat = 40.039693, @long = -105.184286 -- US-9669 (Sawhill Ponds SWA)
---select @parkId = 170,   @parkNum = 'US-0227',  @grid = 'DM79ku', @city = 'Arvada',  @county = 'Jefferson', @state = 'CO', @lat = 39.841670, @long = -105.102664 -- US-0227 (Two Ponds NWR)
---select @parkId = 2995,  @parkNum = 'US-1212',  @grid = 'DM79lm', @city = null,  @county = 'Jefferson', @state = 'CO', @lat = 39.519166, @long = -105.081798 -- US-1212 (Chatfield SP)
+--select @parkId = 168,   @parkNum = 'US-0225',  @grid = 'DM79jv', @city = null,        @county = 'Jefferson', @state = 'CO', @lat = 39.911110, @long = -105.183235 -- US-0225 (Rocky Flats NWR)
+--select @parkId = 169,   @parkNum = 'US-0226',  @grid = 'DM79nu', @city = null,        @county = 'Adams',     @state = 'CO', @lat = 39.813758, @long = -104.860711 -- US-0226 (Rocky Mountains Arsenal NWR)
+--select @parkId = 170,   @parkNum = 'US-0227',  @grid = 'DM79ku', @city = 'Arvada',    @county = 'Jefferson', @state = 'CO', @lat = 39.841670, @long = -105.102664 -- US-0227 (Two Ponds NWR)
+--select @parkId = 2994,  @parkNum = 'US-1211',  @grid = 'DM79pi', @city = 'Franktown', @county = 'Douglas',   @state = 'CO', @lat = 39.333209, @long = -104.744105 -- US-1211 (Castlewood Canyon SP)
+--select @parkId = 2995,  @parkNum = 'US-1212',  @grid = 'DM79lm', @city = null,        @county = 'Jefferson', @state = 'CO', @lat = 39.519166, @long = -105.081798 -- US-1212 (Chatfield SP)
+--select @parkId = 4192,  @parkNum = 'US-1241',  @grid = 'DN70me', @city = 'Longmont',  @county = 'Weld',      @state = 'CO', @lat = 40.170502, @long = -104.985152 -- US-1241 (St. Vrain SP)
+--select @parkId = 11269, @parkNum = 'US-9669',  @grid = 'DM70ja', @city = 'Boulder',   @county = 'Boulder',   @state = 'CO', @lat = 40.039693, @long = -105.184286 -- US-9669 (Sawhill Ponds SWA)
+
 																									   
 -- MAKE SURE ALL THREE ARE CORRECT and include minutes!
-select @startDate = '2025-03-07 00:00', @endDate = '2025-03-07 00:13', @submitDate = '2025-03-07 03:09'
+select @startDate = '2025-03-14 21:25', @endDate = '2025-03-14 22:31', @submitDate = '2025-03-15 04:30'
 
 insert into #tmp select COL_PRIMARY_KEY, COL_CALL from [HamLog].[dbo].[TABLE_HRD_CONTACTS_V01] where COL_TIME_ON between @startDate and @endDate
 
@@ -28,7 +32,7 @@ select @activationId = max(activationid) from [HamLog].[dbo].[PotaActivations]
 insert into [HamLog].[dbo].[PotaContacts](ActivationId, LogId) select @activationId, id from #tmp
 
 update [HamLog].[dbo].[TABLE_HRD_CONTACTS_V01]
-   set COL_MY_GRIDSQUARE = @grid, COL_MY_CITY = @city, COL_MY_CNTY = @county, COL_MY_STATE = @state, COL_SIG = isnull(COL_SIG, 'POTA'), COL_SIG_INFO = isnull(COL_SIG_INFO, @parkNum), COL_MY_LAT = @lat, COL_MY_LON = @long
+   set COL_MY_GRIDSQUARE = @grid, COL_MY_CITY = @city, COL_MY_CNTY = @county, COL_MY_STATE = @state, COL_MY_SIG = isnull(COL_MY_SIG, 'POTA'), COL_MY_SIG_INFO = isnull(COL_MY_SIG_INFO, @parkNum), COL_MY_LAT = @lat, COL_MY_LON = @long
  where COL_PRIMARY_KEY in (select LogId from PotaContacts where ActivationId = @activationId)
 
 select * from PotaActivations where ActivationId = @activationId
@@ -37,6 +41,7 @@ select a.*, l.col_call, l.COL_TIME_ON from PotaContacts a inner join TABLE_HRD_C
 -- rollback
 -- commit
 
+select distinct COL_MY_SIG_INFO from [HamLog].[dbo].[TABLE_HRD_CONTACTS_V01] where COL_COMMENT like 'POTA activation US-0225%'
 /* Activation Upate Script End */
 
 create table #tmp (id int, call varchar(32))
@@ -81,7 +86,7 @@ update TABLE_HRD_CONTACTS_V01 set COL_COMMENT = 'POTA activation US-9669(Sawhill
 update TABLE_HRD_CONTACTS_V01 set COL_USER_DEFINED_9 = 'Y' where COL_PRIMARY_KEY in (select id from #tmp)
 update TABLE_HRD_CONTACTS_V01 set COL_USER_DEFINED_9 = 'Y' where COL_PRIMARY_KEY in (select logid from PotaContacts where ActivationId between 30 and 33)
 
-select * from PotaParks where ParkNum = 'US-1212'
+select * from PotaParks where ParkNum = 'US-0226'
 
 -- US-0225: 168, 'DM79jv', 'Jefferson', 'CO', 39.911110, -105.183235
 -- 0227: 170, 'DM79ku', 'Jefferson', 'CO'
