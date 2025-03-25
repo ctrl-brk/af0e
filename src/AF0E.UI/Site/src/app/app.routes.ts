@@ -16,6 +16,14 @@ export const routes: Routes = [
         loadComponent: () => import('./components/logbook/logbook.component').then(m => m.LogbookComponent)
       },
       {
+        path: ':prefix/:call/:suffix',
+        loadComponent: () => import('./components/logbook/logbook.component').then(m => m.LogbookComponent)
+      },
+      {
+        path: ':prefix/:call',
+        loadComponent: () => import('./components/logbook/logbook.component').then(m => m.LogbookComponent)
+      },
+      {
         path: ':call',
         loadComponent: () => import('./components/logbook/logbook.component').then(m => m.LogbookComponent)
       },

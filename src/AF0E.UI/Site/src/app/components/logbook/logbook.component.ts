@@ -75,7 +75,13 @@ export class LogbookComponent implements OnInit{
     this.onDateRangeFocus(false);
 
     const sub = this._activatedRoute.paramMap.subscribe({
-      next: (x) => {this._call =  x.get('call'); this.onCallChange(this._call);}
+      next: (x) => {
+        let prefix = x.get('prefix') ? x.get('prefix') + '/' : '';
+        let call = x.get('call');
+        let suffix = x.get('suffix') ? '/' + x.get('suffix') : '';
+        this._call = call ? `${prefix}${call}${suffix}` : null;
+        this.onCallChange(this._call);
+      }
     });
 
     this._destroyRef.onDestroy(() => sub.unsubscribe());
