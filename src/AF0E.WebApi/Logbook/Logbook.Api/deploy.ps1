@@ -25,7 +25,9 @@ foreach ($siteName in $webSites)
 }
 
 Remove-PSSession -Session $session
-Start-Sleep -Seconds 2
+#Start-Sleep -Seconds 2
+Read-Host -Prompt "Web site stopped. Press any key to continue..."
+
 $session = New-PSSession -ComputerName $serverName
 
 foreach ($siteName in $webSites)
