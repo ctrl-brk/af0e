@@ -29,6 +29,23 @@ var host = new HostBuilder()
                         options.ConnectionString = Environment.GetEnvironmentVariable("AppInsightsConnectionString");
                     });
             });
+
+        services.AddLogging(logging =>
+        {
+            logging.ClearProviders();
+            logging.AddOpenTelemetry(options =>
+            {
+                options.IncludeFormattedMessage = true;
+                options.IncludeScopes = true;
+                options.ParseStateValues = true;
+
+                options.AddAzureMonitorLogExporter(o =>
+                {
+                    o.ConnectionString = Environment.GetEnvironmentVariable("AppInsightsConnectionString");
+                });
+            });
+        });
+
         services.AddHttpClient();
     })
 
