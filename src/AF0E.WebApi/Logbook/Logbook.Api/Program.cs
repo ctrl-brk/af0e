@@ -1,5 +1,7 @@
+using System.Net;
 using System.Text.Json.Serialization;
 using AF0E.DB;
+using AF0E.DB.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite;
@@ -26,11 +28,17 @@ if (app.Environment.IsDevelopment())
 
 //app.UseHttpsRedirection();
 
-app.MapGet("/api/v1/logbook/lookup/{call}", (string call, HrdDbContext dbContext) =>
-    dbContext.Log.Where(x => x.ColCall == call).OrderByDescending(x => x.ColTimeOn).ToListAsync()
-)
-.WithName("LookupCall")
-.WithOpenApi();
+app.MapGet("/api/v1/logbook/lookup/{call}", (string call, HrdDbContext dbContext) => GetLogByCall(WebUtility.UrlDecode(call), dbContext).ToListAsync())
+    .WithName("LookupCall1")
+    .WithOpenApi();
+
+app.MapGet("/api/v1/logbook/lookup/{prefix}/{call}", (string prefix, string call, HrdDbContext dbContext) => GetLogByCall($"{WebUtility.UrlDecode(prefix)}/{WebUtility.UrlDecode(call)}", dbContext).ToListAsync())
+    .WithName("LookupCall2")
+    .WithOpenApi();
+
+app.MapGet("/api/v1/logbook/lookup/{prefix}/{call}/{suffix}", (string prefix, string call, string suffix, HrdDbContext dbContext) => GetLogByCall($"{WebUtility.UrlDecode(prefix)}/{WebUtility.UrlDecode(call)}/{WebUtility.UrlDecode(suffix)}", dbContext).ToListAsync())
+    .WithName("LookupCall3")
+    .WithOpenApi();
 
 app.MapGet("/api/v1/logbook/partial-lookup/{call}", async (string call, [FromQuery(Name = "max-results")] int? maxResults, HrdDbContext dbContext) =>
     {
@@ -44,7 +52,7 @@ app.MapGet("/api/v1/logbook/partial-lookup/{call}", async (string call, [FromQue
                                                     select distinct top({maxResults}) COL_CALL
                                                       from (select top({maxResults * 5}) col_call
                                                               from TABLE_HRD_CONTACTS_V01
-                                                             where COL_CALL like {call + "%"}
+                                                             where COL_CALL like {WebUtility.UrlDecode(call) + "%"}
                                                              order by COL_TIME_ON desc) as a
                                                     """).ToListAsync();
     })
@@ -59,6 +67,8 @@ app.MapGet("/api/v1/logbook/{call?}", async (string? call, int? skip, int? take,
 
             skip ??= 0;
             if (take is null or > MAX_PAGE_SIZE) take = DEFAULT_PAGE_SIZE;
+
+            call = WebUtility.UrlDecode(call);
 
 #pragma warning disable CA1305
             var countQuery = begin is null || end is null ?
@@ -158,7 +168,7 @@ app.MapGet("/api/v1/pota/activations", (HrdDbContext dbContext) =>
                 x.PotaContacts.Count,
                 CwCount = x.PotaContacts.Count(c => c.Log.ColMode == "CW"),
                 DigiCount = x.PotaContacts.Count(c => c.Log.ColMode == "FT8" || c.Log.ColMode == "MFSK"),
-                PhoneCount = x.PotaContacts.Count(c => c.Log.ColMode == "SSB" || c.Log.ColMode == "LSB" || c.Log.ColMode == "USB"),
+                PhoneCount = x.PotaContacts.Count(c => c.Log.ColMode == "SSB" || c.Log.ColMode == "LSB" || c.Log.ColMode == "USB" || c.Log.ColMode == "FM" || c.Log.ColMode == "AM"),
             }).ToListAsync()
     )
     .WithName("PotaActivations")
@@ -191,7 +201,7 @@ app.MapGet("/api/v1/pota/activations/{id:int}", async (int id, HrdDbContext dbCo
                 res.PotaContacts.Count,
                 CwCount = res.PotaContacts.Count(c => c.Log.ColMode is "CW"),
                 DigiCount = res.PotaContacts.Count(c => c.Log.ColMode is "FT8" or "MFSK"),
-                PhoneCount = res.PotaContacts.Count(c => c.Log.ColMode is "SSB" or "LSB" or "USB"),
+                PhoneCount = res.PotaContacts.Count(c => c.Log.ColMode is "SSB" or "LSB" or "USB" or "FM" or "AM"),
                 P2pCount = res.PotaContacts.Count(c => c.P2P != null),
             });
     })
@@ -405,26 +415,39 @@ app.MapGet("/api/v1/pota/geojson/parks/not-activated/boundary", async (double sw
     .WithName("GeoJsonSpatialParks")
     .WithOpenApi();
 
-app.MapGet("/api/v1/logbook/gridtracker/{call}", (string call, HrdDbContext dbContext) =>
-        dbContext.Log
-            .Where(x => x.ColCall == call)
-            .OrderByDescending(x => x.ColTimeOn)
-            .Select(x => new
-            {
-                x.ColTimeOn,
-                x.ColMode,
-                x.ColBand,
-                x.ColComment,
-                x.ColQslsdate,
-                x.ColQslSentVia,
-                x.ColQslRcvd,
-                x.ColLotwQslRcvd
-            }).ToListAsync()
-    )
-    .WithName("GridtrackerLookup")
+app.MapGet("/api/v1/logbook/gridtracker/{call}", (string call, HrdDbContext dbContext) => GetGridTrackerLog(WebUtility.UrlDecode(call), dbContext).ToListAsync())
+    .WithName("GridtrackerLookup1")
+    .WithOpenApi();
+
+app.MapGet("/api/v1/logbook/gridtracker/{prefix}/{call}", (string prefix, string call, HrdDbContext dbContext) => GetGridTrackerLog($"{WebUtility.UrlDecode(prefix)}/{WebUtility.UrlDecode(call)}", dbContext).ToListAsync())
+    .WithName("GridtrackerLookup2")
+    .WithOpenApi();
+
+app.MapGet("/api/v1/logbook/gridtracker/{prefix}/{call}/{suffix}", (string prefix, string call, string suffix, HrdDbContext dbContext) =>
+        GetGridTrackerLog($"{WebUtility.UrlDecode(prefix)}/{WebUtility.UrlDecode(call)}/{WebUtility.UrlDecode(suffix)}", dbContext)
+            .ToListAsync())
+    .WithName("GridtrackerLookup3")
     .WithOpenApi();
 
 //---------------
 
 app.MapFallbackToFile("/index.html");
 app.Run();
+return;
+
+//---------------
+
+IQueryable<HrdLog> GetLogByCall(string call, HrdDbContext dbContext)
+{
+    return dbContext.Log.Where(x => x.ColCall == WebUtility.UrlDecode(call)).OrderByDescending(x => x.ColTimeOn);
+}
+
+IQueryable<GridTrackerLookupResult> GetGridTrackerLog(string call, HrdDbContext dbContext)
+{
+    return dbContext.Log
+        .Where(x => EF.Functions.Like(x.ColCall, call))
+        .OrderByDescending(x => x.ColTimeOn)
+        .Select(x => new GridTrackerLookupResult(x.ColCall, x.ColTimeOn, x.ColMode, x.ColBand, x.ColComment, x.ColQslsdate, x.ColQslSentVia, x.ColQslRcvd, x.ColLotwQslRcvd));
+}
+
+internal record GridTrackerLookupResult(string ColCall, DateTime? ColTimeOn, string? ColMode, string? ColBand, string? ColComment, DateTime? ColQslsdate, string? ColQslSentVia, string? ColQslRcvd, string? ColLotwQslRcvd);

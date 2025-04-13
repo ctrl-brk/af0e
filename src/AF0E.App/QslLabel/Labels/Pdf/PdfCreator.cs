@@ -138,7 +138,7 @@ internal static class PdfCreator
             if (printDeliveryMethod && !string.IsNullOrEmpty(label.Delivery) && (label.Delivery == "B" || label.Delivery == "D")) //buro or direct
             {
                 curX = startX + 262; curY = startY + 2;
-                Draw(label.Delivery == "B" ? "A" : "i", _symbolsFont);
+                Draw(label.Delivery == "B" ? "A" : "i", _symbolsFont); // up/down smiling faces
             }
 
             curX = startX; curY = startY + 13;

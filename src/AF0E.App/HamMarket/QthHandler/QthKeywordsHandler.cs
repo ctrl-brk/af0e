@@ -3,7 +3,7 @@ namespace HamMarket;
 
 public partial class QthHandler
 {
-    public async Task<ScanResult> ProcessKeywordsAsync(HttpClient httpClient, CookieContainer cookies, CancellationToken token)
+    public async Task<ScanResult?> ProcessKeywordsAsync(HttpClient httpClient, CookieContainer? cookies, CancellationToken token)
     {
         if (_settings.QthCom.KeywordSearch.MaxPosts <= 0) return null;
 
@@ -17,8 +17,8 @@ public partial class QthHandler
 
         if (File.Exists(_settings.QthCom.KeywordSearch.ResultFile))
         {
-            _lastKeywordScan = JsonConvert.DeserializeObject<ScanInfo>(await File.ReadAllTextAsync(_settings.QthCom.KeywordSearch.ResultFile, token));
-            _lastKeywordScan.OtherIds = new List<int>();
+            _lastKeywordScan = JsonConvert.DeserializeObject<ScanInfo>(await File.ReadAllTextAsync(_settings.QthCom.KeywordSearch.ResultFile, token))!;
+            _lastKeywordScan.OtherIds = [];
         }
 
         while (postNum < _settings.QthCom.KeywordSearch.MaxPosts)
@@ -30,11 +30,10 @@ public partial class QthHandler
 
             if (startIndex > 0)
             {
-                formData.AddRange(new[]
-                {
+                formData.AddRange([
                     new KeyValuePair<string, string>("startnum", startIndex.ToString()),
                     new KeyValuePair<string, string>("submit", "Next 10 Ads")
-                });
+                ]);
             }
 
             using var content = new FormUrlEncodedContent(formData);
@@ -48,7 +47,7 @@ public partial class QthHandler
 
             if (await ScanResults(msg, ScanType.Keyword, httpClient))
                 continue;
-            
+
             _logger.LogDebug("No results found");
             break;
         }

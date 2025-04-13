@@ -6,6 +6,7 @@ import {QsoComponent} from '../../qso/qso.component';
 import {TableModule} from 'primeng/table';
 import {Tag} from 'primeng/tag';
 import {ActivationQsoModel} from '../../../models/activation-qso.model';
+import {ModeSeverityPipe, QsoModePipe} from '../../../shared/pipes';
 
 @Component({
   selector: 'app-activation-log',
@@ -19,6 +20,8 @@ import {ActivationQsoModel} from '../../../models/activation-qso.model';
     QsoComponent,
     TableModule,
     Tag,
+    ModeSeverityPipe,
+    QsoModePipe,
   ],
 })
 export class PotaActivationLogComponent {
@@ -27,37 +30,6 @@ export class PotaActivationLogComponent {
   protected qsoDetailsVisible = false;
 
   logEntries = input.required<ActivationQsoModel[]>();
-
-  getMode(mode: string) {
-    switch (mode) {
-      case 'USB':
-      case 'LSB':
-        return 'SSB';
-
-      case 'MFSK':
-        return 'FT4';
-    }
-    return mode;
-  }
-
-  getModeSeverity(mode: string) {
-    switch (mode) {
-      case 'CW':
-        return 'success';
-
-      case 'SSB':
-      case 'LSB':
-      case 'USB':
-        return 'info';
-
-      case 'FT8':
-      case 'MFSK':
-      case 'PSK31':
-      case 'JT65':
-        return 'warn';
-    }
-    return 'secondary';
-  }
 
   onQsoSelect(qso: ActivationQsoModel) {
     if (qso.date > new Date(Date.UTC(2011, 0, 6)))

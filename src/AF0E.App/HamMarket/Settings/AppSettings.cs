@@ -1,7 +1,11 @@
-﻿// ReSharper disable ClassNeverInstantiated.Global
+﻿
+
+// ReSharper disable ClassNeverInstantiated.Global
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 // ReSharper disable UnusedMember.Global
-namespace HamMarket;
+namespace HamMarket.Settings;
+
+using System.ComponentModel.DataAnnotations;
 
 public class SmtpSettings
 {
@@ -74,11 +78,12 @@ public class EhamNet
     public string Title { get; set; } = null!;
     public KeywordSearch KeywordSearch { get; set; } = null!;
     public CategorySearch CategorySearch { get; set; } = null!;
-    public Cache Cache { get; set; } = null!;
+    public Cache? Cache { get; set; }
 }
 
 public class AppSettings
 {
+    [Required]
     public EmailSettings Email { get; set; } = null!;
     /// <summary>
     /// Where to put assets (ex: shared web folder)

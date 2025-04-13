@@ -28,7 +28,7 @@
       <td>{{ qso.date | date:'yy-MM-dd hh:mm' }}</td>
       <td>{{ qso.call }}</td>
       <td>{{ qso.band }}</td>
-      <td><p-tag [value]="getMode(qso.mode)" [severity]="getModeSeverity(qso.mode)" /></td>
+      <td><p-tag [value]="qso.mode|qsoMode" [severity]="qso.mode|modeSeverity" /></td>
       <td>
         @if (qso.p2p.length > 0) {
           @for (p of qso.p2p; track p; let i = $index) {

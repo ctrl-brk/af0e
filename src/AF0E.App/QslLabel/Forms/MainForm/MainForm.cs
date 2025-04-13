@@ -188,7 +188,8 @@ internal sealed partial class MainForm : Form
                 selectionChanged = true;
 
                 var call = row.Cells[callIdx].Value!.ToString();
-                while (idx < gridLog.Rows.Count && gridLog.Rows[++idx].Cells[callIdx].Value!.ToString() == call)
+                idx++;
+                while (idx < gridLog.Rows.Count && gridLog.Rows[idx].Cells[callIdx].Value!.ToString() == call)
                 {
                     gridLog.Rows[idx].Selected = true;
                 }

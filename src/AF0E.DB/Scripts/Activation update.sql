@@ -9,11 +9,17 @@ create table #tmp (id int, call varchar(32))
 declare @parkId int, @parkNum varchar(64), @grid varchar(10), @city nvarchar(100), @county nvarchar(200), @state char(2)
 declare @startDate varchar(20), @endDate varchar(20), @submitDate varchar(20)
 declare @lat decimal(10,6), @long decimal(10,6)
-select @parkId = 168, @parkNum = 'US-0225', @grid = 'DN79jv', @city = null, @county = 'Jefferson', @state = 'CO', @lat = 39.911110, @long = -105.183235 -- US-0225 (Rocky Flats NWR)
---select @parkId = 11269, @grid = 'DM70ja', @city = 'Boulder', @county = 'Boulder', @state = 'CO', @lat = 40.039693, @long = -105.184286 -- US-9669 (Sawhill Ponds SWA)
+--select @parkId = 168,   @parkNum = 'US-0225',  @grid = 'DM79jv', @city = null,        @county = 'Jefferson', @state = 'CO', @lat = 39.911110, @long = -105.183235 -- US-0225 (Rocky Flats NWR)
+--select @parkId = 169,   @parkNum = 'US-0226',  @grid = 'DM79nu', @city = null,        @county = 'Adams',     @state = 'CO', @lat = 39.813758, @long = -104.860711 -- US-0226 (Rocky Mountains Arsenal NWR)
+--select @parkId = 170,   @parkNum = 'US-0227',  @grid = 'DM79ku', @city = 'Arvada',    @county = 'Jefferson', @state = 'CO', @lat = 39.841670, @long = -105.102664 -- US-0227 (Two Ponds NWR)
+--select @parkId = 2994,  @parkNum = 'US-1211',  @grid = 'DM79pi', @city = 'Franktown', @county = 'Douglas',   @state = 'CO', @lat = 39.333209, @long = -104.744105 -- US-1211 (Castlewood Canyon SP)
+--select @parkId = 2995,  @parkNum = 'US-1212',  @grid = 'DM79lm', @city = null,        @county = 'Jefferson', @state = 'CO', @lat = 39.519166, @long = -105.081798 -- US-1212 (Chatfield SP)
+--select @parkId = 4192,  @parkNum = 'US-1241',  @grid = 'DN70me', @city = 'Longmont',  @county = 'Weld',      @state = 'CO', @lat = 40.170502, @long = -104.985152 -- US-1241 (St. Vrain SP)
+--select @parkId = 11269, @parkNum = 'US-9669',  @grid = 'DM70ja', @city = 'Boulder',   @county = 'Boulder',   @state = 'CO', @lat = 40.039693, @long = -105.184286 -- US-9669 (Sawhill Ponds SWA)
 
--- MAKE SURE ALL THREE ARE CORRECT!
-select @startDate = '2025-02-09', @endDate = '2025-02-09 00:37', @submitDate = '2025-02-09 07:01'
+
+-- MAKE SURE ALL THREE ARE CORRECT and include minutes!
+select @startDate = '2025-03-14 21:25', @endDate = '2025-03-14 22:31', @submitDate = '2025-03-15 04:30'
 
 insert into #tmp select COL_PRIMARY_KEY, COL_CALL from [HamLog].[dbo].[TABLE_HRD_CONTACTS_V01] where COL_TIME_ON between @startDate and @endDate
 

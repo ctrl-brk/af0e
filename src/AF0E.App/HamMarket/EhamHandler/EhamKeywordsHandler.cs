@@ -3,7 +3,7 @@ namespace HamMarket;
 
 public partial class EhamHandler
 {
-    public async Task<ScanResult> ProcessKeywordsAsync(HttpClient httpClient, CookieContainer cookies, CancellationToken token)
+    public async Task<ScanResult?> ProcessKeywordsAsync(HttpClient httpClient, CookieContainer? cookies, CancellationToken token)
     {
         _thisScan = new ScanInfo { Ids = [], OtherIds = [] };
         _newPosts = [];
@@ -16,7 +16,7 @@ public partial class EhamHandler
 
         if (File.Exists(_settings.EhamNet.KeywordSearch.ResultFile))
         {
-            _lastKeywordScan = JsonConvert.DeserializeObject<ScanInfo>(await File.ReadAllTextAsync(_settings.EhamNet.KeywordSearch.ResultFile, token));
+            _lastKeywordScan = JsonConvert.DeserializeObject<ScanInfo>(await File.ReadAllTextAsync(_settings.EhamNet.KeywordSearch.ResultFile, token))!;
             _lastKeywordScan.OtherIds = [];
         }
 
