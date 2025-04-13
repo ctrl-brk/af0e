@@ -16,8 +16,11 @@ public sealed class LoadSavedDataActivity
     }
     */
 
+
+#pragma warning disable CA1822 //Member 'Run' does not access instance data and can be marked as static
     [Function(ActivityName)]
     public async Task<List<DxInfo>> Run([ActivityTrigger] Tuple<DateTime, DateTime> dateRange)
+#pragma warning restore CA1822
     {
         var svcClient = new TableServiceClient(Environment.GetEnvironmentVariable("AzureTableStorage"));
         var tblClient = svcClient.GetTableClient("DxInfo");
