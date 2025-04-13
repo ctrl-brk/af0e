@@ -6,11 +6,17 @@
     }
   },
   "logging": {
+    "logLevel": {
+      "DurableTask.AzureStorage": "Warning",
+      "DurableTask.Core": "Warning"
+    },
     "applicationInsights": {
       "samplingSettings": {
         "isEnabled": true,
         "excludedTypes": "Request"
-      }
+      },
+      "enableLiveMetricsFilters": true
     }
-  }
+  },
+  "telemetryMode": "OpenTelemetry"
 }

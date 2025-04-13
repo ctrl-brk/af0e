@@ -2,6 +2,7 @@
 
 namespace AF0E.Functions.DX.Activities;
 
+#pragma warning disable CA1812 //Avoid uninstantiated internal classes
 internal sealed class Va3RjActivity(ILoggerFactory loggerFactory, IHttpClientFactory httpClientFactory)
 {
     public const string ActivityName = nameof(Va3RjActivity);
@@ -67,15 +68,9 @@ internal sealed class Va3RjActivity(ILoggerFactory loggerFactory, IHttpClientFac
             if (beginDate is null)
                 continue;
 
-            var endDateSet = false;
             startIdx = cells[5].IndexOf('>');
 
-            var endDate = ParseDate(cells[5][(startIdx + 1)..], out endDateSet);
-
-            if (endDate is null)
-            {
-                endDate = DateTime.Now.AddMonths(1);
-            }
+            var endDate = ParseDate(cells[5][(startIdx + 1)..], out var endDateSet) ?? DateTime.Now.AddMonths(1);
 
             if (endDate > DateTime.Now.AddMonths(1))
             {
@@ -90,7 +85,7 @@ internal sealed class Va3RjActivity(ILoggerFactory loggerFactory, IHttpClientFac
             {
                 BeginDate = beginDate.Value,
                 BeginDateSet = beginDateSet,
-                EndDate = endDate.Value,
+                EndDate = endDate,
                 EndDateSet = endDateSet,
                 DXCC = dxcc,
                 IOTA = iota,
@@ -138,25 +133,23 @@ internal sealed class Va3RjActivity(ILoggerFactory loggerFactory, IHttpClientFac
         }
 
         if (month > 12)
+            (month, day) = (day, month);
+
+        switch (month)
         {
-            var tmp = month;
-            month = day;
-            day = tmp;
+            case > 12:
+                _logger.LogDateError(DxInfoSource.VA3RJ, dateStr);
+                return null;
+            case 4 or 6 or 9 or 11 when day > 30:
+                day = 30;
+                break;
+            case 2 when year % 4 == 0 && day > 29:
+                day = 29;
+                break;
+            case 2 when day > 28:
+                day = 28;
+                break;
         }
-
-        if (month > 12)
-        {
-            _logger.LogDateError(DxInfoSource.VA3RJ, dateStr);
-            return null;
-        }
-
-        if ((month is 4 or 6 or 9 or 11) && day > 30)
-            day = 30;
-
-        if (month == 2 && year % 4 == 0 && day > 29)
-            day = 29;
-        else if (month == 2 && day > 28)
-            day = 28;
 
         return new DateTime(year, month, day);
     }
