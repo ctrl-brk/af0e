@@ -16,10 +16,11 @@ declare @lat decimal(10,6), @long decimal(10,6)
 --select @parkId = 2995,  @parkNum = 'US-1212',  @grid = 'DM79lm', @city = null,        @county = 'Jefferson', @state = 'CO', @lat = 39.519166, @long = -105.081798 -- US-1212 (Chatfield SP)
 --select @parkId = 4192,  @parkNum = 'US-1241',  @grid = 'DN70me', @city = 'Longmont',  @county = 'Weld',      @state = 'CO', @lat = 40.170502, @long = -104.985152 -- US-1241 (St. Vrain SP)
 --select @parkId = 11269, @parkNum = 'US-9669',  @grid = 'DM70ja', @city = 'Boulder',   @county = 'Boulder',   @state = 'CO', @lat = 40.039693, @long = -105.184286 -- US-9669 (Sawhill Ponds SWA)
+--select @parkId = 6153, @parkNum = 'US-4400',  @grid = 'DM79gu', @city = null,   @county = 'Gilpin',   @state = 'CO', @lat = 39.842408, @long = -105.495729 -- US-4400 (Arapaho NF - Cold Springs Campground)
 
 																									   
 -- MAKE SURE ALL THREE ARE CORRECT and include minutes!
-select @startDate = '2025-03-14 21:25', @endDate = '2025-03-14 22:31', @submitDate = '2025-03-15 04:30'
+select @startDate = '2025-06-01 00:20', @endDate = '2025-06-01 06:18', @submitDate = '2025-06-02 01:03'
 
 insert into #tmp select COL_PRIMARY_KEY, COL_CALL from [HamLog].[dbo].[TABLE_HRD_CONTACTS_V01] where COL_TIME_ON between @startDate and @endDate
 
@@ -86,7 +87,7 @@ update TABLE_HRD_CONTACTS_V01 set COL_COMMENT = 'POTA activation US-9669(Sawhill
 update TABLE_HRD_CONTACTS_V01 set COL_USER_DEFINED_9 = 'Y' where COL_PRIMARY_KEY in (select id from #tmp)
 update TABLE_HRD_CONTACTS_V01 set COL_USER_DEFINED_9 = 'Y' where COL_PRIMARY_KEY in (select logid from PotaContacts where ActivationId between 30 and 33)
 
-select * from PotaParks where ParkNum = 'US-0226'
+select * from PotaParks where ParkNum = 'US-4400'
 
 -- US-0225: 168, 'DM79jv', 'Jefferson', 'CO', 39.911110, -105.183235
 -- 0227: 170, 'DM79ku', 'Jefferson', 'CO'

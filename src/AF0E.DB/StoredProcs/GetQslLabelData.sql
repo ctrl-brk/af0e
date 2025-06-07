@@ -66,8 +66,8 @@ select l.COL_PRIMARY_KEY as ID
 	  ,l.COL_BAND as Band
 	  ,isnull(pota.Parks, '') as Parks
 	  ,l.COL_SAT_NAME as Sat
-	  ,l.COL_QSL_SENT as sQSL
-      ,isnull(l.COL_QSL_SENT_VIA, '') as QslDeliveryMethod
+	  ,upper(l.COL_QSL_SENT) as sQSL
+      ,upper(isnull(l.COL_QSL_SENT_VIA, '')) as QslDeliveryMethod
       ,isnull(l.COL_QSL_VIA, '') as QrzQslInfo
 	  ,isnull(l.COL_USER_DEFINED_1, '') as QslMgrCall
       ,isnull(l.COL_USER_DEFINED_0, '') as SiteComment
