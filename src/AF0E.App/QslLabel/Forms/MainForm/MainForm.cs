@@ -191,7 +191,7 @@ internal sealed partial class MainForm : Form
                 idx++;
                 while (idx < gridLog.Rows.Count && gridLog.Rows[idx].Cells[callIdx].Value!.ToString() == call)
                 {
-                    gridLog.Rows[idx].Selected = true;
+                    gridLog.Rows[idx++].Selected = true;
                 }
             }
             else
@@ -612,7 +612,7 @@ internal sealed partial class MainForm : Form
     private void ApplyDeliveryToSiblings(int rowIdx, int colIdx, string value, int step)
     {
         var callIdx = gridLog.Columns[CallColName]!.Index;
-        var call =  gridLog.Rows[rowIdx].Cells[callIdx].Value!.ToString();
+        var call = gridLog.Rows[rowIdx].Cells[callIdx].Value!.ToString();
 
         rowIdx += step;
 
