@@ -8,7 +8,6 @@ import {NotificationService} from '../../shared/notification.service';
 import {LogService} from '../../shared/log.service';
 import {DatePipe} from '@angular/common';
 import {TagModule} from 'primeng/tag';
-import {CalendarModule} from 'primeng/calendar';
 import {FormsModule} from '@angular/forms';
 import {FloatLabelModule} from 'primeng/floatlabel';
 import {NotificationMessageModel, NotificationMessageSeverity} from '../../shared/notification-message.model';
@@ -29,7 +28,6 @@ import {ModeSeverityPipe, QsoModePipe} from '../../shared/pipes';
   encapsulation: ViewEncapsulation.None,
   imports: [
     Button,
-    CalendarModule,
     DatePickerModule,
     DatePipe,
     DialogModule,
