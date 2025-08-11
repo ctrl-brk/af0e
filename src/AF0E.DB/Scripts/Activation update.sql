@@ -9,18 +9,34 @@ create table #tmp (id int, call varchar(32))
 declare @parkId int, @parkNum varchar(64), @grid varchar(10), @city nvarchar(100), @county nvarchar(200), @state char(2)
 declare @startDate varchar(20), @endDate varchar(20), @submitDate varchar(20)
 declare @lat decimal(10,6), @long decimal(10,6)
---select @parkId = 168,   @parkNum = 'US-0225',  @grid = 'DM79jv', @city = null,        @county = 'Jefferson', @state = 'CO', @lat = 39.911110, @long = -105.183235 -- US-0225 (Rocky Flats NWR)
---select @parkId = 169,   @parkNum = 'US-0226',  @grid = 'DM79nu', @city = null,        @county = 'Adams',     @state = 'CO', @lat = 39.813758, @long = -104.860711 -- US-0226 (Rocky Mountains Arsenal NWR)
---select @parkId = 170,   @parkNum = 'US-0227',  @grid = 'DM79ku', @city = 'Arvada',    @county = 'Jefferson', @state = 'CO', @lat = 39.841670, @long = -105.102664 -- US-0227 (Two Ponds NWR)
---select @parkId = 2994,  @parkNum = 'US-1211',  @grid = 'DM79pi', @city = 'Franktown', @county = 'Douglas',   @state = 'CO', @lat = 39.333209, @long = -104.744105 -- US-1211 (Castlewood Canyon SP)
---select @parkId = 2995,  @parkNum = 'US-1212',  @grid = 'DM79lm', @city = null,        @county = 'Jefferson', @state = 'CO', @lat = 39.519166, @long = -105.081798 -- US-1212 (Chatfield SP)
---select @parkId = 4192,  @parkNum = 'US-1241',  @grid = 'DN70me', @city = 'Longmont',  @county = 'Weld',      @state = 'CO', @lat = 40.170502, @long = -104.985152 -- US-1241 (St. Vrain SP)
---select @parkId = 11269, @parkNum = 'US-9669',  @grid = 'DM70ja', @city = 'Boulder',   @county = 'Boulder',   @state = 'CO', @lat = 40.039693, @long = -105.184286 -- US-9669 (Sawhill Ponds SWA)
---select @parkId = 6153, @parkNum = 'US-4400',  @grid = 'DM79gu', @city = null,   @county = 'Gilpin',   @state = 'CO', @lat = 39.842408, @long = -105.495729 -- US-4400 (Arapaho NF - Cold Springs Campground)
+--select @parkId = 168,   @parkNum = 'US-0225',  @grid = 'DM79jv', @city = null,         @county = 'Jefferson', @state = 'CO', @lat = 39.911110, @long = -105.183235 -- US-0225 (Rocky Flats NWR)
+--select @parkId = 169,   @parkNum = 'US-0226',  @grid = 'DM79nu', @city = null,         @county = 'Adams',     @state = 'CO', @lat = 39.813758, @long = -104.860711 -- US-0226 (Rocky Mountains Arsenal NWR)
+--select @parkId = 170,   @parkNum = 'US-0227',  @grid = 'DM79ku', @city = 'Arvada',     @county = 'Jefferson', @state = 'CO', @lat = 39.841670, @long = -105.102664 -- US-0227 (Two Ponds NWR)
+--select @parkId = 2994,  @parkNum = 'US-1211',  @grid = 'DM79pi', @city = 'Franktown',  @county = 'Douglas',   @state = 'CO', @lat = 39.333209, @long = -104.744105 -- US-1211 (Castlewood Canyon SP)
+--select @parkId = 2995,  @parkNum = 'US-1212',  @grid = 'DM79lm', @city = null,         @county = 'Jefferson', @state = 'CO', @lat = 39.519166, @long = -105.081798 -- US-1212 (Chatfield SP)
+--select @parkId = 4192,  @parkNum = 'US-1241',  @grid = 'DN70me', @city = 'Longmont',   @county = 'Weld',      @state = 'CO', @lat = 40.170502, @long = -104.985152 -- US-1241 (St. Vrain SP)
+--select @parkId = 11269, @parkNum = 'US-9669',  @grid = 'DM70ja', @city = 'Boulder',    @county = 'Boulder',   @state = 'CO', @lat = 40.039693, @long = -105.184286 -- US-9669 (Sawhill Ponds SWA)
+--select @parkId = 6153,  @parkNum = 'US-4400',  @grid = 'DM79gu', @city = null,         @county = 'Gilpin',    @state = 'CO', @lat = 39.842408, @long = -105.495729 -- US-4400 (Arapaho NF - Cold Springs CG)
+--select @parkId = 3026,  @parkNum = 'US-1244',  @grid = 'DM79hl', @city = null,         @county = 'Jefferson', @state = 'CO', @lat = 39.494522, @long = -105.380843 -- US-1244 (Staunton SP)
+--select @parkId = 2877,  @parkNum = 'US-11895', @grid = 'DM79ef', @city = null,         @county = 'Park',      @state = 'CO', @lat = 39.222075, @long = -105.603500 -- US-11895 (Tarryall Reservoir SWA)
+--select @parkId = 11728, @parkNum = 'US-12170', @grid = 'DM79bj', @city = null,         @county = 'Park',      @state = 'CO', @lat = 39.378275, @long = -105.847921 -- US-12170 (Teter-Michigan Creek SWA)
+--select @parkId = 11697, @parkNum = 'US-12139', @grid = 'DM79bh', @city = null,         @county = 'Park',      @state = 'CO', @lat = 39.334618, @long = -105.869179 -- US-12139 (Cline Ranch SWA)
+--select @parkId = 11729, @parkNum = 'US-12171', @grid = 'DM79bc', @city = null,         @county = 'Park',      @state = 'CO', @lat = 39.076476, @long = -105.858825 -- US-12171 (Tomahawk SWA)
+--select @parkId = 11698, @parkNum = 'US-12140', @grid = 'DM79da', @city = null,         @county = 'Park',      @state = 'CO', @lat = 39.014228, @long = -105.730110 -- US-12140 (Spinney Mountain SWA)
+--select @parkId = 11696, @parkNum = 'US-12138', @grid = 'DM78ex', @city = null,         @county = 'Park',      @state = 'CO', @lat = 38.965340, @long = -105.597257 -- US-12138 (Charlie Meyers SWA)
+--select @parkId = 3012,  @parkNum = 'US-1230',  @grid = 'DM78kv', @city = null,         @county = 'Teller',    @state = 'CO', @lat = 38.891478, @long = -105.181292 -- US-1230 (Mueller SP)
+--select @parkId = 6157,  @parkNum = 'US-4404',  @grid = 'DM79kb', @city = null,         @county = 'Teller',    @state = 'CO', @lat = 39.063954, @long = -105.095754 -- US-4404 (Pike NF)
+--select @parkId = 11663, @parkNum = 'US-12106', @grid = 'DN70fb', @city = null,         @county = 'Boulder',   @state = 'CO', @lat = 40.078216, @long = -105.571317 -- US-12106 (Brainard Lake)
+--select @parkId = 6159,  @parkNum = 'US-4406',  @grid = 'DN70fb', @city = null,         @county = 'Boulder',   @state = 'CO', @lat = 40.078216, @long = -105.571317 -- US-4406 (Roosevelt NF - Brainard Lake)
+select @parkId = 6159,  @parkNum = 'US-4406',  @grid = 'DN70hq', @city = null,         @county = 'Larimer',   @state = 'CO', @lat = 40.683447, @long = -105.397615 -- US-4406 (Roosevelt NF - Stove Prairie CG)
+--select @parkId = 11739, @parkNum = 'US-12181', @grid = 'DN70rb', @city = 'Keenesburg', @county = 'Weld',      @state = 'CO', @lat = 40.073021, @long = -104.555451 -- US-12181 (Banner Lakes SWA)
+--select @parkId = 11746, @parkNum = 'US-12188', @grid = 'DN80ef', @city = null,         @county = 'Morgan',    @state = 'CO', @lat = 40.218628, @long = -103.623280 -- US-12188 (Brush Prairie Ponds SWA)
+--select @parkId = 3005, @parkNum = 'US-1222', @grid = 'DN70wj', @city = null,         @county = 'Morgan',    @state = 'CO', @lat = 40.381658, @long = -104.089411 -- US-1222 (Jackson Lake SP)
+--select @parkId = 6163, @parkNum = 'US-4410', @grid = 'DM69uu', @city = null,         @county = 'Summit',    @state = 'CO', @lat = 39.873072, @long = -106.283051 -- US-4410 (White River NF)
 
-																									   
+
 -- MAKE SURE ALL THREE ARE CORRECT and include minutes!
-select @startDate = '2025-06-01 00:20', @endDate = '2025-06-01 06:18', @submitDate = '2025-06-02 01:03'
+select @startDate = '2025-07-20 00:00', @endDate = '2025-07-20 06:40', @submitDate = '2025-07-22 01:59'
 
 insert into #tmp select COL_PRIMARY_KEY, COL_CALL from [HamLog].[dbo].[TABLE_HRD_CONTACTS_V01] where COL_TIME_ON between @startDate and @endDate
 
@@ -87,7 +103,7 @@ update TABLE_HRD_CONTACTS_V01 set COL_COMMENT = 'POTA activation US-9669(Sawhill
 update TABLE_HRD_CONTACTS_V01 set COL_USER_DEFINED_9 = 'Y' where COL_PRIMARY_KEY in (select id from #tmp)
 update TABLE_HRD_CONTACTS_V01 set COL_USER_DEFINED_9 = 'Y' where COL_PRIMARY_KEY in (select logid from PotaContacts where ActivationId between 30 and 33)
 
-select * from PotaParks where ParkNum = 'US-4400'
+select * from PotaParks where ParkNum = 'US-4410'
 
 -- US-0225: 168, 'DM79jv', 'Jefferson', 'CO', 39.911110, -105.183235
 -- 0227: 170, 'DM79ku', 'Jefferson', 'CO'
