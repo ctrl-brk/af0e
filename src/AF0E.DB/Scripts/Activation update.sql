@@ -28,15 +28,21 @@ declare @lat decimal(10,6), @long decimal(10,6)
 --select @parkId = 6157,  @parkNum = 'US-4404',  @grid = 'DM79kb', @city = null,         @county = 'Teller',    @state = 'CO', @lat = 39.063954, @long = -105.095754 -- US-4404 (Pike NF)
 --select @parkId = 11663, @parkNum = 'US-12106', @grid = 'DN70fb', @city = null,         @county = 'Boulder',   @state = 'CO', @lat = 40.078216, @long = -105.571317 -- US-12106 (Brainard Lake)
 --select @parkId = 6159,  @parkNum = 'US-4406',  @grid = 'DN70fb', @city = null,         @county = 'Boulder',   @state = 'CO', @lat = 40.078216, @long = -105.571317 -- US-4406 (Roosevelt NF - Brainard Lake)
-select @parkId = 6159,  @parkNum = 'US-4406',  @grid = 'DN70hq', @city = null,         @county = 'Larimer',   @state = 'CO', @lat = 40.683447, @long = -105.397615 -- US-4406 (Roosevelt NF - Stove Prairie CG)
+--select @parkId = 6159,  @parkNum = 'US-4406',  @grid = 'DN70hq', @city = null,         @county = 'Larimer',   @state = 'CO', @lat = 40.683447, @long = -105.397615 -- US-4406 (Roosevelt NF - Stove Prairie CG)
+--select @parkId = 6159,  @parkNum = 'US-4406',  @grid = 'DN70es', @city = null,         @county = 'Larimer',   @state = 'CO', @lat = 40.771897, @long = -105.622089 -- US-4406 (Roosevelt NF - Bellair Lake CG)
 --select @parkId = 11739, @parkNum = 'US-12181', @grid = 'DN70rb', @city = 'Keenesburg', @county = 'Weld',      @state = 'CO', @lat = 40.073021, @long = -104.555451 -- US-12181 (Banner Lakes SWA)
 --select @parkId = 11746, @parkNum = 'US-12188', @grid = 'DN80ef', @city = null,         @county = 'Morgan',    @state = 'CO', @lat = 40.218628, @long = -103.623280 -- US-12188 (Brush Prairie Ponds SWA)
---select @parkId = 3005, @parkNum = 'US-1222', @grid = 'DN70wj', @city = null,         @county = 'Morgan',    @state = 'CO', @lat = 40.381658, @long = -104.089411 -- US-1222 (Jackson Lake SP)
---select @parkId = 6163, @parkNum = 'US-4410', @grid = 'DM69uu', @city = null,         @county = 'Summit',    @state = 'CO', @lat = 39.873072, @long = -106.283051 -- US-4410 (White River NF)
-
+--select @parkId = 3005,  @parkNum = 'US-1222',  @grid = 'DN70wj', @city = null,         @county = 'Morgan',    @state = 'CO', @lat = 40.381658, @long = -104.089411 -- US-1222 (Jackson Lake SP)
+--select @parkId = 6163,  @parkNum = 'US-4410',  @grid = 'DM69uu', @city = null,         @county = 'Summit',    @state = 'CO', @lat = 39.873072, @long = -106.283051 -- US-4410 (White River NF)
+--select @parkId = 2924,  @parkNum = 'US-11938', @grid = 'DN70fs', @city = null,         @county = 'Larimer',   @state = 'CO', @lat = 40.786392, @long = -105.563379 -- US-11938 (Parvin Lake SWA)
+--select @parkId = 6160,  @parkNum = 'US-4407',  @grid = 'DM68vr', @city = null,         @county = 'Chaffee',   @state = 'CO', @lat = 38.712666, @long = -106.232957 -- US-4407 (San Isabel NF - Chalk Lake CG)
+--select @parkId = 3000,  @parkNum = 'US-1217',  @grid = 'DM78fw', @city = null,         @county = 'Park',      @state = 'CO', @lat = 38.920444, @long = -105.514727 -- US-1217 (Eleven Mile SP - Howbert Point CG)
+--select @parkId = 11747, @parkNum = 'US-12189', @grid = 'DM68wu', @city = null,         @county = 'Chaffee',   @state = 'CO', @lat = 38.846959, @long = -106.122510 -- US-12189 (Buena Vista SWA)
+--select @parkId = 6164,  @parkNum = 'US-4411',  @grid = 'DM68xs', @city = null,         @county = 'Chaffee',   @state = 'CO', @lat = 38.752378, @long = -106.065068 -- US-4411 (Browns Canyon National Monument)
 
 -- MAKE SURE ALL THREE ARE CORRECT and include minutes!
-select @startDate = '2025-07-20 00:00', @endDate = '2025-07-20 06:40', @submitDate = '2025-07-22 01:59'
+select @startDate = '2025-09-01 18:42', @endDate = '2025-09-01 19:55', @submitDate = '2025-09-02 02:45'
+-- MAKE SURE IT'S ONE UTC DAY!
 
 insert into #tmp select COL_PRIMARY_KEY, COL_CALL from [HamLog].[dbo].[TABLE_HRD_CONTACTS_V01] where COL_TIME_ON between @startDate and @endDate
 
@@ -103,7 +109,7 @@ update TABLE_HRD_CONTACTS_V01 set COL_COMMENT = 'POTA activation US-9669(Sawhill
 update TABLE_HRD_CONTACTS_V01 set COL_USER_DEFINED_9 = 'Y' where COL_PRIMARY_KEY in (select id from #tmp)
 update TABLE_HRD_CONTACTS_V01 set COL_USER_DEFINED_9 = 'Y' where COL_PRIMARY_KEY in (select logid from PotaContacts where ActivationId between 30 and 33)
 
-select * from PotaParks where ParkNum = 'US-4410'
+select * from PotaParks where ParkNum = 'US-4411'
 
 -- US-0225: 168, 'DM79jv', 'Jefferson', 'CO', 39.911110, -105.183235
 -- 0227: 170, 'DM79ku', 'Jefferson', 'CO'

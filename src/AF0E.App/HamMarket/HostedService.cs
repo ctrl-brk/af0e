@@ -8,6 +8,7 @@ using SendGrid.Helpers.Mail;
 namespace HamMarket;
 
 using HamMarket.Settings;
+using MimeKit.Text;
 
 #pragma warning disable CA1001
 #pragma warning disable CA1849
@@ -173,7 +174,7 @@ public class HostedService : IHostedService
                 string.Format(_settings.Email.SubjectResultsFormat, results.Sum(x => x.Items), results.Min(x => x.LastScan)) :
                 _settings.Email.SubjectEmptyFormat;
 
-            var body = new TextPart("html") {Text = sb.ToString()};
+            var body = new TextPart(TextFormat.Html) {Text = sb.ToString()};
 
             if (_settings.Email.AttachFile && !string.IsNullOrEmpty(_settings.Email.BodyFileName))
             {
@@ -199,7 +200,7 @@ public class HostedService : IHostedService
                 if (!string.IsNullOrWhiteSpace(_settings.Email.Smtp.User))
                     client.Authenticate(_settings.Email.Smtp.User, _settings.Email.Smtp.Password);
 
-                client.Send(msg);
+                await client.SendAsync(msg);
             }
             catch (Exception e)
             {
@@ -207,7 +208,7 @@ public class HostedService : IHostedService
             }
             finally
             {
-                client.Disconnect(true);
+                await client.DisconnectAsync(true);
             }
         }
 

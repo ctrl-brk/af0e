@@ -447,7 +447,7 @@ IQueryable<GridTrackerLookupResult> GetGridTrackerLog(string call, HrdDbContext 
     return dbContext.Log
         .Where(x => EF.Functions.Like(x.ColCall, call))
         .OrderByDescending(x => x.ColTimeOn)
-        .Select(x => new GridTrackerLookupResult(x.ColCall, x.ColTimeOn, x.ColMode, x.ColBand, x.ColComment, x.ColQslsdate, x.ColQslSentVia, x.ColQslRcvd, x.ColLotwQslRcvd));
+        .Select(x => new GridTrackerLookupResult(x.ColCall, x.ColTimeOn, x.ColMode, x.ColBand, x.ColComment, x.ColGridsquare, x.ColQslsdate, x.ColQslSentVia, x.ColQslRcvd, x.ColLotwQslRcvd));
 }
 
-internal record GridTrackerLookupResult(string ColCall, DateTime? ColTimeOn, string? ColMode, string? ColBand, string? ColComment, DateTime? ColQslsdate, string? ColQslSentVia, string? ColQslRcvd, string? ColLotwQslRcvd);
+internal record GridTrackerLookupResult(string ColCall, DateTime? ColTimeOn, string? ColMode, string? ColBand, string? ColComment, string? ColGrid, DateTime? ColQslsdate, string? ColQslSentVia, string? ColQslRcvd, string? ColLotwQslRcvd);
