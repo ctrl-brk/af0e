@@ -126,10 +126,9 @@ export class MapComponent implements OnInit {
     });
 
     this.map.addControl(new mapbox.NavigationControl());
-    this._destroyRef.onDestroy(() => this.map.remove());
 
     const moveEnd$ = fromEvent(this.map, 'moveend');
-    const moveEndSub = moveEnd$.pipe(debounceTime(250)).subscribe({ //need to debounce when resizing browser window
+    const moveEndSub = moveEnd$.pipe(debounceTime(250)).subscribe({ //need to debounce when resizing a browser window
       next: () => {
         this._state.notActivatedParks.hydrated = false;
         this.hydrateAndUpdateLayers(true)
