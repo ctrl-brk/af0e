@@ -43,7 +43,6 @@ tab_width = 4
 dotnet_naming_rule.constants_should_be_pascal_case.severity = silent
 dotnet_naming_rule.constants_should_be_pascal_case.style = constant_style
 dotnet_naming_rule.constants_should_be_pascal_case.symbols = constants
-
 dotnet_naming_rule.instance_fields_should_be_camel_case.severity = suggestion
 dotnet_naming_rule.instance_fields_should_be_camel_case.style = instance_field_style
 dotnet_naming_rule.instance_fields_should_be_camel_case.symbols = instance_fields
@@ -70,8 +69,6 @@ dotnet_style_prefer_inferred_tuple_names = true:suggestion
 dotnet_style_prefer_is_null_check_over_reference_equality_method = true:suggestion
 dotnet_style_prefer_simplified_boolean_expressions = true:suggestion
 dotnet_style_prefer_simplified_interpolation = true:suggestion
-
-csharp_prefer_braces = false:warning # IDE0011: add braces
 dotnet_diagnostic.IDE0007.severity = none # use var instead of explicit type
 dotnet_diagnostic.IDE0008.severity = none # use explicit type instead of var
 dotnet_diagnostic.IDE0010.severity = none # add missing cases to switch statement
@@ -80,6 +77,8 @@ dotnet_diagnostic.IDE0048.severity = none
 dotnet_diagnostic.IDE0072.severity = none # add missing cases to switch expression
 dotnet_diagnostic.IDE0160.severity = none # namespace scope
 dotnet_diagnostic.IDE0058.severity = none # remove unnecessary expression value
+
+resharper_remove_redundant_braces_highlighting=none
 
 #pragmas
 dotnet_diagnostic.CA1031.severity = silent
