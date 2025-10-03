@@ -1,4 +1,4 @@
-﻿namespace PotaLookup.Models;
+﻿namespace AF0E.Shared.Pota;
 
 public class PotaParkInfo
 {
@@ -10,7 +10,7 @@ public class PotaParkInfo
     public string Grid4 { get; set; }
     public string Grid6 { get; set; }
     public int ParktypeId { get; set; }
-    public byte Active { get; set; }
+    public int Active { get; set; }
     public string ParkComments { get; set; }
     public List<string> ParkURLs { get; set; }
     public string Website { get; set; }
@@ -20,7 +20,7 @@ public class PotaParkInfo
     public int EntityId { get; set; }
     public string EntityName { get; set; }
     public string ReferencePrefix { get; set; }
-    public byte EntityDeleted { get; set; }
+    public int EntityDeleted { get; set; }
     public string FirstActivator { get; set; }
     public string FirstActivationDate { get; set; }
 }

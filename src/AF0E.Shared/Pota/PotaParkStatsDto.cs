@@ -1,4 +1,4 @@
-﻿namespace PotaLookup.Models;
+﻿namespace AF0E.Shared.Pota;
 
 public class PotaParkStats
 {

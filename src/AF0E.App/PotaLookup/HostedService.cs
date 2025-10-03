@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using AF0E.DB;
 using AF0E.DB.Models;
-using PotaLookup.Models;
+using AF0E.Shared.Pota;
 
 namespace PotaLookup;
 
@@ -119,7 +119,7 @@ internal sealed class HostedService(ILogger<HostedService> logger, IHostApplicat
             // try to match by call, band and date, adding 5 min to each side of the date window, since time might not be in sync on both sides
             // ideally there should be only one match but who knows, maybe there's a dupe or something
             foreach (var q in hrdLog.Where(hrdQso =>
-                         hrdQso.Log.ColCall == potaQso.StationCallsign &&
+                         hrdQso.Log.ColCall.Trim() == potaQso.StationCallsign &&
                          hrdQso.Log.ColBand!.Equals(potaQso.Band, StringComparison.OrdinalIgnoreCase) &&
                          hrdQso.Log.ColTimeOn > potaQso.QsoDateTime.AddMinutes(-5) &&
                          hrdQso.Log.ColTimeOn < potaQso.QsoDateTime.AddMinutes(5)))
@@ -227,7 +227,8 @@ internal sealed class HostedService(ILogger<HostedService> logger, IHostApplicat
             Long = parkRes.Longitude,
             Grid = parkRes.Grid6,
             Location = parkRes.LocationDesc,
-            Country = parkRes.ReferencePrefix
+            Country = parkRes.ReferencePrefix,
+            Active = parkRes.Active == 1
         };
 
         url = $"/{settings.Value.ParkStatsRoute}/{parkNum}";

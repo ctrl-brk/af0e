@@ -11,6 +11,8 @@ public class HrdDbContext(string connectionString, QueryTrackingBehavior trackin
     public virtual DbSet<PotaActivation> PotaActivations { get; set; }
     public virtual DbSet<PotaContact> PotaContacts { get; set; }
 
+    public virtual DbSet<PotaHunting> PotaHunting { get; set; }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         optionsBuilder
@@ -30,6 +32,7 @@ public class HrdDbContext(string connectionString, QueryTrackingBehavior trackin
         OnParksModelCreating(modelBuilder);
         OnActivationsModelCreating(modelBuilder);
         OnContactsModelCreating(modelBuilder);
+        OnHuntingModelCreating(modelBuilder);
     }
 
     private static void OnContactsModelCreating(ModelBuilder modelBuilder)
@@ -53,6 +56,29 @@ public class HrdDbContext(string connectionString, QueryTrackingBehavior trackin
                 .HasForeignKey(d => d.LogId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_PotaContacts_HrdLog_LogId");
+        });
+    }
+
+    private static void OnHuntingModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<PotaHunting>(entity =>
+        {
+            entity.ToTable("PotaHunting");
+
+            entity.HasIndex(e => e.LogId, "IX_PotaHunting_LogId");
+            entity.HasIndex(e => e.ParkId, "IX_PotaHunting_ParkId");
+            entity.HasIndex(e => new { e.LogId, e.ParkId }, "IX_PotaHunting_LogId_ParkId").IsUnique();
+
+            entity.Property(e => e.BandReported).HasMaxLength(5).IsUnicode(false);
+
+            entity.HasOne(d => d.Log).WithMany(p => p.PotaHunting)
+                .HasForeignKey(d => d.LogId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_PotaHunting_HrdLog_LogId");
+
+            entity.HasOne(d => d.Park).WithMany(p => p.PotaHunting)
+                .HasForeignKey(d => d.ParkId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
         });
     }
 

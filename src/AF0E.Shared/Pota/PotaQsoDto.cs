@@ -1,11 +1,11 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace PotaLookup.Models;
+namespace AF0E.Shared.Pota;
 
 public class PotaLogResponse
 {
     public int Count { get; init; }
-    public List<PotaLogEntry> Entries { get; init; } = null!;
+    public ICollection<PotaLogEntry> Entries { get; init; } = null!;
 }
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
@@ -30,7 +30,7 @@ public class PotaLogEntry
     public string MySig { get; set; }
     [JsonPropertyName("my_sig_info")]
     public string MySigInfo { get; set; }
-    public int P2PMatch { get; set; }
+    public int? P2pMatch { get; set; }
     public int JobId { get; set; }
     public int ParkId { get; set; }
     public string Reference { get; set; }
