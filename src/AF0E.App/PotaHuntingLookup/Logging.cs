@@ -46,4 +46,13 @@ internal static partial class Logging
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Error")]
     public static partial void LogException(this ILogger logger, Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "{message}")]
+    public static partial void LogInformation(this ILogger logger, string message);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "{message}")]
+    public static partial void LogWarning(this ILogger logger, string message);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "{message}")]
+    public static partial void LogError(this ILogger logger, string message);
 }
