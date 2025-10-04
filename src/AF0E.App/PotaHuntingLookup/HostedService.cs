@@ -86,23 +86,26 @@ internal sealed class HostedService(ILogger<HostedService> logger, IHostApplicat
             cnt = result.Count;
         } while (pageNum++ * PageSize < cnt);
 
+        var changesMade = false;
+
         if (contacts.Count > 0)
         {
             logger.LogProcessing(contacts.Count);
 
             _potaParks = await _dbContext!.PotaParks.ToDictionaryAsync(x => x.ParkNum, x => x, ct);
-            await UpdateLog(contacts, ct);
+            changesMade = await UpdateLog(contacts, ct);
         }
         else
             logger.LogNoQsos();
 
-        await DisplayNotLinkedQsos(startDate, endDate, ct);
+        if (changesMade)
+            await DisplayNotLinkedQsos(startDate, endDate, ct);
 
         appLifeTime.StopApplication();
     }
 
     [SuppressMessage("ReSharper.DPA", "DPA0007: Large number of DB records")]
-    private async Task UpdateLog(List<PotaLogEntry> potaLog, CancellationToken ct)
+    private async Task<bool> UpdateLog(List<PotaLogEntry> potaLog, CancellationToken ct)
     {
         var notFoundCalls = new List<PotaLogEntry>();
         var bandMismatchCalls = new List<PotaLogEntry>();
@@ -184,12 +187,20 @@ internal sealed class HostedService(ILogger<HostedService> logger, IHostApplicat
             var uniqueCalls = notFoundCalls.DistinctBy(x => x.StationCallsign).ToList();
             var calls = string.Join(',', uniqueCalls.Select(x => x.StationCallsign));
 
+            var msg = $"The following {uniqueCalls.Count} call(s) were not found, probably time mismatch - compare the time below with HRD:";
+#if (!DEBUG)
+            logger.LogWarning(msg);
+#endif
             Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine($"The following {uniqueCalls.Count} call(s) were not found, probably time mismatch - compare the time below with HRD:");
+            Console.WriteLine(msg);
             Console.ForegroundColor = ConsoleColor.DarkYellow;
             foreach (var q in notFoundCalls)
             {
-                Console.WriteLine($"    {q.QsoDateTime:yy-MM-dd HH:mm}   {q.StationCallsign}\t{q.Band}\t{q.Mode}\t{q.Reference}{(q.P2pMatch == 1 ? "\tP2P" : "")}");
+                msg = $"    {q.QsoDateTime:yy-MM-dd HH:mm}   {q.StationCallsign}\t{q.Band}\t{q.Mode}\t{q.Reference}{(q.P2pMatch == 1 ? "\tP2P" : "")}";
+#if (!DEBUG)
+                logger.LogWarning(msg);
+#endif
+                Console.WriteLine(msg);
             }
 
             logger.LogCallsNotFound(calls);
@@ -200,12 +211,20 @@ internal sealed class HostedService(ILogger<HostedService> logger, IHostApplicat
             var uniqueCalls = bandMismatchCalls.DistinctBy(x => x.StationCallsign).ToList();
             var calls = string.Join(',', uniqueCalls.Select(x => x.StationCallsign));
 
+            var msg = $"\n\nThe following {uniqueCalls.Count} call(s) were found, but on the other band:";
+#if (!DEBUG)
+            logger.LogWarning(msg);
+#endif
             Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine($"\n\nThe following {uniqueCalls.Count} call(s) were found, but on the other band:");
+            Console.WriteLine(msg);
             Console.ForegroundColor = ConsoleColor.DarkYellow;
             foreach (var q in bandMismatchCalls)
             {
-                Console.WriteLine($"    {q.QsoDateTime:yy-MM-dd HH:mm}   {q.StationCallsign}\t{q.Band}\t{q.Mode}\t{q.Reference}{(q.P2pMatch == 1 ? "\tP2P" : "")}");
+                msg = $"    {q.QsoDateTime:yy-MM-dd HH:mm}   {q.StationCallsign}\t{q.Band}\t{q.Mode}\t{q.Reference}{(q.P2pMatch == 1 ? "\tP2P" : "")}";
+#if (!DEBUG)
+                logger.LogWarning(msg);
+#endif
+                Console.WriteLine(msg);
             }
 
             logger.LogCallsBandMismatch(calls);
@@ -220,13 +239,14 @@ internal sealed class HostedService(ILogger<HostedService> logger, IHostApplicat
                 Console.ForegroundColor = color;
 
                 if (Console.ReadKey().KeyChar != 'Y')
-                    return;
+                    return false;
             }
 
             try
             {
                 Console.WriteLine("\n\nSaving...");
                 await _dbContext.SaveChangesAsync(CancellationToken.None);
+                return true;
             }
             catch (Exception e)
             {
@@ -235,6 +255,8 @@ internal sealed class HostedService(ILogger<HostedService> logger, IHostApplicat
         }
         else
             logger.LogNoNewQsos();
+
+        return false;
     }
 
     private async Task DisplayNotLinkedQsos(DateTime startDate, DateTime endDate, CancellationToken ct)
