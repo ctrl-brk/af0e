@@ -31,10 +31,13 @@ partial class MainForm
     {
         gridLog = new DataGridView();
         gbxFilter = new GroupBox();
+        dtpEndDate = new DateTimePicker();
+        lblPeriod = new Label();
+        dtpStartDate = new DateTimePicker();
         cbQueued = new CheckBox();
         btnSearch = new Button();
         tbCall = new TextBox();
-        label1 = new Label();
+        lblCallsign = new Label();
         btnAnalyze = new Button();
         gbxPdf = new GroupBox();
         btnSelectPrint = new Button();
@@ -51,6 +54,7 @@ partial class MainForm
         btnMarkSent = new Button();
         gbxUpdate = new GroupBox();
         gbxView = new GroupBox();
+        cbShowWaiting = new CheckBox();
         cbViewMyLocation = new CheckBox();
         ((System.ComponentModel.ISupportInitialize)gridLog).BeginInit();
         gbxFilter.SuspendLayout();
@@ -66,9 +70,9 @@ partial class MainForm
         gridLog.AllowUserToDeleteRows = false;
         gridLog.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         gridLog.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-        gridLog.Location = new Point(10, 68);
+        gridLog.Location = new Point(0, 107);
         gridLog.Name = "gridLog";
-        gridLog.Size = new Size(1577, 871);
+        gridLog.Size = new Size(1127, 851);
         gridLog.TabIndex = 0;
         gridLog.TabStop = false;
         gridLog.Text = "dataGridView1";
@@ -89,32 +93,66 @@ partial class MainForm
         // 
         // gbxFilter
         // 
+        gbxFilter.Controls.Add(dtpEndDate);
+        gbxFilter.Controls.Add(lblPeriod);
+        gbxFilter.Controls.Add(dtpStartDate);
         gbxFilter.Controls.Add(cbQueued);
         gbxFilter.Controls.Add(btnSearch);
         gbxFilter.Controls.Add(tbCall);
-        gbxFilter.Controls.Add(label1);
+        gbxFilter.Controls.Add(lblCallsign);
         gbxFilter.Location = new Point(10, 6);
         gbxFilter.Name = "gbxFilter";
-        gbxFilter.Size = new Size(350, 56);
+        gbxFilter.Size = new Size(322, 95);
         gbxFilter.TabIndex = 1;
         gbxFilter.TabStop = false;
         gbxFilter.Text = "Filter";
         // 
+        // dtpEndDate
+        // 
+        dtpEndDate.Checked = false;
+        dtpEndDate.CustomFormat = "yyyy-MM-dd";
+        dtpEndDate.Format = DateTimePickerFormat.Custom;
+        dtpEndDate.Location = new Point(127, 63);
+        dtpEndDate.Name = "dtpEndDate";
+        dtpEndDate.ShowCheckBox = true;
+        dtpEndDate.Size = new Size(100, 23);
+        dtpEndDate.TabIndex = 2;
+        // 
+        // lblPeriod
+        // 
+        lblPeriod.AutoSize = true;
+        lblPeriod.Location = new Point(126, 15);
+        lblPeriod.Name = "lblPeriod";
+        lblPeriod.Size = new Size(41, 15);
+        lblPeriod.TabIndex = 0;
+        lblPeriod.Text = "Period";
+        // 
+        // dtpStartDate
+        // 
+        dtpStartDate.Checked = false;
+        dtpStartDate.CustomFormat = "yyyy-MM-dd";
+        dtpStartDate.Format = DateTimePickerFormat.Custom;
+        dtpStartDate.Location = new Point(127, 36);
+        dtpStartDate.Name = "dtpStartDate";
+        dtpStartDate.ShowCheckBox = true;
+        dtpStartDate.Size = new Size(100, 23);
+        dtpStartDate.TabIndex = 1;
+        // 
         // cbQueued
         // 
-        cbQueued.Location = new Point(184, 23);
+        cbQueued.Location = new Point(243, 15);
         cbQueued.Name = "cbQueued";
         cbQueued.Size = new Size(72, 22);
-        cbQueued.TabIndex = 1;
+        cbQueued.TabIndex = 3;
         cbQueued.Text = "Queued";
         cbQueued.UseVisualStyleBackColor = true;
         // 
         // btnSearch
         // 
-        btnSearch.Location = new Point(270, 18);
+        btnSearch.Location = new Point(241, 46);
         btnSearch.Name = "btnSearch";
         btnSearch.Size = new Size(67, 28);
-        btnSearch.TabIndex = 2;
+        btnSearch.TabIndex = 4;
         btnSearch.Text = "Search";
         btnSearch.UseVisualStyleBackColor = true;
         btnSearch.Click += btnSearch_Click;
@@ -122,19 +160,19 @@ partial class MainForm
         // tbCall
         // 
         tbCall.CharacterCasing = CharacterCasing.Upper;
-        tbCall.Location = new Point(58, 21);
+        tbCall.Location = new Point(8, 36);
         tbCall.Name = "tbCall";
         tbCall.Size = new Size(108, 23);
         tbCall.TabIndex = 0;
         // 
-        // label1
+        // lblCallsign
         // 
-        label1.Location = new Point(6, 21);
-        label1.Name = "label1";
-        label1.Size = new Size(53, 20);
-        label1.TabIndex = 0;
-        label1.Text = "Callsign";
-        label1.TextAlign = ContentAlignment.MiddleLeft;
+        lblCallsign.Location = new Point(6, 15);
+        lblCallsign.Name = "lblCallsign";
+        lblCallsign.Size = new Size(54, 20);
+        lblCallsign.TabIndex = 0;
+        lblCallsign.Text = "Callsign";
+        lblCallsign.TextAlign = ContentAlignment.MiddleLeft;
         // 
         // btnAnalyze
         // 
@@ -154,16 +192,16 @@ partial class MainForm
         gbxPdf.Controls.Add(label2);
         gbxPdf.Controls.Add(cmbTemplate);
         gbxPdf.Controls.Add(cmbStartLabelNum);
-        gbxPdf.Location = new Point(565, 6);
+        gbxPdf.Location = new Point(517, 6);
         gbxPdf.Name = "gbxPdf";
-        gbxPdf.Size = new Size(529, 56);
+        gbxPdf.Size = new Size(326, 95);
         gbxPdf.TabIndex = 3;
         gbxPdf.TabStop = false;
         gbxPdf.Text = "PDF";
         // 
         // btnSelectPrint
         // 
-        btnSelectPrint.Location = new Point(349, 18);
+        btnSelectPrint.Location = new Point(151, 52);
         btnSelectPrint.Name = "btnSelectPrint";
         btnSelectPrint.Size = new Size(58, 28);
         btnSelectPrint.TabIndex = 2;
@@ -174,7 +212,7 @@ partial class MainForm
         // btnGenPdf
         // 
         btnGenPdf.Enabled = false;
-        btnGenPdf.Location = new Point(428, 18);
+        btnGenPdf.Location = new Point(227, 35);
         btnGenPdf.Name = "btnGenPdf";
         btnGenPdf.Size = new Size(92, 28);
         btnGenPdf.TabIndex = 3;
@@ -185,10 +223,10 @@ partial class MainForm
         // label3
         // 
         label3.AutoSize = true;
-        label3.Location = new Point(217, 25);
+        label3.Location = new Point(8, 58);
         label3.Name = "label3";
         label3.Size = new Size(62, 15);
-        label3.TabIndex = 3;
+        label3.TabIndex = 0;
         label3.Text = "Start Label";
         label3.TextAlign = ContentAlignment.MiddleLeft;
         // 
@@ -206,7 +244,7 @@ partial class MainForm
         cmbTemplate.DropDownStyle = ComboBoxStyle.DropDownList;
         cmbTemplate.FormattingEnabled = true;
         cmbTemplate.Items.AddRange(new object[] { "1.3 x 4", "2.0 x 4" });
-        cmbTemplate.Location = new Point(67, 21);
+        cmbTemplate.Location = new Point(77, 21);
         cmbTemplate.Name = "cmbTemplate";
         cmbTemplate.Size = new Size(132, 23);
         cmbTemplate.TabIndex = 0;
@@ -216,7 +254,7 @@ partial class MainForm
         // 
         cmbStartLabelNum.DropDownStyle = ComboBoxStyle.DropDownList;
         cmbStartLabelNum.FormattingEnabled = true;
-        cmbStartLabelNum.Location = new Point(286, 21);
+        cmbStartLabelNum.Location = new Point(77, 54);
         cmbStartLabelNum.Name = "cmbStartLabelNum";
         cmbStartLabelNum.Size = new Size(48, 23);
         cmbStartLabelNum.TabIndex = 1;
@@ -229,10 +267,10 @@ partial class MainForm
         // lblStatus
         // 
         lblStatus.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-        lblStatus.Location = new Point(10, 942);
+        lblStatus.Location = new Point(0, 942);
         lblStatus.Name = "lblStatus";
-        lblStatus.Size = new Size(1577, 15);
-        lblStatus.TabIndex = 3;
+        lblStatus.Size = new Size(1127, 15);
+        lblStatus.TabIndex = 6;
         lblStatus.Text = "Ready";
         lblStatus.TextAlign = ContentAlignment.MiddleRight;
         // 
@@ -240,9 +278,9 @@ partial class MainForm
         // 
         gbxAnalyze.Controls.Add(cbDxOnly);
         gbxAnalyze.Controls.Add(btnAnalyze);
-        gbxAnalyze.Location = new Point(379, 6);
+        gbxAnalyze.Location = new Point(341, 6);
         gbxAnalyze.Name = "gbxAnalyze";
-        gbxAnalyze.Size = new Size(166, 56);
+        gbxAnalyze.Size = new Size(166, 95);
         gbxAnalyze.TabIndex = 2;
         gbxAnalyze.TabStop = false;
         gbxAnalyze.Text = "Analyze";
@@ -262,7 +300,7 @@ partial class MainForm
         // btnSave
         // 
         btnSave.Enabled = false;
-        btnSave.Location = new Point(101, 19);
+        btnSave.Location = new Point(10, 54);
         btnSave.Name = "btnSave";
         btnSave.Size = new Size(74, 28);
         btnSave.TabIndex = 1;
@@ -285,29 +323,43 @@ partial class MainForm
         // 
         gbxUpdate.Controls.Add(btnMarkSent);
         gbxUpdate.Controls.Add(btnSave);
-        gbxUpdate.Location = new Point(1116, 6);
+        gbxUpdate.Location = new Point(853, 6);
         gbxUpdate.Name = "gbxUpdate";
-        gbxUpdate.Size = new Size(186, 56);
-        gbxUpdate.TabIndex = 5;
+        gbxUpdate.Size = new Size(95, 95);
+        gbxUpdate.TabIndex = 4;
         gbxUpdate.TabStop = false;
         gbxUpdate.Text = "Update";
         // 
         // gbxView
         // 
         gbxView.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        gbxView.Controls.Add(cbShowWaiting);
         gbxView.Controls.Add(cbViewMyLocation);
-        gbxView.Location = new Point(1384, 6);
+        gbxView.Location = new Point(997, 6);
         gbxView.Name = "gbxView";
-        gbxView.Size = new Size(200, 56);
-        gbxView.TabIndex = 6;
+        gbxView.Size = new Size(110, 95);
+        gbxView.TabIndex = 5;
         gbxView.TabStop = false;
         gbxView.Text = "View";
+        // 
+        // cbShowWaiting
+        // 
+        cbShowWaiting.AutoSize = true;
+        cbShowWaiting.Checked = true;
+        cbShowWaiting.CheckState = CheckState.Checked;
+        cbShowWaiting.Enabled = false;
+        cbShowWaiting.Location = new Point(11, 54);
+        cbShowWaiting.Name = "cbShowWaiting";
+        cbShowWaiting.Size = new Size(67, 19);
+        cbShowWaiting.TabIndex = 1;
+        cbShowWaiting.Text = "Waiting";
+        cbShowWaiting.UseVisualStyleBackColor = true;
+        cbShowWaiting.Click += cbShowWaiting_Click;
         // 
         // cbViewMyLocation
         // 
         cbViewMyLocation.AutoSize = true;
-        cbViewMyLocation.Checked = true;
-        cbViewMyLocation.CheckState = CheckState.Checked;
+        cbViewMyLocation.Enabled = false;
         cbViewMyLocation.Location = new Point(11, 23);
         cbViewMyLocation.Name = "cbViewMyLocation";
         cbViewMyLocation.Size = new Size(89, 19);
@@ -320,7 +372,7 @@ partial class MainForm
         // 
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
-        ClientSize = new Size(1596, 958);
+        ClientSize = new Size(1127, 958);
         Controls.Add(gbxView);
         Controls.Add(gbxUpdate);
         Controls.Add(gbxAnalyze);
@@ -355,7 +407,7 @@ partial class MainForm
 
     private System.Windows.Forms.DataGridView gridLog;
     private System.Windows.Forms.GroupBox gbxFilter;
-    private System.Windows.Forms.Label label1;
+    private System.Windows.Forms.Label lblCallsign;
     private System.Windows.Forms.TextBox tbCall;
     private System.Windows.Forms.Button btnSearch;
 
@@ -374,4 +426,8 @@ partial class MainForm
     private GroupBox gbxUpdate;
     private GroupBox gbxView;
     private CheckBox cbViewMyLocation;
+    private DateTimePicker dtpEndDate;
+    private Label lblPeriod;
+    private DateTimePicker dtpStartDate;
+    private CheckBox cbShowWaiting;
 }
