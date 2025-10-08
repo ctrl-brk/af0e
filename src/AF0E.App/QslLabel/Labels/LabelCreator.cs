@@ -6,12 +6,13 @@ namespace QslLabel.Labels;
 
 internal static class LabelCreator
 {
-    internal static void CreateLabels(IEnumerable<LogGridModel> log, TemplateType templateType, int startLabelNum, bool printDeliveryMethod, FileType fileType, string fileName)
+    internal static bool CreateLabels(IEnumerable<LogGridModel> log, TemplateType templateType, int startLabelNum, bool printDeliveryMethod, FileType fileType, string fileName)
     {
         var listLog = log.ToList();
         var contacts = listLog.OrderBy(x => string.IsNullOrEmpty(x.QslMgrCall) ? x.Call : x.QslMgrCall).ThenByDescending(x => x.UTC).GroupBy(x => x.Call).Select(g => new LabelData { Call = g.Key, Delivery = g.First().QslDeliveryMethod, Contacts = g.Select(q => q).ToList() }).ToList();
 
-        if (contacts.Count == 0) return;
+        if (contacts.Count == 0)
+            return false;
 
         foreach (var l in contacts)
         {
@@ -23,11 +24,15 @@ internal static class LabelCreator
 
         if (fileType == FileType.PDF)
             CreatePdfLabels(listLog, contacts, templateType, startLabelNum, printDeliveryMethod, fileName);
+
+        return true;
     }
 
-    private static void CreatePdfLabels(IEnumerable<LogGridModel> log, List<LabelData> contacts, TemplateType templateType, int startLabelNum, bool printDeliveryMethod, string fileName)
+    private static bool CreatePdfLabels(IEnumerable<LogGridModel> log, List<LabelData> contacts, TemplateType templateType, int startLabelNum, bool printDeliveryMethod, string fileName)
     {
-        if (!PdfCreator.Generate(contacts, templateType, startLabelNum, printDeliveryMethod, fileName)) return;
+        if (!PdfCreator.Generate(contacts, templateType, startLabelNum, printDeliveryMethod, fileName))
+            return false;
+
         var sqlPath = Path.ChangeExtension(fileName, ".sql");
 
         var sb = new StringBuilder($"""
@@ -43,5 +48,7 @@ internal static class LabelCreator
         sb.AppendLine(")");
 
         File.WriteAllText(sqlPath, sb.ToString());
+
+        return true;
     }
 }
