@@ -10,7 +10,7 @@ var host = new HostBuilder()
     {
         ctx.HostingEnvironment.EnvironmentName = Environment.GetEnvironmentVariable("NETCOREAPP_ENVIRONMENT") ?? "production";
 
-        //cfg.SetBasePath(Directory.GetCurrentDirectory()) // this will give current working directory, not the .exe file location
+        //cfg.SetBasePath(Directory.GetCurrentDirectory()) // this will set the current working directory, not the .exe file location
         cfg.SetBasePath(AppContext.BaseDirectory) // .exe file location, alternative is AppDomain.CurrentDomain.BaseDirectory
             .AddJsonFile("appsettings.json", false)
             .AddJsonFile($"appsettings.{ctx.HostingEnvironment.EnvironmentName}.json", true)
