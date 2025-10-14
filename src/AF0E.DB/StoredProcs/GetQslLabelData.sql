@@ -1,4 +1,4 @@
-alter proc GetQslLabelData(@Call varchar(32) = null, @QueuedOnly bit = 1, @Analyze bit = 0, @DxOnly bit = 1)
+alter proc GetQslLabelData(@Call varchar(32) = null, @QueuedOnly bit = 1, @StartDate datetime2, @EndDate datetime2, @Analyze bit = 0, @DxOnly bit = 1, @ShowWaiting bit = 1)
 as
 set nocount on;
 --exec GetQslLabelData null, 1, 1
@@ -12,7 +12,7 @@ if (@Analyze = 0) begin
     if (@Call is null ) begin
       insert into @CallsTbl select distinct COL_CALL from TABLE_HRD_CONTACTS_V01 where COL_QSL_SENT = 'Q'
     end else begin
-      insert into @CallsTbl select top 1 COL_CALL from TABLE_HRD_CONTACTS_V01 where COL_CALL like @Call and COL_QSL_SENT <> 'I'
+      insert into @CallsTbl select distinct COL_CALL from TABLE_HRD_CONTACTS_V01 where COL_CALL like @Call and COL_QSL_SENT <> 'I'
     end
 end
 
@@ -32,7 +32,8 @@ if (@Analyze = 1) begin
     insert into @CallsTbl
     select distinct COL_CALL
       from TABLE_HRD_CONTACTS_V01
-     where COL_QSL_SENT = 'N'
+     where COL_TIME_ON between @StartDate and @EndDate
+       and COL_QSL_SENT = 'N'
        and COL_COUNTRY is not null
        and COL_COUNTRY <> '[none]'
        and COL_COUNTRY not in (select Country from #countries)
@@ -94,11 +95,14 @@ select l.COL_PRIMARY_KEY as ID
       ,isnull(l.COL_USER_DEFINED_3, '') as Metadata
   from TABLE_HRD_CONTACTS_V01 l
 	   left join pota on pota.LogId = l.COL_PRIMARY_KEY
- where l.COL_CALL in (select [Call] from @CallsTbl)
-   and ((    @Analyze = 0
-        and (@QueuedOnly = 0 or l.COL_QSL_SENT in ('Q', 'N'))
+ where COL_TIME_ON between @StartDate and @EndDate
+   and l.COL_CALL in (select [Call] from @CallsTbl)
+   and (
+         (    @Analyze = 0
+          and (@QueuedOnly = 0 or l.COL_QSL_SENT in ('Q', 'N'))
+         )
+         or @Analyze = 1
        )
-    or @Analyze = 1)
  order by l.COL_CALL, l.COL_QSL_SENT desc, l.COL_TIME_ON desc
 ;
 

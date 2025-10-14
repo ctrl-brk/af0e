@@ -23,4 +23,5 @@ public sealed class PotaPark
 
     // ReSharper disable once CollectionNeverUpdated.Global
     public ICollection<PotaActivation> PotaActivations { get; init; } = [];
+    public ICollection<PotaHunting> PotaHunting { get; init; } = [];
 }

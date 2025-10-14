@@ -416,17 +416,21 @@ app.MapGet("/api/v1/pota/geojson/parks/not-activated/boundary", async (double sw
     .WithOpenApi();
 
 app.MapGet("/api/v1/logbook/gridtracker/{call}", (string call, HrdDbContext dbContext) => GetGridTrackerLog(WebUtility.UrlDecode(call), dbContext).ToListAsync())
-    .WithName("GridtrackerLookup1")
+    .WithName("GridtrackerCallLookup1")
     .WithOpenApi();
 
 app.MapGet("/api/v1/logbook/gridtracker/{prefix}/{call}", (string prefix, string call, HrdDbContext dbContext) => GetGridTrackerLog($"{WebUtility.UrlDecode(prefix)}/{WebUtility.UrlDecode(call)}", dbContext).ToListAsync())
-    .WithName("GridtrackerLookup2")
+    .WithName("GridtrackerCallLookup2")
     .WithOpenApi();
 
 app.MapGet("/api/v1/logbook/gridtracker/{prefix}/{call}/{suffix}", (string prefix, string call, string suffix, HrdDbContext dbContext) =>
         GetGridTrackerLog($"{WebUtility.UrlDecode(prefix)}/{WebUtility.UrlDecode(call)}/{WebUtility.UrlDecode(suffix)}", dbContext)
             .ToListAsync())
-    .WithName("GridtrackerLookup3")
+    .WithName("GridtrackerCallLookup3")
+    .WithOpenApi();
+
+app.MapGet("/api/v1/logbook/gridtracker/pota/{parkNum}", (string parkNum, HrdDbContext dbContext) => GetGridTrackerParkStats(parkNum, dbContext).ToListAsync())
+    .WithName("GridtrackerParkStats")
     .WithOpenApi();
 
 //---------------
@@ -445,9 +449,38 @@ IQueryable<HrdLog> GetLogByCall(string call, HrdDbContext dbContext)
 IQueryable<GridTrackerLookupResult> GetGridTrackerLog(string call, HrdDbContext dbContext)
 {
     return dbContext.Log
+        .Include(x => x.PotaHunting)
+        .ThenInclude(h => h.Park)
         .Where(x => EF.Functions.Like(x.ColCall, call))
         .OrderByDescending(x => x.ColTimeOn)
-        .Select(x => new GridTrackerLookupResult(x.ColCall, x.ColTimeOn, x.ColMode, x.ColBand, x.ColComment, x.ColGridsquare, x.ColQslsdate, x.ColQslSentVia, x.ColQslRcvd, x.ColLotwQslRcvd));
+        .Select(x => new GridTrackerLookupResult(
+            x.ColCall, x.ColTimeOn, x.ColMode, x.ColBand, x.ColComment, x.ColGridsquare,
+            x.ColQslsdate, x.ColQslSentVia, x.ColQslRcvd, x.ColLotwQslRcvd,
+            x.PotaHunting.Select(p => p.Park.ParkNum)));
 }
 
-internal record GridTrackerLookupResult(string ColCall, DateTime? ColTimeOn, string? ColMode, string? ColBand, string? ColComment, string? ColGrid, DateTime? ColQslsdate, string? ColQslSentVia, string? ColQslRcvd, string? ColLotwQslRcvd);
+IQueryable<GridTrackerParkStatsResult> GetGridTrackerParkStats(string parkNum, HrdDbContext dbContext)
+{
+    return dbContext.PotaHunting
+        .Include(x => x.Park)
+        .Include(x => x.Log)
+        .Where(x => x.Park.ParkNum == parkNum)
+        .GroupBy(x => x.Log.ColBand)
+        .OrderByDescending(x => x.Key)
+        .Select(x => new GridTrackerParkStatsResult(x.Key!, x.Count()));
+}
+
+internal record GridTrackerLookupResult(
+    string ColCall,
+    DateTime? ColTimeOn,
+    string? ColMode,
+    string? ColBand,
+    string? ColComment,
+    string? ColGrid,
+    DateTime? ColQslsdate,
+    string? ColQslSentVia,
+    string? ColQslRcvd,
+    string? ColLotwQslRcvd,
+    IEnumerable<string> Parks);
+
+internal record GridTrackerParkStatsResult(string Band, int QsoCount);

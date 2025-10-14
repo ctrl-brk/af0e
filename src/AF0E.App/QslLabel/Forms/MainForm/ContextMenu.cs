@@ -6,7 +6,7 @@ using QslLabel.Models;
 
 namespace QslLabel;
 
-internal partial class MainForm : Form
+partial class MainForm
 {
     private ContextMenuStrip _contextMenu;
     private int _selectedRowIndex;

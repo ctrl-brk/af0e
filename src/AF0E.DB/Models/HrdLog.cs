@@ -126,4 +126,5 @@ public sealed class HrdLog
     public string? ColSubmode { get; init; }
 
     public ICollection<PotaContact> PotaContacts { get; init; } = [];
+    public ICollection<PotaHunting> PotaHunting { get; init; } = [];
 }
