@@ -127,6 +127,13 @@ export class HeaderComponent implements OnInit {
               this._router.navigate(['/map']);
             }
           },
+          {
+            label: 'Unconfirmed',
+            icon: 'pi pi-hourglass',
+            command: () => {
+              this._router.navigate(['/pota/log/unconfirmed']);
+            }
+          },
         ]
       },
       {

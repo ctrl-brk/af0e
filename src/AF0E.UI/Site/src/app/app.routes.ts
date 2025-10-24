@@ -39,7 +39,15 @@ export const routes: Routes = [
       {
         path: 'activations/:id',
         loadComponent: () => import('./components/pota/activation/activation.component').then(m => m.PotaActivationComponent),
-      }
+      },
+      {
+        path: 'park/:parkNum/stats',
+        loadComponent: () => import('./components/pota/park/stats/hunting.component').then(m => m.PotaParkHuntingComponent),
+      },
+      {
+        path: 'log/unconfirmed',
+        loadComponent: () => import('./components/pota/log/unconfirmed.component').then(m => m.PotaUnconfirmedComponent),
+      },
     ]
   },
   {

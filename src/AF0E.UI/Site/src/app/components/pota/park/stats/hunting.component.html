@@ -1,0 +1,58 @@
+<p-card>
+  @if (park) {
+    <h3><a href="https://pota.app/#/park/{{park.parkNum}}">{{park.parkDesc}}</a> {{park.location}} <a gridMap target="_blank">{{park.grid}}</a></h3>
+    <p>
+      <b>{{logEntries.length}}</b> QSOs@if (totalP2P > 0) {, <b>{{totalP2P}}</b> P2P}
+    </p>
+    <p>
+      <b>{{park.totalActivationCount}}</b> Activations,
+      <b>{{park.totalQsoCount}}</b> QSOs,
+      <b>{{park.active ? 'Active' : 'Inactive'}}</b>
+    </p>
+  }
+</p-card>
+
+<p-table
+  [value]="logEntries"
+  dataKey="id"
+  sortField="date"
+  [sortOrder]="-1"
+  [paginator]="true"
+  [showCurrentPageReport]="true"
+  currentPageReportTemplate="{first}-{last} of {totalRecords}"
+  [rows]="50"
+  [scrollable]="true"
+  scrollHeight="calc(100vh - 9.6rem)"
+  class="tbl-activations"
+  stripedRows>
+
+  <ng-template pTemplate="header">
+    <tr>
+      <th pSortableColumn="date">UTC (ymd) <p-sortIcon field="date" /></th>
+      <th pSortableColumn="call">Call <p-sortIcon field="call" /></th>
+      <th pSortableColumn="band">Band <p-sortIcon field="band" /></th>
+      <th>Mode</th>
+      <th>Grid</th>
+      <th title="POTA activation">POTA</th>
+      <th title="Satellite name">SAT</th>
+    </tr>
+  </ng-template>
+
+  <ng-template pTemplate="body" let-qso>
+    <tr>
+      <td>{{ qso.date | date:'yy-MM-dd hh:mm' }}</td>
+      <td>{{ qso.call }}</td>
+      <td>{{ qso.band }}</td>
+      <td><p-tag [value]="qso.mode|qsoMode" [severity]="qso.mode|modeSeverity" /></td>
+      <td>{{ qso.grid|grid }}</td>
+      <td>
+        @if (qso.potaCount) {
+          <mat-icon>park</mat-icon>
+        }
+      </td>
+      <td>{{qso.satName}}</td>
+    </tr>
+  </ng-template>
+</p-table>
+
+<p-scrollTop />

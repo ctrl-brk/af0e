@@ -42,3 +42,14 @@ export class QsoModePipe implements PipeTransform {
     return mode;
   }
 }
+
+@Pipe({
+  name: 'grid'
+})
+export class GridPipe implements PipeTransform {
+  transform(grid: string) {
+    if (!grid) return '';
+
+    return grid.length === 6 ? grid.slice(0, 4) + grid.slice(4).toLowerCase() : grid;
+  }
+}
