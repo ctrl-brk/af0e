@@ -42,9 +42,12 @@ declare @lat decimal(10,6), @long decimal(10,6)
 --select @parkId = 3002,  @parkNum = 'US-1219',  @grid = 'DM79gv', @city = null,         @county = 'Gilpin',    @state = 'CO', @lat = 39.875963, @long = -105.450389 -- US-1219 (Golden Gate Canyon SP)
 --select @parkId = 2993,  @parkNum = 'US-1210',  @grid = 'DN70lk', @city = null,         @county = 'Larimer',   @state = 'CO', @lat = 40.430300, @long = -105.040901 -- US-1210 (Boyd Lake SP)
 --select @parkId = 11734, @parkNum = 'US-12176', @grid = 'DN70ml', @city = 'Ward',       @county = 'Weld',      @state = 'CO', @lat = 40.472498, @long = -104.943167 -- US-12176 (Frank SWA)
+--select @parkId = 8293,  @parkNum = 'US-6602',  @grid = 'EL19wt', @city = 'San Felipe', @county = 'Austin',    @state = 'TX', @lat = 29.804897, @long = -96.096743  -- US-6602 (San Felipe de Austin State Historic Site, TX)
+--select @parkId = 4831,  @parkNum = 'US-3058',  @grid = 'EL19wt', @city = 'Sealy',      @county = 'Austin',    @state = 'TX', @lat = 29.811839, @long = -96.107970 -- US-3058 (Stephen F. Austin SP, TX)
+select @parkId = 462,  @parkNum = 'US-0542',  @grid = 'EL19uq', @city = null,      @county = 'Colorado',    @state = 'TX', @lat = 29.667981, @long = -96.265857 -- US-0542 (Attwater Prairie Chicken NWR, TX)
 
 -- MAKE SURE ALL THREE ARE CORRECT and include minutes!
-select @startDate = '2025-10-19 17:47', @endDate = '2025-10-19 18:05', @submitDate = '2025-10-19 23:04'
+select @startDate = '2025-10-30 21:22', @endDate = '2025-10-30 21:29', @submitDate = '2025-10-31 15:14'
 -- MAKE SURE IT'S ONE UTC DAY!
 
 insert into #tmp select COL_PRIMARY_KEY, COL_CALL from [HamLog].[dbo].[TABLE_HRD_CONTACTS_V01] where COL_TIME_ON between @startDate and @endDate
@@ -112,7 +115,7 @@ update TABLE_HRD_CONTACTS_V01 set COL_COMMENT = 'POTA activation US-9669(Sawhill
 update TABLE_HRD_CONTACTS_V01 set COL_USER_DEFINED_9 = 'Y' where COL_PRIMARY_KEY in (select id from #tmp)
 update TABLE_HRD_CONTACTS_V01 set COL_USER_DEFINED_9 = 'Y' where COL_PRIMARY_KEY in (select logid from PotaContacts where ActivationId between 30 and 33)
 
-select * from PotaParks where ParkNum = 'US-12176'
+select * from PotaParks where ParkNum = 'US-0542'
 
 -- US-0225: 168, 'DM79jv', 'Jefferson', 'CO', 39.911110, -105.183235
 -- 0227: 170, 'DM79ku', 'Jefferson', 'CO'
