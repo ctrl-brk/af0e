@@ -6,7 +6,6 @@ import {Utils} from '../../shared/utils';
 import {QsoSummaryModel} from '../../models/qso-summary.model';
 import {NotificationService} from '../../shared/notification.service';
 import {LogService} from '../../shared/log.service';
-import {DatePipe} from '@angular/common';
 import {TagModule} from 'primeng/tag';
 import {FormsModule} from '@angular/forms';
 import {FloatLabelModule} from 'primeng/floatlabel';
@@ -20,6 +19,7 @@ import {MatIcon, MatIconRegistry} from '@angular/material/icon';
 import {Button} from 'primeng/button';
 import {ScrollTop} from 'primeng/scrolltop';
 import {ModeSeverityPipe, QsoModePipe} from '../../shared/pipes';
+import {DatePipe} from '@angular/common';
 
 @Component({
   selector: 'app-logbook',
@@ -112,8 +112,8 @@ export class LogbookComponent implements OnInit{
 
     this._logbookSvc.getQsoSummaries(call, skip, take, order, sortBy, [minDate!, maxDate!]).subscribe({
       next: r => {
-        this.totalRecords = r.length > 0 ? r[0].totalCount : 0;
-        this.logEntries = r;
+        this.totalRecords = r.totalCount;
+        this.logEntries = r.contacts;
       },
       error: e=> Utils.showErrorMessage(e, this._ntfSvc, this._log),
       complete: () => this.loading = false

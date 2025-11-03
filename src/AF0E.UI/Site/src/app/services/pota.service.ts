@@ -5,10 +5,33 @@ import {map, Observable} from 'rxjs';
 import {PotaActivationModel} from '../models/pota-activation.model';
 import {ActivationQsoModel} from '../models/activation-qso.model';
 import {PotaParkModel} from '../models/pota-park.model';
+import {QsoSummaryModel} from '../models/qso-summary.model';
 
 @Injectable({providedIn: 'root'})
 export class PotaService {
   private _http = inject(HttpService);
+
+  public getUnconfirmedLog(): Observable<QsoSummaryModel[]> {
+    return this._http.get(Configuration.potaUrl(`log/unconfirmed`)).pipe(
+      map((q: QsoSummaryModel[]) => {
+        return q.map((s) => {
+          s.date = new Date(s.date);
+          return s;
+        });
+      })
+    );
+  }
+
+  public getParkHuntingQsoSummaries(parkNum: string): Observable<QsoSummaryModel[]> {
+    return this._http.get(Configuration.potaUrl(`park/${parkNum}/stats/hunting/log`)).pipe(
+      map((q: QsoSummaryModel[]) => {
+        return q.map((s) => {
+          s.date = new Date(s.date);
+          return s;
+        });
+      })
+    );
+  }
 
   public getActivations(): Observable<PotaActivationModel[]> {
     return this._http.get(Configuration.potaUrl('activations')).pipe(
@@ -64,6 +87,15 @@ export class PotaService {
           return m;
         })
       })
+    );
+  }
+
+  public getPark(parkNum: string): Observable<PotaParkModel> {
+    return this._http.get(Configuration.potaUrl(`park/${parkNum}`)).pipe(
+      map((x: PotaParkModel) => {
+          x.parkDesc = `${x.parkNum} - ${x.parkName}`;
+          return x;
+        })
     );
   }
 }
