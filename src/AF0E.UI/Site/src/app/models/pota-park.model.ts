@@ -10,4 +10,5 @@ export interface PotaParkModel {
   country?: string;
   totalActivationCount?: number;
   totalQsoCount?: number;
+  active?: boolean;
 }

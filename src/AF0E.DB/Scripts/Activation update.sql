@@ -10,7 +10,7 @@ declare @parkId int, @parkNum varchar(64), @grid varchar(10), @city nvarchar(100
 declare @startDate varchar(20), @endDate varchar(20), @submitDate varchar(20)
 declare @lat decimal(10,6), @long decimal(10,6)
 --select @parkId = 168,   @parkNum = 'US-0225',  @grid = 'DM79jv', @city = null,         @county = 'Jefferson', @state = 'CO', @lat = 39.911110, @long = -105.183235 -- US-0225 (Rocky Flats NWR)
-select @parkId = 169,   @parkNum = 'US-0226',  @grid = 'DM79nu', @city = null,         @county = 'Adams',     @state = 'CO', @lat = 39.813758, @long = -104.860711 -- US-0226 (Rocky Mountains Arsenal NWR)
+--select @parkId = 169,   @parkNum = 'US-0226',  @grid = 'DM79nu', @city = null,         @county = 'Adams',     @state = 'CO', @lat = 39.813758, @long = -104.860711 -- US-0226 (Rocky Mountains Arsenal NWR)
 --select @parkId = 170,   @parkNum = 'US-0227',  @grid = 'DM79ku', @city = 'Arvada',     @county = 'Jefferson', @state = 'CO', @lat = 39.841670, @long = -105.102664 -- US-0227 (Two Ponds NWR)
 --select @parkId = 2994,  @parkNum = 'US-1211',  @grid = 'DM79pi', @city = 'Franktown',  @county = 'Douglas',   @state = 'CO', @lat = 39.333209, @long = -104.744105 -- US-1211 (Castlewood Canyon SP)
 --select @parkId = 2995,  @parkNum = 'US-1212',  @grid = 'DM79lm', @city = null,         @county = 'Jefferson', @state = 'CO', @lat = 39.519166, @long = -105.081798 -- US-1212 (Chatfield SP)
@@ -40,9 +40,14 @@ select @parkId = 169,   @parkNum = 'US-0226',  @grid = 'DM79nu', @city = null,  
 --select @parkId = 11747, @parkNum = 'US-12189', @grid = 'DM68wu', @city = null,         @county = 'Chaffee',   @state = 'CO', @lat = 38.846959, @long = -106.122510 -- US-12189 (Buena Vista SWA)
 --select @parkId = 6164,  @parkNum = 'US-4411',  @grid = 'DM68xs', @city = null,         @county = 'Chaffee',   @state = 'CO', @lat = 38.752378, @long = -106.065068 -- US-4411 (Browns Canyon National Monument)
 --select @parkId = 3002,  @parkNum = 'US-1219',  @grid = 'DM79gv', @city = null,         @county = 'Gilpin',    @state = 'CO', @lat = 39.875963, @long = -105.450389 -- US-1219 (Golden Gate Canyon SP)
+--select @parkId = 2993,  @parkNum = 'US-1210',  @grid = 'DN70lk', @city = null,         @county = 'Larimer',   @state = 'CO', @lat = 40.430300, @long = -105.040901 -- US-1210 (Boyd Lake SP)
+--select @parkId = 11734, @parkNum = 'US-12176', @grid = 'DN70ml', @city = 'Ward',       @county = 'Weld',      @state = 'CO', @lat = 40.472498, @long = -104.943167 -- US-12176 (Frank SWA)
+--select @parkId = 8293,  @parkNum = 'US-6602',  @grid = 'EL19wt', @city = 'San Felipe', @county = 'Austin',    @state = 'TX', @lat = 29.804897, @long = -96.096743  -- US-6602 (San Felipe de Austin State Historic Site, TX)
+--select @parkId = 4831,  @parkNum = 'US-3058',  @grid = 'EL19wt', @city = 'Sealy',      @county = 'Austin',    @state = 'TX', @lat = 29.811839, @long = -96.107970 -- US-3058 (Stephen F. Austin SP, TX)
+select @parkId = 462,  @parkNum = 'US-0542',  @grid = 'EL19uq', @city = null,      @county = 'Colorado',    @state = 'TX', @lat = 29.667981, @long = -96.265857 -- US-0542 (Attwater Prairie Chicken NWR, TX)
 
 -- MAKE SURE ALL THREE ARE CORRECT and include minutes!
-select @startDate = '2025-06-11 22:03', @endDate = '2025-06-11 23:21', @submitDate = '2025-09-30 23:58'
+select @startDate = '2025-10-30 21:22', @endDate = '2025-10-30 21:29', @submitDate = '2025-10-31 15:14'
 -- MAKE SURE IT'S ONE UTC DAY!
 
 insert into #tmp select COL_PRIMARY_KEY, COL_CALL from [HamLog].[dbo].[TABLE_HRD_CONTACTS_V01] where COL_TIME_ON between @startDate and @endDate
@@ -60,7 +65,7 @@ update [HamLog].[dbo].[TABLE_HRD_CONTACTS_V01]
  where COL_PRIMARY_KEY in (select LogId from PotaContacts where ActivationId = @activationId)
 
 select * from PotaActivations where ActivationId = @activationId
-select a.*, l.col_call, l.COL_TIME_ON from PotaContacts a inner join TABLE_HRD_CONTACTS_V01 l on l.COL_PRIMARY_KEY = a.LogId where ActivationId = @activationId order by a.LogId desc
+select c.*, l.col_call, l.COL_TIME_ON, l.COL_COMMENT from PotaContacts c inner join TABLE_HRD_CONTACTS_V01 l on l.COL_PRIMARY_KEY = c.LogId where ActivationId = @activationId order by c.LogId desc
 
 -- rollback
 -- commit
@@ -110,7 +115,7 @@ update TABLE_HRD_CONTACTS_V01 set COL_COMMENT = 'POTA activation US-9669(Sawhill
 update TABLE_HRD_CONTACTS_V01 set COL_USER_DEFINED_9 = 'Y' where COL_PRIMARY_KEY in (select id from #tmp)
 update TABLE_HRD_CONTACTS_V01 set COL_USER_DEFINED_9 = 'Y' where COL_PRIMARY_KEY in (select logid from PotaContacts where ActivationId between 30 and 33)
 
-select * from PotaParks where ParkNum = 'US-1219'
+select * from PotaParks where ParkNum = 'US-0542'
 
 -- US-0225: 168, 'DM79jv', 'Jefferson', 'CO', 39.911110, -105.183235
 -- 0227: 170, 'DM79ku', 'Jefferson', 'CO'

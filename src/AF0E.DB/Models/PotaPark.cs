@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 using NetTopologySuite.Geometries;
 
 namespace AF0E.DB.Models;
@@ -18,10 +19,11 @@ public sealed class PotaPark
     [Column("QSOs")]
     public int TotalQsoCount { get; set; }
     public bool Active { get; init; }
-    [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
+    [DatabaseGenerated(DatabaseGeneratedOption.Computed), JsonIgnore]
     public Geometry GeoPoint { get; init; } = null!;
 
-    // ReSharper disable once CollectionNeverUpdated.Global
+    [JsonIgnore]
     public ICollection<PotaActivation> PotaActivations { get; init; } = [];
+    [JsonIgnore]
     public ICollection<PotaHunting> PotaHunting { get; init; } = [];
 }

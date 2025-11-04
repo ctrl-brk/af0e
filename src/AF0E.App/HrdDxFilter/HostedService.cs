@@ -101,6 +101,9 @@ public class HostedService(ILogger<HostedService> logger, IHostApplicationLifeti
             info.CallSign = $"{arr[0]}.*";
         }
 
+        foreach (var info in sorted)
+            info.CallSign = info.CallSign.Replace(" ", "", StringComparison.OrdinalIgnoreCase);
+
         return sorted;
     }
 
