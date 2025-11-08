@@ -2,6 +2,8 @@
 using AF0E.DB;
 using Logbook.Api.Models;
 using Logbook.Api.Responses;
+using Logbook.Api.Security;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 namespace Logbook.Api.Handlers;
@@ -60,16 +62,22 @@ public static class LogbookHandlers
         return new LogSearchResponse { TotalCount = cnt, Contacts = qsoList };
     }
 
-    public static async Task<QsoDetails?> GetQsoDetails(int logId, HrdDbContext dbContext)
+    public static async Task<QsoDetails?> GetQsoDetails(int logId, HrdDbContext dbContext, IAuthorizationService authSvc, IHttpContextAccessor httpContext)
     {
-        var res = await dbContext.Log
+        var log = await dbContext.Log
             .Include(x => x.PotaContacts)
             .ThenInclude(c => c.Activation)
             .ThenInclude(p => p.Park)
             .SingleOrDefaultAsync(x => x.ColPrimaryKey == logId);
 
-        return res == null
-            ? null
-            : new QsoDetails(res);
+        if (log == null)
+            return null;
+
+        var qso = new QsoDetails(log);
+
+        if (await AuthHelper.HasPolicyAsync(Policies.AdminOnly, authSvc, httpContext))
+            qso.Comment = log.ColComment;
+
+        return qso;
     }
 }

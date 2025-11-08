@@ -2,6 +2,7 @@
 using AF0E.DB;
 using Logbook.Api.Handlers;
 using Logbook.Api.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
@@ -42,9 +43,9 @@ public static class V1Endpoints
             .WithName("LookupPartialCall")
             .WithOpenApi();
 
-        builder.MapGet("qso/{id:int}", async Task<Results<NotFound, Ok<QsoDetails>>> (int id, HrdDbContext dbContext) =>
+        builder.MapGet("qso/{id:int}", async Task<Results<NotFound, Ok<QsoDetails>>> (int id, HrdDbContext dbContext, IAuthorizationService authSvc, IHttpContextAccessor httpContext) =>
             {
-                var res = await LogbookHandlers.GetQsoDetails(id, dbContext);
+                var res = await LogbookHandlers.GetQsoDetails(id, dbContext, authSvc, httpContext);
                 return res is null ? TypedResults.NotFound() : TypedResults.Ok(res);
             })
             .WithName("QsoDetails")
@@ -126,7 +127,6 @@ public static class V1Endpoints
         builder.MapGet("{call}", async (string call, HrdDbContext dbContext) =>
                 TypedResults.Ok(await GridTrackerHandlers.GetGridTrackerLog(WebUtility.UrlDecode(call), dbContext)))
             .WithName("GridTrackerCallLookup1")
-            //.WithGroupName("GridTracker")
             .WithOpenApi();
 
         builder.MapGet("{prefix}/{call}", async (string prefix, string call, HrdDbContext dbContext) =>

@@ -35,10 +35,10 @@
     <div>ITU:</div><div>{{qsoDetails.myItuZone}}</div>
   }
 </div>
-  @if (qsoDetails.comment) {
+  @if (qsoDetails.siteComment) {
     <p-fieldset legend="Notes">
       <p>
-        {{qsoDetails.comment}}
+        {{qsoDetails.siteComment}}
       </p>
     </p-fieldset>
   }

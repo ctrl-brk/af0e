@@ -1,0 +1,40 @@
+<p-card>
+  <h3>Unconfirmed on pota.app</h3>
+</p-card>
+
+<p-table
+  [value]="logEntries"
+  dataKey="id"
+  sortField="date"
+  [sortOrder]="1"
+  [paginator]="true"
+  [showCurrentPageReport]="true"
+  currentPageReportTemplate="{first}-{last} of {totalRecords}"
+  [rows]="50"
+  [scrollable]="true"
+  scrollHeight="calc(100vh - 12.6rem)"
+  class="tbl-activations"
+  stripedRows>
+
+  <ng-template pTemplate="header">
+    <tr>
+      <th pSortableColumn="date">UTC (ymd) <p-sortIcon field="date" /></th>
+      <th pSortableColumn="call">Call <p-sortIcon field="call" /></th>
+      <th pSortableColumn="band">Band <p-sortIcon field="band" /></th>
+      <th>Mode</th>
+      <th>Park</th>
+    </tr>
+  </ng-template>
+
+  <ng-template pTemplate="body" let-qso>
+    <tr>
+      <td>{{ qso.date | date:'yy-MM-dd hh:mm' }}</td>
+      <td>{{ qso.call }}</td>
+      <td>{{ qso.band }}</td>
+      <td><p-tag [value]="qso.mode|qsoMode" [severity]="qso.mode|modeSeverity" /></td>
+      <td>{{qso.metadata}}</td>
+    </tr>
+  </ng-template>
+</p-table>
+
+<p-scrollTop />

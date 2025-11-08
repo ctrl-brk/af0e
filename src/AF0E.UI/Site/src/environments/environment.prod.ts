@@ -5,5 +5,6 @@ export const environment = {
   production: true,
   apiUrl: '/api/v1',
   mapBoxKey: environmentSecrets.mapBoxKey,
-  logLevel: LogLevel.Error
+  logLevel: LogLevel.Error,
+  claimType: 'https://af0e.org/claims',
 };

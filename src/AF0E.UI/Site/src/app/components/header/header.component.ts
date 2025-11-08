@@ -14,6 +14,7 @@ import {ButtonModule} from 'primeng/button';
 import {MenuModule} from 'primeng/menu';
 import {filter} from 'rxjs';
 import {TieredMenu} from 'primeng/tieredmenu';
+import {AppAuthService} from '../../services/auth.service';
 
 // noinspection JSIgnoredPromiseFromCall
 @Component({
@@ -38,6 +39,7 @@ export class HeaderComponent implements OnInit {
   private _ntfSvc= inject(NotificationService);
   private _log = inject(LogService);
   private _logbookSvc = inject(LogbookService);
+  private _authSvc = inject(AppAuthService);
   searchCall!: string;
   callsFound: any[] = [];
   isLessThan1000px = false;
@@ -46,7 +48,7 @@ export class HeaderComponent implements OnInit {
   searchTitle  = '';
 
   ngOnInit(): void {
-    const sub = this._router.events
+    const routerSub = this._router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe((event) => {
         let arr = event.url.split('/');
@@ -64,11 +66,15 @@ export class HeaderComponent implements OnInit {
         else
           this.searchCall = '';
       });
-    this._destroyRef.onDestroy(() => sub.unsubscribe());
 
+    this.configureMenu();
     this.onSearchFocus(false);
     this.setResponsive();
-    this.configureMenu();
+
+    const authSub = this._authSvc.isAuthenticated$.subscribe(isAuthenticated => this.onAuthChanged(isAuthenticated));
+
+    this._destroyRef.onDestroy(() => routerSub.unsubscribe());
+    this._destroyRef.onDestroy(() => authSub.unsubscribe());
   }
 
   search(event: AutoCompleteCompleteEvent) {
@@ -137,19 +143,59 @@ export class HeaderComponent implements OnInit {
         ]
       },
       {
-        label: 'Stats',
-        icon: 'pi pi-chart-bar',
-        command: () => {
-          this._router.navigate(['/stats']);
-        }
+        label: 'Info',
+        icon: 'pi pi-info-circle',
+        items: [
+          {
+            label: 'Stats',
+            icon: 'pi pi-chart-bar',
+            command: () => {
+              this._router.navigate(['/stats']);
+            }
+          },
+          {
+            label: 'About',
+            icon: 'pi pi-face-smile',
+            command: () => {
+              this._router.navigate(['/about']);
+            }
+          }
+        ]
       },
       {
-        label: 'About',
-        icon: 'pi pi-face-smile',
-        command: () => {
-          this._router.navigate(['/about']);
-        }
+        label: 'User',
+        icon: 'pi pi-user',
+        items: [
+          {
+            label: 'Login',
+            icon: 'pi pi-sign-in',
+            command: () => this._authSvc.login()
+          },
+        ]
       }
     ]
+  }
+
+  private onAuthChanged(isAuthenticated: boolean) {
+    const userMenu = this.menuItems!.find(item => item.label === 'User');
+
+    if (!userMenu)
+      return;
+
+    userMenu.items = isAuthenticated ? [
+      {
+        label: 'Logout',
+        icon: 'pi pi-sign-out',
+        command: () => this._authSvc.logout()
+      },
+    ] : [
+      {
+        label: 'Login',
+        icon: 'pi pi-sign-in',
+        command: () => this._authSvc.login()
+      }
+    ];
+
+    this.menuItems = [...this.menuItems!];
   }
 }
