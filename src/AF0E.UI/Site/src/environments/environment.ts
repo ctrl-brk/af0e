@@ -6,5 +6,6 @@ export const environment = {
   //apiUrl: 'http://localhost:5200/api/v1', //if proxy is not use
   apiUrl: '/api/v1', //with proxy
   mapBoxKey: environmentSecrets.mapBoxKey,
-  logLevel: LogLevel.Debug
+  logLevel: LogLevel.Debug,
+  claimType: 'https://af0e.org/claims',
 };

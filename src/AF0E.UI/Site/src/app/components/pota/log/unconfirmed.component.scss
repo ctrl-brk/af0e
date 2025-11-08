@@ -1,0 +1,18 @@
+.p-card {
+  margin-top: 4.75rem;
+  .p-card-body {padding-top: 0.2rem; padding-bottom: 0.5rem;}
+  h3 {
+    a, a:hover, a:focus, a:active, a:visited {color: var(--p-tag-info-color)}
+  }
+  p {
+    margin-top: 0.5rem;
+  }
+}
+
+p-table {
+  font-family: var(--mono-font);
+  font-size: 0.85rem;
+  table {
+    min-width: 33rem;
+  }
+}

@@ -32,5 +32,9 @@ public sealed class QsoDetails(HrdLog log)
     public string? SatName { get; set; } = log.ColSatName;
     public string? SatMode { get; set; } = log.ColSatMode;
     public string? Contest { get; set; } = log.ColContestId;
-    public string? Comment { get; set; } = log.SiteComment;
+    public string? SiteComment { get; set; } = log.SiteComment;
+    /// <summary>
+    /// Only set if authorized
+    /// </summary>
+    public string? Comment { get; set; }
 }
