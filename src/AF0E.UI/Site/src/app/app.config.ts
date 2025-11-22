@@ -8,6 +8,7 @@ import {providePrimeNG} from 'primeng/config';
 import Aura from '@primeng/themes/aura';
 import {provideAnimationsAsync} from '@angular/platform-browser/animations/async';
 import {authHttpInterceptorFn, provideAuth0} from '@auth0/auth0-angular';
+import {environment} from '../environments/environment';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -15,26 +16,38 @@ export const appConfig: ApplicationConfig = {
     provideAnimationsAsync(),
     provideRouter(routes, withComponentInputBinding()),
     provideAuth0({
-      domain: 'dev-4l6joodw0kczibgl.us.auth0.com',
-      clientId: 'sNpxyLre7xkR55bd6kHXURvJSGLkzaRX',
+      domain: environment.auth0domain,
+      clientId: environment.auth0clientId,
       authorizationParams: {
         redirect_uri: window.location.origin,
-        audience: 'https://af0e.logbook.api'
+        audience: environment.auth0audience
       },
       httpInterceptor: {
         allowedList: [
           {
-            uri: '/api/*',
-            // uriMatcher: (uri) => {
-            //   console.log('🔍 Checking URI:', uri);
-            //   return uri.includes('/api/');
-            // },
-            tokenOptions: {
-              authorizationParams: {
-                audience: 'https://af0e.logbook.api'
-              }
-            }
-          }
+            uri: '/api/v1/logbook/qso*',
+            httpMethod: 'GET',
+            allowAnonymous: true,
+          },
+          {
+            // QSO create operation - require authentication
+            uri: '/api/v1/logbook/qso*',
+            httpMethod: 'POST',
+          },
+          {
+            // QSO update operation - require authentication
+            uri: '/api/v1/logbook/qso*',
+            httpMethod: 'PUT',
+          },
+          // {
+          //   // POTA unconfirmed log - requires authentication
+          //   uri: '/api/v1/pota/log/unconfirmed*',
+          //   tokenOptions: {
+          //     authorizationParams: {
+          //       audience: 'https://af0e.logbook.api'
+          //     }
+          //   }
+          // }
         ]
       }
     }),

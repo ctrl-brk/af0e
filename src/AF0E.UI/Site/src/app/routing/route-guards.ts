@@ -12,7 +12,7 @@ export function rolePermissionGuard(roles?: string[], permissions?: string[]) {
     if (roles && roles.length > 0) {
       return of(roles).pipe(
         switchMap(roles =>
-          authSvc.hasAnyRole(roles).pipe(
+          authSvc.hasAnyRoleAsync(roles).pipe(
             map(has => has ? true : router.createUrlTree(['/unauthorized']))
           )
         )
@@ -21,7 +21,7 @@ export function rolePermissionGuard(roles?: string[], permissions?: string[]) {
     if (permissions && permissions.length > 0) {
       return of(permissions).pipe(
         switchMap(perms =>
-          authSvc.hasAnyPermission(perms).pipe(
+          authSvc.hasAnyPermissionAsync(perms).pipe(
             map(has => has ? true : router.createUrlTree(['/unauthorized']))
           )
         )

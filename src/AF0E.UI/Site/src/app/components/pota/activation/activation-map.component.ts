@@ -1,7 +1,8 @@
 import {Component, DestroyRef, ElementRef, inject, input, ViewChild, ViewEncapsulation} from '@angular/core';
 import {ActivationQsoModel} from '../../../models/activation-qso.model';
 import * as mapbox from 'mapbox-gl';
-import * as turf from '@turf/turf';
+import {point} from '@turf/helpers';
+import greatCircle from '@turf/great-circle';
 import {environment} from '../../../../environments/environment';
 import {PotaActivationModel} from '../../../models/pota-activation.model';
 
@@ -67,10 +68,10 @@ export class PotaActivationMapComponent {
         'data': {
           'type': 'FeatureCollection',
           'features': contacts.map(q => {
-            const from = turf.point([this.activation().long!, this.activation().lat!]);
-            const to = turf.point([q.long!, q.lat!]);
+            const from = point([this.activation().long!, this.activation().lat!]);
+            const to = point([q.long!, q.lat!]);
             const options = {npoints: 25}; // Define the resolution of the line
-            return turf.greatCircle(from, to, options);
+            return greatCircle(from, to, options);
           })
         }
       });

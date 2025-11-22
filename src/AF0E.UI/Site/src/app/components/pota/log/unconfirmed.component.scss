@@ -1,12 +1,7 @@
 .p-card {
   margin-top: 4.75rem;
+  margin-bottom: 5px;
   .p-card-body {padding-top: 0.2rem; padding-bottom: 0.5rem;}
-  h3 {
-    a, a:hover, a:focus, a:active, a:visited {color: var(--p-tag-info-color)}
-  }
-  p {
-    margin-top: 0.5rem;
-  }
 }
 
 p-table {

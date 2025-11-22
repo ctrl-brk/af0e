@@ -1,8 +1,10 @@
 ﻿using System.Net;
 using AF0E.DB;
+using Logbook.Api.Extensions;
 using Logbook.Api.Models;
 using Logbook.Api.Responses;
 using Logbook.Api.Security;
+using Logbook.Api.Validators;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 
@@ -73,11 +75,44 @@ public static class LogbookHandlers
         if (log == null)
             return null;
 
-        var qso = new QsoDetails(log);
+        var isAdmin = await AuthHelper.HasPolicyAsync(Policies.AdminOnly, authSvc, httpContext);
 
-        if (await AuthHelper.HasPolicyAsync(Policies.AdminOnly, authSvc, httpContext))
-            qso.Comment = log.ColComment;
+        var qso = new QsoDetails(log, isAdmin);
 
         return qso;
+    }
+
+    public static async Task<QsoDetails?> UpdateQsoDetails(QsoDetails qso, HrdDbContext dbContext, IAuthorizationService authSvc, IHttpContextAccessor httpContext)
+    {
+        QsoDetailsValidator.ValidateAndThrow(qso);
+
+        var log = await dbContext.Log
+            .AsTracking()
+            .SingleOrDefaultAsync(x => x.ColPrimaryKey == qso.Id);
+
+        if (log == null)
+            return null;
+
+        var isAdmin = await AuthHelper.HasPolicyAsync(Policies.AdminOnly, authSvc, httpContext);
+
+        log.UpdateFromQsoDetails(qso, includeAdminFields: isAdmin);
+
+        await dbContext.SaveChangesAsync();
+
+        return await GetQsoDetails(log.ColPrimaryKey, dbContext, authSvc, httpContext);
+    }
+
+    public static async Task<QsoDetails> CreateQso(QsoDetails qso, HrdDbContext dbContext, IAuthorizationService authSvc, IHttpContextAccessor httpContext)
+    {
+        QsoDetailsValidator.ValidateAndThrow(qso);
+
+        var isAdmin = await AuthHelper.HasPolicyAsync(Policies.AdminOnly, authSvc, httpContext);
+
+        var log = qso.ToHrdLog(includeAdminFields: isAdmin);
+
+        dbContext.Log.Add(log);
+        await dbContext.SaveChangesAsync();
+
+        return (await GetQsoDetails(log.ColPrimaryKey, dbContext, authSvc, httpContext))!;
     }
 }

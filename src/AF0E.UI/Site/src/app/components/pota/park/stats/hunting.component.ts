@@ -12,7 +12,6 @@ import {PotaParkModel} from '../../../../models/pota-park.model';
 import {ScrollTop} from 'primeng/scrolltop';
 import {GridPipe, ModeSeverityPipe, QsoModePipe} from '../../../../shared/pipes';
 import {Tag} from 'primeng/tag';
-import {MatIcon, MatIconRegistry} from '@angular/material/icon';
 import {GridMapDirective} from '../../../../shared/directives';
 
 @Component({
@@ -24,7 +23,6 @@ import {GridMapDirective} from '../../../../shared/directives';
     Card,
     DatePipe,
     ScrollTop,
-    MatIcon,
     ModeSeverityPipe,
     QsoModePipe,
     Tag,
@@ -35,7 +33,6 @@ import {GridMapDirective} from '../../../../shared/directives';
 export class PotaParkHuntingComponent implements OnInit {
   private _activatedRoute = inject(ActivatedRoute)
   private _destroyRef = inject(DestroyRef);
-  private _matIconReg = inject(MatIconRegistry);
   private _potaSvc = inject(PotaService);
   private _ntfSvc= inject(NotificationService);
   private _log = inject(LogService);
@@ -46,7 +43,6 @@ export class PotaParkHuntingComponent implements OnInit {
   protected totalP2P = 0;
 
   ngOnInit(): void {
-    this._matIconReg.setDefaultFontSetClass('material-symbols-outlined');
 
     const sub = this._activatedRoute.paramMap.subscribe({
       next: (x) => {this.parkNum = x.get('parkNum')!; this.onParkChange(this.parkNum);}

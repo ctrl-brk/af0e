@@ -1,4 +1,4 @@
-import {inject, Injectable} from '@angular/core';
+import {inject, Injectable, signal} from '@angular/core';
 import {AuthService} from '@auth0/auth0-angular';
 import {map, Observable} from 'rxjs';
 import {environment} from '../../environments/environment';
@@ -8,6 +8,14 @@ import {environment} from '../../environments/environment';
 })
 export class AppAuthService {
   private auth = inject(AuthService);
+  private currentClaims = signal<any>(null);
+
+  constructor() {
+    // Keep claims in sync
+    this.auth.idTokenClaims$.subscribe(claims => {
+      this.currentClaims.set(claims);
+    });
+  }
 
   isAuthenticated$ = this.auth.isAuthenticated$;
   user$ = this.auth.user$;
@@ -32,7 +40,7 @@ export class AppAuthService {
     });
   }
 
-  hasRole(role: string): Observable<boolean> {
+  hasRoleAsync(role: string): Observable<boolean> {
     return this.auth.idTokenClaims$.pipe(
       map(claims => {
         const claimedRoles = claims?.[`${environment.claimType}/roles`] as string[] | undefined;
@@ -41,7 +49,13 @@ export class AppAuthService {
     );
   }
 
-  hasAnyRole(roles: string[]): Observable<boolean> {
+  hasRole(role: string): boolean {
+    const claims = this.currentClaims();
+    const claimedRoles = claims?.[`${environment.claimType}/roles`] as string[] | undefined;
+    return claimedRoles ? claimedRoles.includes(role) : false;
+  }
+
+  hasAnyRoleAsync(roles: string[]): Observable<boolean> {
     return this.auth.idTokenClaims$.pipe(
       map(claims => {
         const claimedRoles = claims?.[`${environment.claimType}/roles`] as string[] | undefined;
@@ -50,7 +64,7 @@ export class AppAuthService {
     );
   }
 
-  hasPermission(permission: string): Observable<boolean> {
+  hasPermissionAsync(permission: string): Observable<boolean> {
     return this.auth.idTokenClaims$.pipe(
       map(claims => {
         const claimedPerms = claims?.[`${environment.claimType}/permissions`] as string[] | undefined;
@@ -59,7 +73,7 @@ export class AppAuthService {
     );
   }
 
-  hasAnyPermission(permissions: string[]): Observable<boolean> {
+  hasAnyPermissionAsync(permissions: string[]): Observable<boolean> {
     return this.auth.idTokenClaims$.pipe(
       map(claims => {
         const claimedPerms = claims?.[`${environment.claimType}/permissions`] as string[] | undefined;

@@ -42,7 +42,7 @@
 </p-table>
 
 <p-dialog header="{{myCallsign}} confirms the following QSO" [modal]="true" [(visible)]="qsoDetailsVisible" [style]="{ width: '25rem' }">
-  <app-qso [qsoId]="selectedId" />
+  <app-qso [logId]="selectedId" />
   <div class="qsl">
     <p-button label="Close" severity="secondary" (click)="qsoDetailsVisible = false" />
   </div>

@@ -26,7 +26,7 @@ import {ModeSeverityPipe, QsoModePipe} from '../../../shared/pipes';
 })
 export class PotaActivationLogComponent {
   protected myCallsign = '';
-  protected selectedId?: number;
+  protected selectedId = 0;
   protected qsoDetailsVisible = false;
 
   logEntries = input.required<ActivationQsoModel[]>();
