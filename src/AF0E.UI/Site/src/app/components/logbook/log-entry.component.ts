@@ -1,16 +1,15 @@
 import {Component, DestroyRef, inject, OnInit, ViewEncapsulation} from '@angular/core';
 import {ActivatedRoute} from '@angular/router';
-import {Card} from 'primeng/card';
-import {QsoDetailModel} from '../../models/qso-detail.model';
 import {QsoEditComponent} from './qso-edit.component';
+import {Card} from 'primeng/card';
 
 @Component({
   templateUrl: './log-entry.component.html',
   styleUrl: './log-entry.component.scss',
   encapsulation: ViewEncapsulation.None,
   imports: [
-    Card,
     QsoEditComponent,
+    Card,
   ],
 })
 export class LogEntryComponent implements OnInit {
@@ -18,7 +17,7 @@ export class LogEntryComponent implements OnInit {
   private _destroyRef = inject(DestroyRef);
 
   protected logId = 0;
-  protected qso: QsoDetailModel = null!;
+  protected title = 'QSO';
 
   ngOnInit(): void {
     const sub = this._activatedRoute.queryParams.subscribe( p => {
@@ -26,5 +25,9 @@ export class LogEntryComponent implements OnInit {
     });
 
     this._destroyRef.onDestroy(() => sub.unsubscribe());
+  }
+
+  onEditModeChange(isEditMode: boolean) {
+    this.title = isEditMode ? 'Edit QSO' : 'Add QSO';
   }
 }

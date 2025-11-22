@@ -18,18 +18,18 @@ export class QsoComponent {
   private _ntfSvc= inject(NotificationService);
   private _log = inject(LogService);
 
-  qsoId = input<number>();
+  logId = input<number>(0);
   qsoDetails: QsoDetailModel | undefined;
 
   constructor() {
     effect(() => {
-      if (this.qsoId())
+      if (this.logId() > 0) // could also be -1
         this.loadQSO();
     });
   }
 
   private loadQSO() {
-    this._logbookSvc.getQso(this.qsoId()!).subscribe({
+    this._logbookSvc.getQso(this.logId()!).subscribe({
       next: r => {
         this.qsoDetails = r;
       },

@@ -2,6 +2,7 @@
 using AF0E.DB;
 using Logbook.Api.Handlers;
 using Logbook.Api.Models;
+using Logbook.Api.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -49,6 +50,38 @@ public static class V1Endpoints
                 return res is null ? TypedResults.NotFound() : TypedResults.Ok(res);
             })
             .WithName("QsoDetails")
+            .WithOpenApi();
+
+        builder.MapPut("qso", async Task<Results<BadRequest<string>, NotFound, Ok<QsoDetails>>> (QsoDetails qso, HrdDbContext dbContext, IAuthorizationService authSvc, IHttpContextAccessor httpContext) =>
+            {
+                try
+                {
+                    var res = await LogbookHandlers.UpdateQsoDetails(qso, dbContext, authSvc, httpContext);
+                    return res is null ? TypedResults.NotFound() : TypedResults.Ok(res);
+                }
+                catch (ArgumentException ex)
+                {
+                    return TypedResults.BadRequest(ex.Message);
+                }
+            })
+            .RequireAuthorization(Policies.AdminOnly)
+            .WithName("QsoUpdate")
+            .WithOpenApi();
+
+        builder.MapPost("qso", async Task<Results<BadRequest<string>, Created<QsoDetails>>> (QsoDetails qso, HrdDbContext dbContext, IAuthorizationService authSvc, IHttpContextAccessor httpContext) =>
+            {
+                try
+                {
+                    var result = await LogbookHandlers.CreateQso(qso, dbContext, authSvc, httpContext);
+                    return TypedResults.Created($"/api/v1/logbook/qso/{result.Id}", result);
+                }
+                catch (ArgumentException ex)
+                {
+                    return TypedResults.BadRequest(ex.Message);
+                }
+            })
+            .RequireAuthorization(Policies.AdminOnly)
+            .WithName("QsoCreate")
             .WithOpenApi();
 
         builder.MapGet("{call?}", async (string? call, int? skip, int? take, string? sort, int? orderBy, string? begin, string? end, HrdDbContext dbContext) =>

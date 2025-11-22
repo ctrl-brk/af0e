@@ -30,3 +30,5 @@ _ReSharper*/
 # Angular
 .angular/
 node_modules/
+
+UpgradeLog.htm

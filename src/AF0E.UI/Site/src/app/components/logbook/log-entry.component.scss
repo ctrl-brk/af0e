@@ -1,10 +1,14 @@
 main.le-content {
+  margin-top: 2.5rem;
+  padding: 2rem;
   display: flex;
   justify-content: center;
-  margin-top: 4.75rem;
 
-  .p-card {
-    min-width: 30rem;
-    background-color: aliceblue;
+  p-card {max-width: 55rem;}
+}
+
+@media (max-width: 768px) {
+  main.le-content {
+    padding: 1rem;
   }
 }

@@ -1,5 +1,5 @@
 import {Component, DestroyRef, inject, OnInit, ViewEncapsulation} from '@angular/core';
-import {ActivatedRoute} from '@angular/router';
+import {ActivatedRoute, Router} from '@angular/router';
 import {TableLazyLoadEvent, TableModule} from 'primeng/table';
 import {LogbookService} from '../../services/logbook.service';
 import {Utils} from '../../shared/utils';
@@ -15,11 +15,12 @@ import {DatePickerModule} from 'primeng/datepicker';
 import {DialogModule} from 'primeng/dialog';
 import {QsoComponent} from '../qso/qso.component';
 import {TooltipModule} from 'primeng/tooltip';
-import {MatIcon, MatIconRegistry} from '@angular/material/icon';
 import {Button} from 'primeng/button';
 import {ScrollTop} from 'primeng/scrolltop';
 import {ModeSeverityPipe, QsoModePipe} from '../../shared/pipes';
 import {DatePipe} from '@angular/common';
+import {AppAuthService} from '../../services/auth.service';
+import {QsoEditComponent} from './qso-edit.component';
 
 @Component({
   selector: 'app-logbook',
@@ -33,7 +34,6 @@ import {DatePipe} from '@angular/common';
     DialogModule,
     FloatLabelModule,
     FormsModule,
-    MatIcon,
     QsoComponent,
     ScrollTop,
     TableModule,
@@ -41,30 +41,33 @@ import {DatePipe} from '@angular/common';
     TooltipModule,
     ModeSeverityPipe,
     QsoModePipe,
+    QsoEditComponent,
   ],
 })
-export class LogbookComponent implements OnInit{
+export class LogbookComponent implements OnInit {
   private _activatedRoute = inject(ActivatedRoute)
   private _destroyRef = inject(DestroyRef);
-  private _matIconReg = inject(MatIconRegistry);
+  private _router = inject(Router);
+  protected _authSvc = inject(AppAuthService);
   private _logbookSvc = inject(LogbookService);
-  private _ntfSvc= inject(NotificationService);
+  private _ntfSvc = inject(NotificationService);
   private _log = inject(LogService);
+
   private _call: string | null = null;
 
   logEntries: QsoSummaryModel[] = [];
   totalRecords = 0;
-  selectedId?: number;
+  selectedId: number = 0;
   loading = false;
   qsoDateRange!: Date[];
   qsoMinDate: Date | undefined | null;
   qsoMaxDate: Date | undefined | null;
   dateRangeTitle = '';
   qsoDetailsVisible = false;
+  qsoEditVisible = false;
   myCallsign = '';
 
   ngOnInit() {
-    this._matIconReg.setDefaultFontSetClass('material-symbols-outlined');
 
     const now = new Date();
     this.qsoMinDate = new Date(2009, 4);
@@ -115,12 +118,24 @@ export class LogbookComponent implements OnInit{
         this.totalRecords = r.totalCount;
         this.logEntries = r.contacts;
       },
-      error: e=> Utils.showErrorMessage(e, this._ntfSvc, this._log),
+      error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log),
       complete: () => this.loading = false
     });
   }
 
+  protected onAddQso() {
+    this.selectedId = this.selectedId === 0 ? -1 : 0; // triggers form init
+    this.qsoEditVisible = true;
+  }
+
   onQsoSelect(qso: QsoSummaryModel) {
+    this.selectedId = qso.id;
+
+    if (this._authSvc.hasRole('Admin')) {
+      this.qsoEditVisible = true;
+      return;
+    }
+
     if (qso.date > new Date(Date.UTC(2011, 0, 6)))
       this.myCallsign = 'AFØE';
     else if (qso.date > new Date(2010, 10, 21))
@@ -128,7 +143,14 @@ export class LogbookComponent implements OnInit{
     else
       this.myCallsign = 'KDØHHE';
 
-    this.selectedId = qso.id;
     this.qsoDetailsVisible = true;
+  }
+
+  onQsoSaved(isUpdate: boolean) {
+    this.qsoEditVisible = false;
+
+    if (!isUpdate) {
+      this.loadLog(this._call, 0, 50, this.qsoDateRange);
+    }
   }
 }
