@@ -1,19 +1,19 @@
 <p-card>
-  @if (park) {
-    <h3><a href="https://pota.app/#/park/{{park.parkNum}}">{{park.parkDesc}}</a> {{park.location}} <a gridMap target="_blank">{{park.grid}}</a></h3>
+  @if (park()) {
+    <h3><a href="https://pota.app/#/park/{{park()!.parkNum}}">{{park()!.parkDesc}}</a> {{park()!.location}} <a gridMap target="_blank">{{park()!.grid}}</a></h3>
     <p>
-      <b>{{logEntries.length}}</b> QSOs@if (totalP2P > 0) {, <b>{{totalP2P}}</b> P2P}
+      <b>{{logEntries().length}}</b> QSOs@if (totalP2P() > 0) {, <b>{{totalP2P()}}</b> P2P}
     </p>
     <p>
-      <b>{{park.totalActivationCount}}</b> Activations,
-      <b>{{park.totalQsoCount}}</b> QSOs,
-      <b>{{park.active ? 'Active' : 'Inactive'}}</b>
+      <b>{{park()!.totalActivationCount}}</b> Activations,
+      <b>{{park()!.totalQsoCount}}</b> QSOs,
+      <b>{{park()!.active ? 'Active' : 'Inactive'}}</b>
     </p>
   }
 </p-card>
 
 <p-table
-  [value]="logEntries"
+  [value]="logEntries()"
   dataKey="id"
   sortField="date"
   [sortOrder]="-1"

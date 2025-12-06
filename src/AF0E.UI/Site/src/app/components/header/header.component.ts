@@ -1,4 +1,4 @@
-import {Component, DestroyRef, inject, OnInit, output, ViewEncapsulation} from '@angular/core';
+import {Component, DestroyRef, inject, model, OnInit, output, signal, ViewEncapsulation} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {AutoCompleteCompleteEvent, AutoCompleteModule, AutoCompleteSelectEvent} from 'primeng/autocomplete';
 import {FloatLabelModule} from 'primeng/floatlabel';
@@ -40,12 +40,12 @@ export class HeaderComponent implements OnInit {
   private _log = inject(LogService);
   private _logbookSvc = inject(LogbookService);
   private _authSvc = inject(AppAuthService);
-  searchCall!: string;
-  callsFound: any[] = [];
-  isLessThan1000px = false;
-  menuItems: MenuItem[] | undefined;
+  searchCall = model(''); // model for two-way binding with autocomplete
+  callsFound = signal<any[]>([]);
+  isLessThan1000px = signal(false);
+  menuItems = signal<MenuItem[] | undefined>(undefined);
   callSelected = output();
-  searchTitle  = '';
+  searchTitle = signal('');
 
   ngOnInit(): void {
     const routerSub = this._router.events
@@ -54,17 +54,17 @@ export class HeaderComponent implements OnInit {
         let arr = event.url.split('/');
         if (arr[1].toLowerCase() == 'logbook') {
           switch (arr.length) {
-            case 3: this.searchCall = decodeURIComponent(arr[2]);
+            case 3: this.searchCall.set(decodeURIComponent(arr[2]));
               break;
-            case 4: this.searchCall = `${decodeURIComponent(arr[2])}/${decodeURIComponent(arr[3])}`;
+            case 4: this.searchCall.set(`${decodeURIComponent(arr[2])}/${decodeURIComponent(arr[3])}`);
               break;
-            case 5: this.searchCall = `${decodeURIComponent(arr[2])}/${decodeURIComponent(arr[3])}/${decodeURIComponent(arr[4])}`;
+            case 5: this.searchCall.set(`${decodeURIComponent(arr[2])}/${decodeURIComponent(arr[3])}/${decodeURIComponent(arr[4])}`);
               break;
-              default: this.searchCall = '';
+              default: this.searchCall.set('');
           }
         }
         else
-          this.searchCall = '';
+          this.searchCall.set('');
       });
 
     this.configureMenu();
@@ -79,13 +79,13 @@ export class HeaderComponent implements OnInit {
 
   search(event: AutoCompleteCompleteEvent) {
     this._logbookSvc.lookupPartial(event.query).subscribe({
-      next: r => this.callsFound = r,
+      next: r => this.callsFound.set(r),
       error: e=> Utils.showErrorMessage(e, this._ntfSvc, this._log),
     })
   }
 
   onSearchFocus(focus: boolean) {
-    this.searchTitle = focus ? 'enter call sign' : 'log search...'
+    this.searchTitle.set(focus ? 'enter call sign' : 'log search...');
   }
 
   onSelect(event: AutoCompleteSelectEvent) {
@@ -95,12 +95,12 @@ export class HeaderComponent implements OnInit {
 
   private setResponsive(): void {
     const sub = this._responsive.observe('(max-width: 1000px)')
-      .subscribe(x => this.isLessThan1000px = x.matches);
+      .subscribe(x => this.isLessThan1000px.set(x.matches));
     this._destroyRef.onDestroy(() => sub.unsubscribe());
   }
 
   private configureMenu() {
-    this.menuItems = [
+    this.menuItems.set([
       {
         label: 'Home',
         icon: 'pi pi-home',
@@ -173,11 +173,11 @@ export class HeaderComponent implements OnInit {
           },
         ]
       }
-    ]
+    ]);
   }
 
   private onAuthChanged(isAuthenticated: boolean) {
-    const userMenu = this.menuItems!.find(item => item.label === 'User');
+    const userMenu = this.menuItems()!.find(item => item.label === 'User');
 
     if (!userMenu)
       return;
@@ -196,6 +196,6 @@ export class HeaderComponent implements OnInit {
       }
     ];
 
-    this.menuItems = [...this.menuItems!];
+    this.menuItems.set([...this.menuItems()!]);
   }
 }

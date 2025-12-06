@@ -1,4 +1,4 @@
-import {Component, inject, OnInit, ViewEncapsulation} from '@angular/core';
+import {Component, inject, OnInit, signal, ViewEncapsulation} from '@angular/core';
 import {TableModule} from 'primeng/table';
 import {PotaService} from '../../../services/pota.service';
 import {QsoSummaryModel} from '../../../models/qso-summary.model';
@@ -36,12 +36,12 @@ export class PotaUnconfirmedComponent implements OnInit {
   auth = inject(AuthService);
   private http = inject(HttpClient);
 
-  protected logEntries: QsoSummaryModel[] = [];
+  protected logEntries = signal<QsoSummaryModel[]>([]);
 
   ngOnInit(): void {
       this._potaSvc.getUnconfirmedLog().subscribe({
       next: (r: QsoSummaryModel[]) => {
-        this.logEntries = r;
+        this.logEntries.set(r);
       },
       error: e=> Utils.showErrorMessage(e, this._ntfSvc, this._log),
     });

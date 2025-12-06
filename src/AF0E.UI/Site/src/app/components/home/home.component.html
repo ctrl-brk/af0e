@@ -27,7 +27,7 @@
       <a href="https://hamalert.org" target="_blank"><img src="https://hamalert.org/myspot?c=AF0E&amp;h=e098e09f02890414" srcset="https://hamalert.org/myspot?c=AF0E&amp;h=e098e09f02890414&amp;hr=1 2x"></a>
     </p-card>
 
-    @if (!isLessThan1000px) {
+    @if (!isLessThan1000px()) {
       <p-card class="qrz">
         <iframe frameborder="0" height="407" scrolling="yes" src="https://logbook.qrz.com/lbstat/AF0E/" width="640"></iframe>
       </p-card>
@@ -43,7 +43,7 @@
       </p-card>
     }
 
-    @if (!isLessThan1000px) {
+    @if (!isLessThan1000px()) {
       <p-card class="rbn">
         <a href="https://foc.dj1yfk.de/activity/AF0E" target="_blank"><img src="https://foc.dj1yfk.de/activity/image/AF0E"></a>
       </p-card>

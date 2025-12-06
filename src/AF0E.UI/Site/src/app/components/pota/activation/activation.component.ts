@@ -1,4 +1,4 @@
-import {Component, DestroyRef, inject, OnInit, ViewEncapsulation} from '@angular/core';
+import {Component, DestroyRef, inject, OnInit, signal, ViewEncapsulation} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {PotaActivationModel} from '../../../models/pota-activation.model';
 import {PotaService} from '../../../services/pota.service';
@@ -39,13 +39,16 @@ export class PotaActivationComponent implements OnInit {
   private _ntfSvc= inject(NotificationService);
   private _log = inject(LogService);
 
-  protected activationId = 0;
-  protected activation: PotaActivationModel = null!;
-  protected logEntries: ActivationQsoModel[] = [];
+  protected activationId = signal(0);
+  protected activation = signal<PotaActivationModel>(null!);
+  protected logEntries = signal<ActivationQsoModel[]>([]);
 
   ngOnInit(): void {
     const sub = this._activatedRoute.paramMap.subscribe({
-      next: (x) => {this.activationId = parseInt(x.get('id')!); this.onActivationChange(this.activationId);}
+      next: (x) => {
+        this.activationId.set(parseInt(x.get('id')!));
+        this.onActivationChange(this.activationId());
+      }
     });
 
     this._destroyRef.onDestroy(() => sub.unsubscribe());
@@ -53,12 +56,12 @@ export class PotaActivationComponent implements OnInit {
 
   private onActivationChange(id: number) {
     this._potaSvc.getActivation(id).subscribe({
-      next: (r: PotaActivationModel) => this.activation = r,
+      next: (r: PotaActivationModel) => this.activation.set(r),
       error: e=> Utils.showErrorMessage(e, this._ntfSvc, this._log),
     });
 
     this._potaSvc.getActivationLog(id).subscribe({
-      next: (r: ActivationQsoModel[]) => this.logEntries = r,
+      next: (r: ActivationQsoModel[]) => this.logEntries.set(r),
       error: e=> Utils.showErrorMessage(e, this._ntfSvc, this._log),
     });
   }

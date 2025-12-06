@@ -1,4 +1,4 @@
-import {Component, inject, OnInit, ViewEncapsulation} from '@angular/core';
+import {Component, inject, OnInit, signal, ViewEncapsulation} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {AutoCompleteModule} from 'primeng/autocomplete';
 import {FloatLabelModule} from 'primeng/floatlabel';
@@ -37,12 +37,12 @@ export class PotaActivationsComponent implements OnInit {
   private _ntfSvc= inject(NotificationService);
   private _log = inject(LogService);
 
-  protected activations: PotaActivationModel[] = [];
+  protected activations = signal<PotaActivationModel[]>([]);
 
   ngOnInit(): void {
     this._potaSvc.getActivations().subscribe({
       next: (r: PotaActivationModel[]) => {
-        this.activations = r;
+        this.activations.set(r);
       },
       error: e=> Utils.showErrorMessage(e, this._ntfSvc, this._log),
     });

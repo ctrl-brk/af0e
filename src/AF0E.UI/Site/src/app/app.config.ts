@@ -1,4 +1,4 @@
-import {ApplicationConfig, provideZoneChangeDetection} from '@angular/core';
+import {ApplicationConfig} from '@angular/core';
 import {provideRouter, withComponentInputBinding} from '@angular/router';
 import {routes} from './routing/app.routes';
 import {provideHttpClient, withInterceptors} from '@angular/common/http';
@@ -12,7 +12,6 @@ import {environment} from '../environments/environment';
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideZoneChangeDetection({ eventCoalescing: true }),
     provideAnimationsAsync(),
     provideRouter(routes, withComponentInputBinding()),
     provideAuth0({

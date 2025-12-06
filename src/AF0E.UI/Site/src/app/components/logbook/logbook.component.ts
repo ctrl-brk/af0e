@@ -1,4 +1,4 @@
-import {Component, DestroyRef, inject, OnInit, ViewEncapsulation} from '@angular/core';
+import {Component, DestroyRef, inject, model, OnInit, signal, ViewEncapsulation} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
 import {TableLazyLoadEvent, TableModule} from 'primeng/table';
 import {LogbookService} from '../../services/logbook.service';
@@ -55,24 +55,25 @@ export class LogbookComponent implements OnInit {
 
   private _call: string | null = null;
 
-  logEntries: QsoSummaryModel[] = [];
-  totalRecords = 0;
-  selectedId: number = 0;
-  loading = false;
-  qsoDateRange!: Date[];
-  qsoMinDate: Date | undefined | null;
-  qsoMaxDate: Date | undefined | null;
-  dateRangeTitle = '';
-  qsoDetailsVisible = false;
-  qsoEditVisible = false;
-  myCallsign = '';
+  // Convert to signals for better zoneless change detection
+  logEntries = signal<QsoSummaryModel[]>([]);
+  totalRecords = signal(0);
+  selectedId = signal(0);
+  loading = signal(false);
+  qsoDateRange = model<Date[]>([]); // model() for two-way binding
+  qsoMinDate = signal<Date | undefined | null>(undefined);
+  qsoMaxDate = signal<Date | undefined | null>(undefined);
+  dateRangeTitle = signal('');
+  qsoDetailsVisible = model(false); // model() for two-way binding with dialog
+  qsoEditVisible = model(false); // model() for two-way binding with dialog
+  myCallsign = signal('');
 
   ngOnInit() {
 
     const now = new Date();
-    this.qsoMinDate = new Date(2009, 4);
-    this.qsoMaxDate = new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-    this.qsoDateRange = [this.qsoMinDate, this.qsoMaxDate];
+    this.qsoMinDate.set(new Date(2009, 4));
+    this.qsoMaxDate.set(new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    this.qsoDateRange.set([this.qsoMinDate()!, this.qsoMaxDate()!]);
     this.onDateRangeFocus(false);
 
     const sub = this._activatedRoute.paramMap.subscribe({
@@ -89,68 +90,72 @@ export class LogbookComponent implements OnInit {
   }
 
   private onCallChange(call: string | null) {
-    this.loadLog(call, 0, 50, [this.qsoMinDate!, this.qsoMaxDate!]);
+    this.loadLog(call, 0, 50, [this.qsoMinDate()!, this.qsoMaxDate()!]);
   }
 
   onLazyLoad(event: TableLazyLoadEvent) {
-    this.loadLog(this._call, event.first!, event.rows!, this.qsoDateRange, event.sortOrder === 1 ? SortDirection.Ascending : SortDirection.Descending);
+    this.loadLog(this._call, event.first!, event.rows!, this.qsoDateRange(), event.sortOrder === 1 ? SortDirection.Ascending : SortDirection.Descending);
   }
 
   onDateRangeFocus(focus: boolean) {
-    this.dateRangeTitle = focus ? 'yyyy-mm-dd - yyyy-mm-dd' : 'Date range...';
+    this.dateRangeTitle.set(focus ? 'yyyy-mm-dd - yyyy-mm-dd' : 'Date range...');
   }
 
   onDateRangeSearch() {
-    if (!this.qsoDateRange || !this.qsoDateRange[0] || !this.qsoDateRange[1])
+    if (!this.qsoDateRange() || !this.qsoDateRange()[0] || !this.qsoDateRange()[1])
       this._ntfSvc.addMessage(new NotificationMessageModel(NotificationMessageSeverity.Warn, 'Please select a date range'));
 
-    this.loadLog(this._call, 0, 50, this.qsoDateRange);
+    this.loadLog(this._call, 0, 50, this.qsoDateRange());
   }
 
   private loadLog(call: string | null, skip: number, take: number = 0, dateRange?: Date[], order: SortDirection = SortDirection.Descending, sortBy = 'date') {
-    this.loading = true;
+    this.loading.set(true);
 
-    let minDate = !dateRange || !dateRange[0] || !dateRange[1] ? this.qsoMinDate : dateRange[0];
-    let maxDate = !dateRange || !dateRange[0] || !dateRange[1] ? this.qsoMaxDate : dateRange[1];
+    let minDate = !dateRange || !dateRange[0] || !dateRange[1] ? this.qsoMinDate() : dateRange[0];
+    let maxDate = !dateRange || !dateRange[0] || !dateRange[1] ? this.qsoMaxDate() : dateRange[1];
 
     this._logbookSvc.getQsoSummaries(call, skip, take, order, sortBy, [minDate!, maxDate!]).subscribe({
       next: r => {
-        this.totalRecords = r.totalCount;
-        this.logEntries = r.contacts;
+        this.totalRecords.set(r.totalCount);
+        this.logEntries.set(r.contacts);
+        this.loading.set(false);
+        // No ChangeDetectorRef needed! Signals automatically notify Angular
       },
-      error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log),
-      complete: () => this.loading = false
+      error: e => {
+        this.loading.set(false);
+        Utils.showErrorMessage(e, this._ntfSvc, this._log);
+      }
     });
   }
 
   protected onAddQso() {
-    this.selectedId = this.selectedId === 0 ? -1 : 0; // triggers form init
-    this.qsoEditVisible = true;
+    this.selectedId.set(this.selectedId() === 0 ? -1 : 0); // triggers form init
+    this.qsoEditVisible.set(true);
   }
 
   onQsoSelect(qso: QsoSummaryModel) {
-    this.selectedId = qso.id;
+    this.selectedId.set(qso.id);
 
     if (this._authSvc.hasRole('Admin')) {
-      this.qsoEditVisible = true;
+      this.qsoEditVisible.set(true);
       return;
     }
 
     if (qso.date > new Date(Date.UTC(2011, 0, 6)))
-      this.myCallsign = 'AFØE';
+      this.myCallsign.set('AFØE');
     else if (qso.date > new Date(2010, 10, 21))
-      this.myCallsign = 'K3OSO';
+      this.myCallsign.set('K3OSO');
     else
-      this.myCallsign = 'KDØHHE';
+      this.myCallsign.set('KDØHHE');
 
-    this.qsoDetailsVisible = true;
+    this.qsoDetailsVisible.set(true);
   }
 
   onQsoSaved(isUpdate: boolean) {
-    this.qsoEditVisible = false;
+    this.qsoEditVisible.set(false);
 
     if (!isUpdate) {
-      this.loadLog(this._call, 0, 50, this.qsoDateRange);
+      this.loadLog(this._call, 0, 50, this.qsoDateRange());
     }
   }
 }

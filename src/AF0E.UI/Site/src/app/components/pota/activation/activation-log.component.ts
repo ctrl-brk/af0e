@@ -1,4 +1,4 @@
-import {Component, input, ViewEncapsulation} from '@angular/core';
+import {Component, input, model, signal, ViewEncapsulation} from '@angular/core';
 import {ButtonModule} from 'primeng/button';
 import {DatePipe} from '@angular/common';
 import {Dialog} from 'primeng/dialog';
@@ -25,21 +25,21 @@ import {ModeSeverityPipe, QsoModePipe} from '../../../shared/pipes';
   ],
 })
 export class PotaActivationLogComponent {
-  protected myCallsign = '';
-  protected selectedId = 0;
-  protected qsoDetailsVisible = false;
+  protected myCallsign = signal('');
+  protected selectedId = signal(0);
+  protected qsoDetailsVisible = model(false);
 
   logEntries = input.required<ActivationQsoModel[]>();
 
   onQsoSelect(qso: ActivationQsoModel) {
     if (qso.date > new Date(Date.UTC(2011, 0, 6)))
-      this.myCallsign = 'AFØE';
+      this.myCallsign.set('AFØE');
     else if (qso.date > new Date(2010, 10, 21))
-      this.myCallsign = 'K3OSO';
+      this.myCallsign.set('K3OSO');
     else
-      this.myCallsign = 'KDØHHE';
+      this.myCallsign.set('KDØHHE');
 
-    this.selectedId = qso.logId;
-    this.qsoDetailsVisible = true;
+    this.selectedId.set(qso.logId);
+    this.qsoDetailsVisible.set(true);
   }
 }
