@@ -19,6 +19,7 @@ x86/
 
 # IDEs
 .vs/
+.vscode/
 .idea/
 
 # Jetbrains

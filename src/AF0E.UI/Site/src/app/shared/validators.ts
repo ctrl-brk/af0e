@@ -51,6 +51,11 @@ export function callSignValidator(): ValidatorFn {
       return { callSignNoDigit: { message: 'The main call sign must contain at least one digit' } };
     }
 
+    // Must contain at least one letter
+    if (!/[A-Za-z]/.test(mainCallSign)) {
+      return { callSignNoLetter: { message: 'The main call sign must contain at least one letter' } };
+    }
+
     return null;
   };
 }
