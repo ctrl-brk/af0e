@@ -1,4 +1,4 @@
-import {ApplicationConfig, provideZoneChangeDetection} from '@angular/core';
+import {ApplicationConfig} from '@angular/core';
 import {provideRouter, withComponentInputBinding} from '@angular/router';
 import {routes} from './routing/app.routes';
 import {provideHttpClient, withInterceptors} from '@angular/common/http';
@@ -6,14 +6,11 @@ import {MessageService} from 'primeng/api';
 import {LogService} from './shared/log.service';
 import {providePrimeNG} from 'primeng/config';
 import Aura from '@primeng/themes/aura';
-import {provideAnimationsAsync} from '@angular/platform-browser/animations/async';
 import {authHttpInterceptorFn, provideAuth0} from '@auth0/auth0-angular';
 import {environment} from '../environments/environment';
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideZoneChangeDetection({ eventCoalescing: true }),
-    provideAnimationsAsync(),
     provideRouter(routes, withComponentInputBinding()),
     provideAuth0({
       domain: environment.auth0domain,

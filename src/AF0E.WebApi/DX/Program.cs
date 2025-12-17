@@ -4,7 +4,6 @@ using Azure.Data.Tables;
 using DX.Api;
 using DX.Api.Models;
 using Microsoft.Extensions.Logging.ApplicationInsights;
-using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,7 +28,7 @@ builder.Services.AddApiVersioning(o =>
 });
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c => c.SwaggerDoc("v1", new OpenApiInfo{Title = "AFØE DX Api", Version = "v1"}));
+builder.Services.AddOpenApi();
 
 if (!builder.Environment.IsDevelopment())
 {
@@ -50,11 +49,11 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler();
 }
 
-app.UseSwagger();
+app.MapOpenApi();
 app.UseSwaggerUI(c =>
 {
     c.RoutePrefix = string.Empty;
-    c.SwaggerEndpoint("swagger/v1/swagger.json", "v1");
+    c.SwaggerEndpoint("openapi/v1.json", "v1");
     c.DocumentTitle = "AFØE DX Api";
 });
 app.UseHttpsRedirection();
@@ -65,7 +64,7 @@ var versionSet = app.NewApiVersionSet()
     .Build();
 
 app.MapGet("v{version:apiVersion}/30days", (IConfiguration config) =>
-    {
+{
     var connectionString = config.GetConnectionString("AzureTableStorage") ?? throw new ApplicationException("Connection string not found");
 
     var svcClient = new TableServiceClient(connectionString);
@@ -85,7 +84,6 @@ app.MapGet("v{version:apiVersion}/30days", (IConfiguration config) =>
 .WithApiVersionSet(versionSet)
 .WithName("GetActiveDx")
 .WithSummary("DX list for the next 30 days")
-.WithDescription("Gets list of scheduled DX stations for the next 30 days starting from now.")
-.WithOpenApi();
+.WithDescription("Gets list of scheduled DX stations for the next 30 days starting from now.");
 
 app.Run();

@@ -13,7 +13,7 @@ on:
 
 env:
   APP_SRC_PATH: 'src/AF0E.WebApi/DX' # set this to the path to your web app project, defaults to the repository root
-  DOTNET_VERSION: '9.x' # set this to the dotnet version to use
+  DOTNET_VERSION: '10.x' # set this to the dotnet version to use
 
 jobs:
   build-and-deploy:

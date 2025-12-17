@@ -1,0 +1,59 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="Requests.http" />
+  </Folder>
+  <Configurations>
+    <BuildType Name="Debug" />
+    <BuildType Name="Development" />
+    <BuildType Name="Release" />
+  </Configurations>
+  <Folder Name="/App/">
+    <Project Path="AF0E.App/HamMarket/HamMarket.csproj">
+      <BuildType Solution="Development|*" Project="Debug" />
+    </Project>
+    <Project Path="AF0E.App/HrdDxFilter/HrdDxFilter.csproj">
+      <BuildType Solution="Development|*" Project="Debug" />
+    </Project>
+    <Project Path="AF0E.App/N1MM-Lookup/N1MM-Lookup.csproj">
+      <BuildType Solution="Development|*" Project="Debug" />
+    </Project>
+    <Project Path="AF0E.App/PotaHuntingLookup/PotaHuntingLookup.csproj">
+      <BuildType Solution="Development|*" Project="Debug" />
+    </Project>
+    <Project Path="AF0E.App/PotaLookup/PotaLookup.csproj">
+      <BuildType Solution="Development|*" Project="Debug" />
+    </Project>
+    <Project Path="AF0E.App/QrzLookup/QrzLookup.csproj">
+      <BuildType Solution="Development|*" Project="Debug" />
+    </Project>
+    <Project Path="AF0E.App/QslLabel/QslLabel.csproj">
+      <BuildType Solution="Development|*" Project="Debug" />
+    </Project>
+  </Folder>
+  <Folder Name="/Web.Api/">
+    <Project Path="AF0E.WebApi/DX/DX.Api.csproj">
+      <BuildType Solution="Development|*" Project="Debug" />
+    </Project>
+    <Project Path="AF0E.WebApi/Logbook/Logbook.Api/Logbook.Api.csproj">
+      <BuildType Solution="Development|*" Project="Debug" />
+    </Project>
+  </Folder>
+  <Folder Name="/ETL/">
+    <Project Path="AF0E.ETL/POTA parks import/POTA parks import.dtproj" Type="c9674dcb-5085-4a16-b785-4c70dd1589bd">
+      <BuildType Project="Development" />
+      <Platform Project="?" />
+    </Project>
+  </Folder>
+  <Project Path="AF0E.DB/AF0E.DB.csproj">
+    <BuildType Solution="Development|*" Project="Debug" />
+  </Project>
+  <Project Path="AF0E.Functions/AF0E.Functions.csproj">
+    <BuildType Solution="Development|*" Project="Debug" />
+  </Project>
+  <Project Path="AF0E.Shared/AF0E.Shared.csproj">
+    <BuildType Solution="Development|*" Project="Debug" />
+  </Project>
+</Solution>

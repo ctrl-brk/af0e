@@ -1,5 +1,5 @@
 <p-table
-  [value]="logEntries"
+  [value]="logEntries()"
   dataKey="id"
   sortField="date"
   [sortOrder]="-1"
@@ -9,8 +9,8 @@
   [rows]="50"
   [lazy]="true"
   [lazyLoadOnInit]="false"
-  [totalRecords]="totalRecords"
-  [loading]=loading
+  [totalRecords]="totalRecords()"
+  [loading]="loading()"
   (onLazyLoad)="onLazyLoad($event)"
   [scrollable]="true"
   class="tbl-log"
@@ -23,15 +23,15 @@
         <p-datePicker
           selectionMode="range"
           [(ngModel)]="qsoDateRange"
-          [minDate]="qsoMinDate"
-          [maxDate]="qsoMaxDate"
+          [minDate]="qsoMinDate()"
+          [maxDate]="qsoMaxDate()"
           dateFormat="yy-mm-dd"
           inputId="daterange"
           [readonlyInput]="false"
           (onFocus)="onDateRangeFocus(true)"
           (onBlur)="onDateRangeFocus(false)"
         />
-        <label for="daterange">{{dateRangeTitle}}</label>
+        <label for="daterange">{{dateRangeTitle()}}</label>
       </p-floatlabel>
       <p-button severity="secondary" icon="pi pi-search" (onClick)="onDateRangeSearch()" />
       @if (_authSvc.hasRole('Admin')) {
@@ -70,17 +70,17 @@
 
 <p-scrollTop />
 
-<p-dialog header="{{myCallsign}} confirms the following QSO" [modal]="true" [(visible)]="qsoDetailsVisible" [style]="{ width: '25rem' }">
-  @if (qsoDetailsVisible) {
-    <app-qso [logId]="selectedId" />
+<p-dialog header="{{myCallsign()}} confirms the following QSO" [modal]="true" [(visible)]="qsoDetailsVisible" [style]="{ width: '25rem' }">
+  @if (qsoDetailsVisible()) {
+    <app-qso [logId]="selectedId()" />
   }
   <div class="qsl">
-    <p-button label="Close" severity="secondary" (click)="qsoDetailsVisible = false" />
+    <p-button label="Close" severity="secondary" (click)="qsoDetailsVisible.set(false)" />
   </div>
 </p-dialog>
 
 <p-dialog header="Edit QSO" [modal]="true" [(visible)]="qsoEditVisible" [style]="{ width: '60rem' }" [focusOnShow]="false">
-  @if (qsoEditVisible) {
-    <app-qso-edit [logId]="selectedId" (saved)="onQsoSaved($event)" />
+  @if (qsoEditVisible()) {
+    <app-qso-edit [logId]="selectedId()" (saved)="onQsoSaved($event)" />
   }
 </p-dialog>

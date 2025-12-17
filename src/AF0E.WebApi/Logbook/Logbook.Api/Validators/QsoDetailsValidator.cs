@@ -173,6 +173,12 @@ public static partial class QsoDetailsValidator
         {
             errors.Add("The main call sign must contain at least one digit");
         }
+
+        // Must contain at least one letter
+        if (!mainCallSign.Any(char.IsAsciiLetter))
+        {
+            errors.Add("The main call sign must contain at least one letter");
+        }
     }
 
     /// <summary>

@@ -1,20 +1,20 @@
 <p-card>
-  @if (activation) {
-    <h3><a href="https://pota.app/#/park/{{activation.parkNum}}">{{activation.parkNum}} - {{activation.parkName}}</a></h3>
+  @if (activation()) {
+    <h3><a href="https://pota.app/#/park/{{activation()!.parkNum}}">{{activation()!.parkNum}} - {{activation()!.parkName}}</a></h3>
     <p>
-      <b>{{activation.count}}</b> QSOs&nbsp;&nbsp;
-      @if (activation.p2pCount > 0) {
-        <b>{{activation.p2pCount}}</b> P2P &nbsp;
+      <b>{{activation()!.count}}</b> QSOs&nbsp;&nbsp;
+      @if (activation()!.p2pCount > 0) {
+        <b>{{activation()!.p2pCount}}</b> P2P &nbsp;
       }
-      <p-tag [value]="'CW: ' + activation.cwCount.toString()" severity="success" />&nbsp;
-      <p-tag [value]="'Digi: ' + activation.digiCount.toString()" severity="warn" />&nbsp;
-      <p-tag [value]="'Phone: ' + activation.phoneCount.toString()" severity="info" />
+      <p-tag [value]="'CW: ' + activation()!.cwCount.toString()" severity="success" />&nbsp;
+      <p-tag [value]="'Digi: ' + activation()!.digiCount.toString()" severity="warn" />&nbsp;
+      <p-tag [value]="'Phone: ' + activation()!.phoneCount.toString()" severity="info" />
     </p>
     <p>
-      From: {{activation.startDate | date:'yy-MM-dd hh:mm'}}&nbsp;&nbsp;&nbsp;To: {{activation.endDate | date:'yy-MM-dd hh:mm'}}&nbsp;&nbsp;&nbsp;
-      Log submitted: {{activation.logSubmittedDate | date:'yy-MM-dd hh:mm'}}
+      From: {{activation()!.startDate | date:'yy-MM-dd hh:mm'}}&nbsp;&nbsp;&nbsp;To: {{activation()!.endDate | date:'yy-MM-dd hh:mm'}}&nbsp;&nbsp;&nbsp;
+      Log submitted: {{activation()!.logSubmittedDate | date:'yy-MM-dd hh:mm'}}
     </p>
-    <p class="comment">{{activation.siteComments}}</p>
+    <p class="comment">{{activation()!.siteComments}}</p>
   }
 </p-card>
 
@@ -25,10 +25,10 @@
   </p-tablist>
   <p-tabpanels>
     <p-tabpanel value="log">
-      <app-activation-log [logEntries]="logEntries"></app-activation-log>
+      <app-activation-log [logEntries]="logEntries()"></app-activation-log>
     </p-tabpanel>
     <p-tabpanel value="map">
-      <app-activation-map #map [activation]="activation" [logEntries]="logEntries"></app-activation-map>
+      <app-activation-map #map [activation]="activation()" [logEntries]="logEntries()"></app-activation-map>
     </p-tabpanel>
   </p-tabpanels>
 </p-tabs>

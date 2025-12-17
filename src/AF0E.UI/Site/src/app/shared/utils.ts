@@ -26,16 +26,13 @@ export class Utils {
   }
 
   public static showErrorMessage(r: any, ntf: NotificationService, log?: LogService) {
-    let msg = 'Server error. Please contact your system administrator.';
+    let msg = 'Server error. Please notify me.';
     const severity = NotificationMessageSeverity.Error;
     let title = 'Error';
     let sticky = false;
 
     if (!(r instanceof HttpErrorResponse)) {
-      if (r.message === 'Login required') //comes from auth interceptor
-        msg = "You are not authorized to use this resource. Please contact your system administrator.";
-      else
-        msg = 'Unhandled error. Please contact your system administrator.';
+      msg = 'Unhandled error. Please notify me.';
       if (log) log.error(r);
     } else if (r.status === 0) //handled by http helper
       return;
@@ -44,23 +41,29 @@ export class Utils {
       return;
     } else if (r.status === 401) {
       title = "Not authorized";
-      msg = "You are not authorized to use this resource. Please contact your system administrator.";
+      msg = "You are not authorized to use this resource.";
       sticky = true;
     } else if (r.status === 403) {
       title = "Access denied";
-      msg = "You do not have permissions to access this feature. Please contact your system administrator.";
+      msg = "You do not have permissions to access this feature.";
       sticky = true;
     } else if (r.status === 404) {
       title = "Not found";
-      msg = "The server resource is not found. Please contact your system administrator.";
+      msg = "The resource is not found. Please notify me.";
       sticky = true;
     } else {
-      const err: ErrorDtoModel = r.error;
+      if (r.error) {
+        const err: ErrorDtoModel = r.error;
 
-      if (err.source === 3) { //ErrorSource.Business
-        msg = err.message;
-        if (err.severity === ErrorSeverity.Conflict)
-          sticky = true;
+        if (err.source === 3) { //ErrorSource.Business
+          msg = err.message;
+          if (err.severity === ErrorSeverity.Conflict)
+            sticky = true;
+        }
+      }
+      else {
+        title = "Error";
+        msg = "Unexpected error. Please notify me.";
       }
     }
 

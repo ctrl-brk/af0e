@@ -4,36 +4,48 @@ using Logbook.Api.Converters;
 using Logbook.Api.Endpoints;
 using Logbook.Api.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
+using Scalar.AspNetCore;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(o =>
+builder.Services.AddOpenApi(options =>
 {
-    o.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
     {
-        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
-        Name = "Authorization",
-        In = ParameterLocation.Header,
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer"
+        // Add security scheme to the OpenAPI document
+        document.Components ??= new OpenApiComponents();
+        document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
+        document.Components.SecuritySchemes["bearer"] = new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            Description = "JWT Authorization header using the Bearer scheme. Enter your token in the text input below."
+        };
+
+        return Task.CompletedTask;
     });
 
-    o.AddSecurityRequirement(new OpenApiSecurityRequirement
+    options.AddOperationTransformer((operation, context, cancellationToken) =>
     {
+        // Add security requirement to operations that require authorization
+        var metadata = context.Description.ActionDescriptor.EndpointMetadata;
+        var requiresAuth = metadata.OfType<IAuthorizeData>().Any();
+
+        if (requiresAuth)
         {
-            new OpenApiSecurityScheme
+            operation.Security ??= [];
+            operation.Security.Add(new OpenApiSecurityRequirement
             {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            Array.Empty<string>()
+                [new OpenApiSecuritySchemeReference("bearer", context.Document)] = []
+            });
         }
+
+        return Task.CompletedTask;
     });
 });
 
@@ -69,8 +81,19 @@ app.UseStaticFiles();
 
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.MapOpenApi();
+
+    app.MapScalarApiReference(options =>
+    {
+        options.WithTitle("Logbook API v1")
+            .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
+
+        // Configure authentication - Scalar will display a UI to input the bearer token
+        options.Authentication = new()
+        {
+            PreferredSecuritySchemes = ["bearer"]
+        };
+    });
 }
 else
 {
