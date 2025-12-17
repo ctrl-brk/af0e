@@ -1,11 +1,19 @@
 import {getTestBed} from '@angular/core/testing';
 import {BrowserTestingModule, platformBrowserTesting,} from '@angular/platform-browser/testing';
 
-// Initialize Angular testing environment
-getTestBed().initTestEnvironment(
-  BrowserTestingModule,
-  platformBrowserTesting(),
-);
+// Initialize Angular testing environment once; the Vitest builder already calls this,
+// so swallow the duplicate-initialization error to stay compatible with both flows.
+const testBed = getTestBed();
+try {
+  testBed.initTestEnvironment(
+    BrowserTestingModule,
+    platformBrowserTesting(),
+  );
+} catch (err) {
+  if (!(err instanceof Error) || !err.message.includes('base providers')) {
+    throw err;
+  }
+}
 
 // Mock global objects if needed
 (globalThis as any).CSS = {

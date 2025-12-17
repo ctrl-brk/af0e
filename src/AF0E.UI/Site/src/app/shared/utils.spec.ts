@@ -30,20 +30,15 @@ describe('Utils', () => {
 
   describe('getCurrentUtcDate', () => {
     it('should return current date with time set to UTC', () => {
+      const now = new Date();
       const result = Utils.getCurrentUtcDate();
       expect(result).toBeInstanceOf(Date);
-
-      const now = new Date();
-      expect(result.getUTCFullYear()).toBe(now.getUTCFullYear());
-      expect(result.getUTCMonth()).toBe(now.getUTCMonth());
-      expect(result.getUTCDate()).toBe(now.getUTCDate());
-    });
-
-    it('should have hours, minutes, seconds, and milliseconds set', () => {
-      const result = Utils.getCurrentUtcDate();
-      // Should have actual time, not zeroed out
-      const totalTime = result.getUTCHours() + result.getUTCMinutes() + result.getUTCSeconds();
-      expect(totalTime).toBeGreaterThanOrEqual(0); // Basic sanity check
+      
+      expect(result.getFullYear()).toBe(now.getUTCFullYear());
+      expect(result.getMonth()).toBe(now.getUTCMonth());
+      expect(result.getDate()).toBe(now.getUTCDate());
+      expect(result.getHours()).toBe(now.getUTCHours());
+      expect(result.getMinutes()).toBe(now.getUTCMinutes());
     });
   });
 
