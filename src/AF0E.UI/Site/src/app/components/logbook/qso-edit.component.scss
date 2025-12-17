@@ -1,0 +1,136 @@
+.qso-edit-container {
+  width: 100%;
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+  }
+
+  .qso-form-fields {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    margin-left: -1rem; // counter left margins for alignment
+
+    &.inner { margin-top: -0.5rem; } // base -2rem overridden to add extra 0.5rem space below legends
+
+    > p-floatlabel,
+    > .flex,
+    > .field-hint {
+      margin-top: 2rem;
+      margin-left: 1rem;
+    }
+
+    > p-floatlabel {
+      flex: 0 0 auto;
+
+      &.form-field-full {
+        flex: 1 1 100%;
+        min-width: 100%;
+        max-width: 100%;
+      }
+
+      // Explicit width utilities for deterministic sizing
+      &.w-datetime { width: 10rem; }
+      &.w-date { width: 7rem; }
+      &.w-rst { width: 4.5rem; }
+      &.w-freq { width: 7.5rem; }
+      &.w-ddl { min-width: 5.5rem; }
+      &.w-comment { min-width: 20rem; }
+      &.w-auto { width: auto; }
+
+      label {
+        font-size: 0.7rem;
+        font-weight: 400;
+        color: var(--text-color-secondary);
+        opacity: 0.6;
+        transition: color .2s ease, opacity .2s ease;
+      }
+
+      // Float/filled states: ONLY darken on focus now (was also dark on filled)
+      &:focus-within label,
+      &:has(.p-select.p-focus) label,
+      &:has(.p-inputnumber.p-focus) label,
+      &:has(.p-datepicker .p-focus) label {
+        opacity: 1;
+        color: var(--text-color);
+        font-weight: 500;
+      }
+
+      // Unified filled (but not focused) state for all component types
+      &:not(:focus-within):has(.p-select.p-filled) label,
+      &:not(:focus-within):has(.p-inputnumber.p-filled) label,
+      &:not(:focus-within):has(.p-datepicker.p-filled) label,
+      &:not(:focus-within):has(input:not(:placeholder-shown)) label,
+      &:not(:focus-within):has(textarea:not(:placeholder-shown)) label {
+        opacity: 0.75;
+        color: var(--text-color-secondary);
+        font-weight: 400;
+      }
+
+      // Remove previous component-specific focus selectors now superseded
+      &.p-inputwrapper-focus label,
+      &:has(.p-inputwrapper-focus) label { /* obsolete; kept for backward compatibility */ }
+      &:has(.p-inputwrapper-filled):not(:focus-within) label { /* obsolete filled selector */ }
+    }
+
+    // Break utilities: occupy full row width without adding vertical gap
+    > .line-break,
+    > .flex-break {
+      flex-basis: 100%;
+      height: 0;
+      margin: 0; // prevent added spacing
+      padding: 0;
+    }
+
+    > .field-hint { flex: 1 1 100%; }
+
+    > .flex { flex: 0 0 auto; min-width: 160px; display: flex; gap: 0.5rem; align-items: center; }
+    .ml-2 { margin-left: 0.5rem; }
+
+    /* Make width utilities affect inner control border widths */
+    > p-floatlabel.w-datetime {
+      .p-inputtext { width: 10rem }
+    }
+    > p-floatlabel.w-date {
+      .p-inputtext { width: 7rem }
+    }
+    > p-floatlabel.w-rst {
+      .p-inputtext { width: 4.5rem }
+    }
+    > p-floatlabel.w-freq {
+      .p-inputtext { width: 7.5rem }
+    }
+    > p-floatlabel.w-ddl {
+      .p-select { min-width: 5.5rem }
+    }
+    > p-floatlabel.w-comment {
+      textarea { min-width: 20rem }
+    }
+  }
+
+  /* Utility: ensure very long labels or elements wrap gracefully */
+  p-floatlabel { white-space: nowrap; }
+  p-floatlabel.form-field-full { white-space: normal; }
+}
+
+@media (max-width: 768px) {
+  .qso-edit-container {
+
+    .form-actions {
+      flex-direction: column-reverse;
+    }
+
+    p-button {
+      width: 100%;
+      button {width: 100%;}
+    }
+  }
+}

@@ -1,44 +1,44 @@
-@if (qsoDetails) {
+@if (qsoDetails()) {
 <div class='qsl'>
-  <div>To radio:</div><div><strong>{{qsoDetails.call}}</strong></div>
-  <div>UTC (ymd):</div><div>{{qsoDetails.date | date:'yyyy-MM-dd hh:mm' }}</div>
-  <div>Band:</div><div>{{qsoDetails.band}}</div>
-  <div>2-way:</div><div>{{qsoDetails.mode}}</div>
-  <div>RS(t):</div><div>{{qsoDetails.rstSent}}</div>
-  <div>QSL sent:</div><div>{{qslStatus(qsoDetails.qslSent, qsoDetails.qslSentDate, qsoDetails.qslSentVia)}}</div>
-  <div>QSL rcvd:</div><div>{{qslStatus(qsoDetails.qslRcvd, qsoDetails.qslRcvdDate, qsoDetails.qslRcvdVia)}}</div>
-  @if (qsoDetails.satName) {
-    <div>SAT:</div><div>{{qsoDetails.satName}}</div>
-    <div>SAT mode:</div><div>{{qsoDetails.satMode}}</div>
-    @if (qsoDetails.bandRx) {
-      <div>Rx band:</div><div>{{qsoDetails.bandRx}}</div>
+  <div>To radio:</div><div><strong>{{qsoDetails()!.call}}</strong></div>
+  <div>UTC (ymd):</div><div>{{qsoDetails()!.date | date:'yyyy-MM-dd hh:mm' }}</div>
+  <div>Band:</div><div>{{qsoDetails()!.band}}</div>
+  <div>2-way:</div><div>{{qsoDetails()!.mode}}</div>
+  <div>RS(t):</div><div>{{qsoDetails()!.rstSent}}</div>
+  <div>QSL sent:</div><div>{{qslStatus(qsoDetails()!.qslSent, qsoDetails()!.qslSentDate, qsoDetails()!.qslSentVia)}}</div>
+  <div>QSL rcvd:</div><div>{{qslStatus(qsoDetails()!.qslRcvd, qsoDetails()!.qslRcvdDate, qsoDetails()!.qslRcvdVia)}}</div>
+  @if (qsoDetails()!.satName) {
+    <div>SAT:</div><div>{{qsoDetails()!.satName}}</div>
+    <div>SAT mode:</div><div>{{qsoDetails()!.satMode}}</div>
+    @if (qsoDetails()!.bandRx) {
+      <div>Rx band:</div><div>{{qsoDetails()!.bandRx}}</div>
     }
   }
-  @if (qsoDetails.contest) {
-    <div>Contest:</div><div>{{qsoDetails.contest}}</div>
+  @if (qsoDetails()!.contest) {
+    <div>Contest:</div><div>{{qsoDetails()!.contest}}</div>
   }
-  @if (qsoDetails.pota && qsoDetails.pota.length > 0) {
-    <div>POTA@if (qsoDetails.p2p) { P2P}:</div>
+  @if (qsoDetails()!.pota && qsoDetails()!.pota.length > 0) {
+    <div>POTA@if (qsoDetails()!.p2p) { P2P}:</div>
     <div>
-      @for (park of qsoDetails.pota; track $index) {
+      @for (park of qsoDetails()!.pota; track $index) {
         <a href="https://pota.app/#/park/{{park}}" target="_blank">{{park}}</a>@if (!$last){,}
       }
     </div>
   }
-  @if (qsoDetails.myGrid) {
-    <div>Grid:</div><div><a href="https://k7fry.com/grid/?qth={{qsoDetails.myGrid}}" target="_blank">{{qsoDetails.myGrid}}</a></div>
-    @if (qsoDetails.myCounty) {
-      <div>County:</div><div>{{qsoDetails.myCounty}}</div>
+  @if (qsoDetails()!.myGrid) {
+    <div>Grid:</div><div><a href="https://k7fry.com/grid/?qth={{qsoDetails()!.myGrid}}" target="_blank">{{qsoDetails()!.myGrid}}</a></div>
+    @if (qsoDetails()!.myCounty) {
+      <div>County:</div><div>{{qsoDetails()!.myCounty}}</div>
     }
-    <div>State:</div><div>{{qsoDetails.myState}}</div>
-    <div>CQ:</div><div>{{qsoDetails.myCqZone}}</div>
-    <div>ITU:</div><div>{{qsoDetails.myItuZone}}</div>
+    <div>State:</div><div>{{qsoDetails()!.myState}}</div>
+    <div>CQ:</div><div>{{qsoDetails()!.myCqZone}}</div>
+    <div>ITU:</div><div>{{qsoDetails()!.myItuZone}}</div>
   }
 </div>
-  @if (qsoDetails.comment) {
+  @if (qsoDetails()!.siteComment) {
     <p-fieldset legend="Notes">
       <p>
-        {{qsoDetails.comment}}
+        {{qsoDetails()!.siteComment}}
       </p>
     </p-fieldset>
   }

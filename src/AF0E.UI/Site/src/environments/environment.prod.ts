@@ -1,9 +1,9 @@
 import {LogLevel} from "../app/shared/log-level.enum";
-import {environmentSecrets} from "./environment-secrets";
+import {commonEnvironment} from "./environment.common";
 
 export const environment = {
+  ...commonEnvironment,
   production: true,
   apiUrl: '/api/v1',
-  mapBoxKey: environmentSecrets.mapBoxKey,
-  logLevel: LogLevel.Error
+  logLevel: LogLevel.Error,
 };

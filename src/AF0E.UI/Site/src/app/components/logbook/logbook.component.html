@@ -1,5 +1,5 @@
 <p-table
-  [value]="logEntries"
+  [value]="logEntries()"
   dataKey="id"
   sortField="date"
   [sortOrder]="-1"
@@ -9,8 +9,8 @@
   [rows]="50"
   [lazy]="true"
   [lazyLoadOnInit]="false"
-  [totalRecords]="totalRecords"
-  [loading]=loading
+  [totalRecords]="totalRecords()"
+  [loading]="loading()"
   (onLazyLoad)="onLazyLoad($event)"
   [scrollable]="true"
   class="tbl-log"
@@ -18,21 +18,27 @@
   stripedRows>
 
   <ng-template pTemplate="caption">
-    <p-floatlabel variant="on">
-      <p-datePicker
-        selectionMode="range"
-        [(ngModel)]="qsoDateRange"
-        [minDate]="qsoMinDate"
-        [maxDate]="qsoMaxDate"
-        dateFormat="yy-mm-dd"
-        inputId="daterange"
-        [readonlyInput]="false"
-        (onFocus)="onDateRangeFocus(true)"
-        (onBlur)="onDateRangeFocus(false)"
-      />
-      <label for="daterange">{{dateRangeTitle}}</label>
-    </p-floatlabel>
-    <p-button severity="secondary" icon="pi pi-search" (onClick)="onDateRangeSearch()" />
+    <div class='log-caption'>
+      <p-floatlabel variant="on">
+        <p-datePicker
+          selectionMode="range"
+          [(ngModel)]="qsoDateRange"
+          [minDate]="qsoMinDate()"
+          [maxDate]="qsoMaxDate()"
+          dateFormat="yy-mm-dd"
+          inputId="daterange"
+          [readonlyInput]="false"
+          (onFocus)="onDateRangeFocus(true)"
+          (onBlur)="onDateRangeFocus(false)"
+        />
+        <label for="daterange">{{dateRangeTitle()}}</label>
+      </p-floatlabel>
+      <p-button severity="secondary" icon="pi pi-search" (onClick)="onDateRangeSearch()" />
+      @if (_authSvc.hasRole('Admin')) {
+        <div style="flex: 1;"></div>
+        <p-button severity="primary" label="Add QSO" icon="pi pi-plus" (onClick)="onAddQso()" />
+      }
+    </div>
   </ng-template>
 
   <ng-template pTemplate="header">
@@ -54,7 +60,7 @@
       <td><p-tag [value]="qso.mode|qsoMode" [severity]="qso.mode|modeSeverity" /></td>
       <td>
         @if (qso.potaCount) {
-          <mat-icon>park</mat-icon>
+          <span class="material-symbols-outlined">park</span>
         }
       </td>
       <td>{{qso.satName}}</td>
@@ -64,9 +70,17 @@
 
 <p-scrollTop />
 
-<p-dialog header="{{myCallsign}} confirms the following QSO" [modal]="true" [(visible)]="qsoDetailsVisible" [style]="{ width: '25rem' }">
-  <app-qso [qsoId]="selectedId" />
+<p-dialog header="{{myCallsign()}} confirms the following QSO" [modal]="true" [(visible)]="qsoDetailsVisible" [style]="{ width: '25rem' }">
+  @if (qsoDetailsVisible()) {
+    <app-qso [logId]="selectedId()" />
+  }
   <div class="qsl">
-    <p-button label="Close" severity="secondary" (click)="qsoDetailsVisible = false" />
+    <p-button label="Close" severity="secondary" (click)="qsoDetailsVisible.set(false)" />
   </div>
+</p-dialog>
+
+<p-dialog header="Edit QSO" [modal]="true" [(visible)]="qsoEditVisible" [style]="{ width: '60rem' }" [focusOnShow]="false">
+  @if (qsoEditVisible()) {
+    <app-qso-edit [logId]="selectedId()" (saved)="onQsoSaved($event)" />
+  }
 </p-dialog>

@@ -19,6 +19,7 @@ x86/
 
 # IDEs
 .vs/
+.vscode/
 .idea/
 
 # Jetbrains
@@ -30,3 +31,5 @@ _ReSharper*/
 # Angular
 .angular/
 node_modules/
+
+UpgradeLog.htm

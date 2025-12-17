@@ -4,10 +4,19 @@
   "scripts": {
     "ng": "ng",
     "start": "ng s --proxy-config proxy.conf.js",
+    "startall": "ng s --host 0.0.0.0 --ssl --proxy-config proxy.conf.js",
     "build": "ng build",
-    "watch": "ng build --watch --configuration development"
+    "build:test": "npm run test:run && npm run build",
+    "build:prod": "npm run test:run && ng build --configuration production",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "prettier": {
+    "printWidth": 100,
+    "singleQuote": true,
     "overrides": [
       {
         "files": "*.html",
@@ -18,33 +27,38 @@
     ]
   },
   "private": true,
+  "packageManager": "npm@11.4.2",
   "dependencies": {
-    "@angular/animations": "20.3.6",
-    "@angular/cdk": "20.2.9",
-    "@angular/common": "20.3.6",
-    "@angular/compiler": "20.3.6",
-    "@angular/core": "20.3.6",
-    "@angular/forms": "20.3.6",
-    "@angular/material": "20.2.9",
-    "@angular/platform-browser": "20.3.6",
-    "@angular/platform-browser-dynamic": "20.3.6",
-    "@angular/router": "20.3.6",
-    "@primeng/themes": "20.2.0",
+    "@angular/animations": "21.0.3",
+    "@angular/common": "21.0.3",
+    "@angular/compiler": "21.0.3",
+    "@angular/core": "21.0.3",
+    "@angular/forms": "21.0.3",
+    "@angular/platform-browser": "21.0.3",
+    "@angular/platform-browser-dynamic": "21.0.3",
+    "@angular/router": "21.0.3",
+    "@auth0/auth0-angular": "2.3.0",
+    "@primeng/themes": "21.0.1",
     "@types/mapbox-gl": "3.4.1",
-    "mapbox-gl": "3.15.0",
-    "@turf/turf": "7.2.0",
+    "mapbox-gl": "3.17.0",
     "material-design-icons": "3.0.1",
     "primeicons": "7.0.0",
-    "primeng": "20.2.0",
+    "primeng": "21.0.1",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
-    "zone.js": "~0.15.0"
+    "@turf/helpers": "7.3.1",
+    "@turf/great-circle": "7.3.1"
   },
   "devDependencies": {
-    "@angular/build": "20.3.6",
-    "@angular/cli": "20.3.6",
-    "@angular/compiler-cli": "20.3.6",
+    "@angular/build": "21.0.2",
+    "@angular/cli": "21.0.2",
+    "@angular/compiler-cli": "21.0.3",
+    "@vitest/browser-playwright": "4.0.15",
+    "@vitest/coverage-v8": "4.0.15",
+    "@vitest/ui": "4.0.15",
     "agentkeepalive": "4.6.0",
-    "typescript": "~5.8.2"
+    "jsdom": "27.2.0",
+    "typescript": "~5.9.2",
+    "vitest": "4.0.15"
   }
 }

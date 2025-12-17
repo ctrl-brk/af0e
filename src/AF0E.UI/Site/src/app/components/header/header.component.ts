@@ -1,4 +1,4 @@
-import {Component, DestroyRef, inject, OnInit, output, ViewEncapsulation} from '@angular/core';
+import {Component, DestroyRef, inject, model, OnInit, output, signal, ViewEncapsulation} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {AutoCompleteCompleteEvent, AutoCompleteModule, AutoCompleteSelectEvent} from 'primeng/autocomplete';
 import {FloatLabelModule} from 'primeng/floatlabel';
@@ -14,6 +14,7 @@ import {ButtonModule} from 'primeng/button';
 import {MenuModule} from 'primeng/menu';
 import {filter} from 'rxjs';
 import {TieredMenu} from 'primeng/tieredmenu';
+import {AppAuthService} from '../../services/auth.service';
 
 // noinspection JSIgnoredPromiseFromCall
 @Component({
@@ -38,48 +39,53 @@ export class HeaderComponent implements OnInit {
   private _ntfSvc= inject(NotificationService);
   private _log = inject(LogService);
   private _logbookSvc = inject(LogbookService);
-  searchCall!: string;
-  callsFound: any[] = [];
-  isLessThan1000px = false;
-  menuItems: MenuItem[] | undefined;
+  private _authSvc = inject(AppAuthService);
+  searchCall = model(''); // model for two-way binding with autocomplete
+  callsFound = signal<any[]>([]);
+  isLessThan1000px = signal(false);
+  menuItems = signal<MenuItem[] | undefined>(undefined);
   callSelected = output();
-  searchTitle  = '';
+  searchTitle = signal('');
 
   ngOnInit(): void {
-    const sub = this._router.events
+    const routerSub = this._router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe((event) => {
         let arr = event.url.split('/');
         if (arr[1].toLowerCase() == 'logbook') {
           switch (arr.length) {
-            case 3: this.searchCall = decodeURIComponent(arr[2]);
+            case 3: this.searchCall.set(decodeURIComponent(arr[2]));
               break;
-            case 4: this.searchCall = `${decodeURIComponent(arr[2])}/${decodeURIComponent(arr[3])}`;
+            case 4: this.searchCall.set(`${decodeURIComponent(arr[2])}/${decodeURIComponent(arr[3])}`);
               break;
-            case 5: this.searchCall = `${decodeURIComponent(arr[2])}/${decodeURIComponent(arr[3])}/${decodeURIComponent(arr[4])}`;
+            case 5: this.searchCall.set(`${decodeURIComponent(arr[2])}/${decodeURIComponent(arr[3])}/${decodeURIComponent(arr[4])}`);
               break;
-              default: this.searchCall = '';
+              default: this.searchCall.set('');
           }
         }
         else
-          this.searchCall = '';
+          this.searchCall.set('');
       });
-    this._destroyRef.onDestroy(() => sub.unsubscribe());
 
+    this.configureMenu();
     this.onSearchFocus(false);
     this.setResponsive();
-    this.configureMenu();
+
+    const authSub = this._authSvc.isAuthenticated$.subscribe(isAuthenticated => this.onAuthChanged(isAuthenticated));
+
+    this._destroyRef.onDestroy(() => routerSub.unsubscribe());
+    this._destroyRef.onDestroy(() => authSub.unsubscribe());
   }
 
   search(event: AutoCompleteCompleteEvent) {
     this._logbookSvc.lookupPartial(event.query).subscribe({
-      next: r => this.callsFound = r,
+      next: r => this.callsFound.set(r),
       error: e=> Utils.showErrorMessage(e, this._ntfSvc, this._log),
     })
   }
 
   onSearchFocus(focus: boolean) {
-    this.searchTitle = focus ? 'enter call sign' : 'log search...'
+    this.searchTitle.set(focus ? 'enter call sign' : 'log search...');
   }
 
   onSelect(event: AutoCompleteSelectEvent) {
@@ -89,12 +95,12 @@ export class HeaderComponent implements OnInit {
 
   private setResponsive(): void {
     const sub = this._responsive.observe('(max-width: 1000px)')
-      .subscribe(x => this.isLessThan1000px = x.matches);
+      .subscribe(x => this.isLessThan1000px.set(x.matches));
     this._destroyRef.onDestroy(() => sub.unsubscribe());
   }
 
   private configureMenu() {
-    this.menuItems = [
+    this.menuItems.set([
       {
         label: 'Home',
         icon: 'pi pi-home',
@@ -137,19 +143,59 @@ export class HeaderComponent implements OnInit {
         ]
       },
       {
-        label: 'Stats',
-        icon: 'pi pi-chart-bar',
-        command: () => {
-          this._router.navigate(['/stats']);
-        }
+        label: 'Info',
+        icon: 'pi pi-info-circle',
+        items: [
+          {
+            label: 'Stats',
+            icon: 'pi pi-chart-bar',
+            command: () => {
+              this._router.navigate(['/stats']);
+            }
+          },
+          {
+            label: 'About',
+            icon: 'pi pi-face-smile',
+            command: () => {
+              this._router.navigate(['/about']);
+            }
+          }
+        ]
       },
       {
-        label: 'About',
-        icon: 'pi pi-face-smile',
-        command: () => {
-          this._router.navigate(['/about']);
-        }
+        label: 'User',
+        icon: 'pi pi-user',
+        items: [
+          {
+            label: 'Login',
+            icon: 'pi pi-sign-in',
+            command: () => this._authSvc.login()
+          },
+        ]
       }
-    ]
+    ]);
+  }
+
+  private onAuthChanged(isAuthenticated: boolean) {
+    const userMenu = this.menuItems()!.find(item => item.label === 'User');
+
+    if (!userMenu)
+      return;
+
+    userMenu.items = isAuthenticated ? [
+      {
+        label: 'Logout',
+        icon: 'pi pi-sign-out',
+        command: () => this._authSvc.logout()
+      },
+    ] : [
+      {
+        label: 'Login',
+        icon: 'pi pi-sign-in',
+        command: () => this._authSvc.login()
+      }
+    ];
+
+    this.menuItems.set([...this.menuItems()!]);
   }
 }

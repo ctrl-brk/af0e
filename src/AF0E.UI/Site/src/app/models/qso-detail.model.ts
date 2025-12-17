@@ -28,5 +28,6 @@ export interface QsoDetailModel {
   satName: string;
   satMode: string;
   contest: string;
-  comment: string
+  siteComment: string;
+  comment: string;
 }

@@ -1,7 +1,11 @@
 ﻿using System.Net;
 using AF0E.DB;
+using Logbook.Api.Extensions;
 using Logbook.Api.Models;
 using Logbook.Api.Responses;
+using Logbook.Api.Security;
+using Logbook.Api.Validators;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 namespace Logbook.Api.Handlers;
@@ -60,16 +64,55 @@ public static class LogbookHandlers
         return new LogSearchResponse { TotalCount = cnt, Contacts = qsoList };
     }
 
-    public static async Task<QsoDetails?> GetQsoDetails(int logId, HrdDbContext dbContext)
+    public static async Task<QsoDetails?> GetQsoDetails(int logId, HrdDbContext dbContext, IAuthorizationService authSvc, IHttpContextAccessor httpContext)
     {
-        var res = await dbContext.Log
+        var log = await dbContext.Log
             .Include(x => x.PotaContacts)
             .ThenInclude(c => c.Activation)
             .ThenInclude(p => p.Park)
             .SingleOrDefaultAsync(x => x.ColPrimaryKey == logId);
 
-        return res == null
-            ? null
-            : new QsoDetails(res);
+        if (log == null)
+            return null;
+
+        var isAdmin = await AuthHelper.HasPolicyAsync(Policies.AdminOnly, authSvc, httpContext);
+
+        var qso = new QsoDetails(log, isAdmin);
+
+        return qso;
+    }
+
+    public static async Task<QsoDetails?> UpdateQsoDetails(QsoDetails qso, HrdDbContext dbContext, IAuthorizationService authSvc, IHttpContextAccessor httpContext)
+    {
+        QsoDetailsValidator.ValidateAndThrow(qso);
+
+        var log = await dbContext.Log
+            .AsTracking()
+            .SingleOrDefaultAsync(x => x.ColPrimaryKey == qso.Id);
+
+        if (log == null)
+            return null;
+
+        var isAdmin = await AuthHelper.HasPolicyAsync(Policies.AdminOnly, authSvc, httpContext);
+
+        log.UpdateFromQsoDetails(qso, includeAdminFields: isAdmin);
+
+        await dbContext.SaveChangesAsync();
+
+        return await GetQsoDetails(log.ColPrimaryKey, dbContext, authSvc, httpContext);
+    }
+
+    public static async Task<QsoDetails> CreateQso(QsoDetails qso, HrdDbContext dbContext, IAuthorizationService authSvc, IHttpContextAccessor httpContext)
+    {
+        QsoDetailsValidator.ValidateAndThrow(qso);
+
+        var isAdmin = await AuthHelper.HasPolicyAsync(Policies.AdminOnly, authSvc, httpContext);
+
+        var log = qso.ToHrdLog(includeAdminFields: isAdmin);
+
+        dbContext.Log.Add(log);
+        await dbContext.SaveChangesAsync();
+
+        return (await GetQsoDetails(log.ColPrimaryKey, dbContext, authSvc, httpContext))!;
     }
 }

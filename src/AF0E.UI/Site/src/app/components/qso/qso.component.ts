@@ -1,4 +1,4 @@
-import {Component, effect, inject, input} from '@angular/core';
+import {Component, effect, inject, input, signal} from '@angular/core';
 import {LogbookService} from '../../services/logbook.service';
 import {NotificationService} from '../../shared/notification.service';
 import {Utils} from '../../shared/utils';
@@ -18,20 +18,20 @@ export class QsoComponent {
   private _ntfSvc= inject(NotificationService);
   private _log = inject(LogService);
 
-  qsoId = input<number>();
-  qsoDetails: QsoDetailModel | undefined;
+  logId = input<number>(0);
+  qsoDetails = signal<QsoDetailModel | undefined>(undefined);
 
   constructor() {
     effect(() => {
-      if (this.qsoId())
+      if (this.logId() > 0) // could also be -1
         this.loadQSO();
     });
   }
 
   private loadQSO() {
-    this._logbookSvc.getQso(this.qsoId()!).subscribe({
+    this._logbookSvc.getQso(this.logId()!).subscribe({
       next: r => {
-        this.qsoDetails = r;
+        this.qsoDetails.set(r);
       },
       error: e=> Utils.showErrorMessage(e, this._ntfSvc, this._log),
     });

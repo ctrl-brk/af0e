@@ -1,6 +1,21 @@
 # AFØE.org
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 18.2.8.
+Angular client UI
+
+## Setup
+
+### Environment Secrets
+
+Before running the application, you need to create your environment secrets file:
+
+1. Copy `src/environments/environment-secrets.template.ts` to `src/environments/environment-secrets.ts`
+2. Fill in your actual API keys and secrets
+3. The `environment-secrets.ts` file is in `.gitignore` and will not be committed
+
+```bash
+# Windows PowerShell
+Copy-Item src/environments/environment-secrets.template.ts src/environments/environment-secrets.ts
+```
 
 ## Development server
 
