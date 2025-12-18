@@ -1,5 +1,5 @@
 ﻿using System.Text.Json;
-using AF0E.Shared.Entities;
+using AF0E.Common.Entities;
 
 namespace AF0E.Functions.DX.Infrastructure;
 

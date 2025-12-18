@@ -53,7 +53,7 @@
   <Project Path="AF0E.Functions/AF0E.Functions.csproj">
     <BuildType Solution="Development|*" Project="Debug" />
   </Project>
-  <Project Path="AF0E.Shared/AF0E.Shared.csproj">
+  <Project Path="AF0E.Common/AF0E.Common.csproj">
     <BuildType Solution="Development|*" Project="Debug" />
   </Project>
 </Solution>

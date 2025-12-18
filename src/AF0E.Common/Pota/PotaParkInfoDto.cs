@@ -1,4 +1,4 @@
-﻿namespace AF0E.Shared.Pota;
+﻿namespace AF0E.Common.Pota;
 
 public class PotaParkInfo
 {

@@ -27,7 +27,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\AF0E.DB\AF0E.DB.csproj" />
-      <ProjectReference Include="..\..\AF0E.Shared\AF0E.Shared.csproj" />
+      <ProjectReference Include="..\..\AF0E.Common\AF0E.Common.csproj" />
     </ItemGroup>
 
 </Project>
