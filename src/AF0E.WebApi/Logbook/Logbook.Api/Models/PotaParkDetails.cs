@@ -8,6 +8,7 @@ public sealed class PotaParkDetails(PotaPark park)
     public string ParkNum { get; init; } = park.ParkNum;
     public string ParkName { get; init; } = park.ParkName;
     public decimal? Lat { get; init; } = park.Lat;
+#pragma warning disable CA1720
     public decimal? Long { get; init; } = park.Long;
     public string? Grid { get; init; } = park.Grid;
     public string? Location { get; init; } = park.Location;

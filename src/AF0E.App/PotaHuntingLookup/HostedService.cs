@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using AF0E.DB;
 using AF0E.DB.Models;
-using AF0E.Shared.Pota;
+using AF0E.Common.Pota;
 
 namespace PotaHuntingLookup;
 

@@ -1,4 +1,4 @@
-﻿using AF0E.Shared.Entities;
+﻿using AF0E.Common.Entities;
 using System.Collections.ObjectModel;
 using System.Text.Json;
 

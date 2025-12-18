@@ -4,7 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 // ReSharper disable PropertyCanBeMadeInitOnly.Global
 // ReSharper disable MemberCanBeProtected.Global
 
-namespace AF0E.Shared.Entities;
+namespace AF0E.Common.Entities;
 
 [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
 public class DxInfoTableEntity : ITableEntity
