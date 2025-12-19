@@ -29,6 +29,7 @@ partial class MainForm
     /// </summary>
     private void InitializeComponent()
     {
+        components = new System.ComponentModel.Container();
         gridLog = new DataGridView();
         gbxFilter = new GroupBox();
         dtpEndDate = new DateTimePicker();
@@ -56,6 +57,7 @@ partial class MainForm
         gbxView = new GroupBox();
         cbShowWaiting = new CheckBox();
         cbViewMyLocation = new CheckBox();
+        mainFormTooltip = new ToolTip(components);
         ((System.ComponentModel.ISupportInitialize)gridLog).BeginInit();
         gbxFilter.SuspendLayout();
         gbxPdf.SuspendLayout();
@@ -206,6 +208,7 @@ partial class MainForm
         btnSelectPrint.Size = new Size(58, 28);
         btnSelectPrint.TabIndex = 2;
         btnSelectPrint.Text = "Select";
+        mainFormTooltip.SetToolTip(btnSelectPrint, "Ctrl to invert");
         btnSelectPrint.UseVisualStyleBackColor = true;
         btnSelectPrint.Click += btnSelectPrint_Click;
         // 
@@ -430,4 +433,5 @@ partial class MainForm
     private Label lblPeriod;
     private DateTimePicker dtpStartDate;
     private CheckBox cbShowWaiting;
+    private ToolTip mainFormTooltip;
 }

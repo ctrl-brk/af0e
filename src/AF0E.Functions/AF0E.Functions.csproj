@@ -20,7 +20,7 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AF0E.Shared\AF0E.Shared.csproj" />
+    <ProjectReference Include="..\AF0E.Common\AF0E.Common.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="host.json">

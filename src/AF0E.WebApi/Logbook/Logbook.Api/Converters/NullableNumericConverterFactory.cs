@@ -32,7 +32,7 @@ public class NullableNumericConverterFactory : JsonConverterFactory
             typeof(NullableNumericConverter<>).MakeGenericType(underlyingType))!;
     }
 
-    private class NullableNumericConverter<T> : JsonConverter<T?> where T : struct
+    private sealed class NullableNumericConverter<T> : JsonConverter<T?> where T : struct
     {
         public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {

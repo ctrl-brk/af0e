@@ -9,6 +9,7 @@ on:
       - main
     paths:
       - 'src/AF0E.Functions/**'
+      - 'src/AF0E.Common/**'
       - 'src/Directory.build.props'
       - 'src/Directory.Packages.props'
   workflow_dispatch:

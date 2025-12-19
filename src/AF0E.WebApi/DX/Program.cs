@@ -1,4 +1,4 @@
-﻿using AF0E.Shared.Entities;
+﻿using AF0E.Common.Entities;
 using Asp.Versioning;
 using Azure.Data.Tables;
 using DX.Api;
