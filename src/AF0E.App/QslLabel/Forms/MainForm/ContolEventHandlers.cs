@@ -60,18 +60,22 @@ partial class MainForm
 
             //if (row.IsNewRow) continue;  // skip new rows, but I don't have them :)
 
+            //select all rows with "P" or "Print" in Metadata column along with all their siblings based on call sign
             var meta = row.Cells[metaIdx].Value?.ToString() ?? "";
 
             if (meta.Equals("P", StringComparison.OrdinalIgnoreCase) || meta.Equals("Print", StringComparison.OrdinalIgnoreCase))
             {
-                row.Selected = true;
+                //set or toggle selection
+                row.Selected = (Control.ModifierKeys & Keys.Control) != Keys.Control || !row.Selected;
+
                 selectionChanged = true;
 
                 var call = row.Cells[callIdx].Value!.ToString();
                 idx++;
                 while (idx < gridLog.Rows.Count && gridLog.Rows[idx].Cells[callIdx].Value!.ToString() == call)
                 {
-                    gridLog.Rows[idx++].Selected = true;
+                    gridLog.Rows[idx].Selected = (Control.ModifierKeys & Keys.Control) != Keys.Control || !gridLog.Rows[idx].Selected;
+                    idx++;
                 }
             }
             else

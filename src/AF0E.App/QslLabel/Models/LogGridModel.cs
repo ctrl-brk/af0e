@@ -88,10 +88,10 @@ internal sealed class LogGridModel : INotifyPropertyChanged
         set => SetField(ref _comment, value, nameof(Comment));
     }
 
-    public string? MyGrid { get; init; }
-    public string? MyState { get; init; }
-    public string? MyCity { get; init; }
-    public string? MyCounty { get; init; }
+    public string? MyGrid { get; set; }
+    public string? MyState { get; set; }
+    public string? MyCity { get; set; }
+    public string? MyCounty { get; set; }
 
     private string? _metadata;
     public string? Metadata
