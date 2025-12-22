@@ -4,6 +4,7 @@ namespace Logbook.Api.Models;
 
 public class GridTrackerLookup(HrdLog log)
 {
+    public int Id { get; set; } = log.ColPrimaryKey;
     public string Call { get; set; } = log.ColCall;
     public DateTime Date { get; set; } = log.ColTimeOn!.Value;
     public string? Mode { get; set; } = log.ColMode;
