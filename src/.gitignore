@@ -17,6 +17,9 @@ x86/
 [Ll]ogs/
 [Dd]ist/
 
+#NPI
+HostingFiles/
+
 # IDEs
 .vs/
 .vscode/
