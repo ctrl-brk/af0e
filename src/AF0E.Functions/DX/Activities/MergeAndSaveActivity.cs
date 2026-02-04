@@ -1,9 +1,10 @@
-﻿using AF0E.Functions.DX.Infrastructure;
+﻿using System.Text.RegularExpressions;
+using AF0E.Functions.DX.Infrastructure;
 using Azure.Data.Tables;
 
 namespace AF0E.Functions.DX.Activities;
 
-public sealed class MergeAndSaveActivity(ILogger<MergeAndSaveActivity> logger)
+public partial class MergeAndSaveActivity(ILogger<MergeAndSaveActivity> logger)
 {
     public const string ActivityName = nameof(MergeAndSaveActivity);
 
@@ -22,6 +23,10 @@ public sealed class MergeAndSaveActivity(ILogger<MergeAndSaveActivity> logger)
         {
             foreach (var dxInfo in newData)
             {
+                // there are things like C5???, especially on va3rj
+                if (!CallSignCharactersRegex().IsMatch(dxInfo.CallSign))
+                    continue;
+
                 var existing = merged.SingleOrDefault(x => x.CallSign == dxInfo.CallSign);
 
                 if (existing == null)
@@ -83,10 +88,21 @@ public sealed class MergeAndSaveActivity(ILogger<MergeAndSaveActivity> logger)
                 while (iterator <= endDate)
                 {
                     var entity = new DxInfoDto(iterator.ToString("yyyyMM"), result);
-                    await tblClient.UpsertEntityAsync(entity);
+                    try
+                    {
+                        await tblClient.UpsertEntityAsync(entity);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogUpsertError(ex, entity);
+                    }
                     iterator = iterator.AddMonths(1);
                 }
             }
         }
     }
+
+
+    [GeneratedRegex(@"^[A-Za-z0-9\/]+$")]
+    private static partial Regex CallSignCharactersRegex();
 }
