@@ -88,6 +88,7 @@ dotnet_diagnostic.CA1305.severity = silent
 dotnet_diagnostic.CA1307.severity = silent
 dotnet_diagnostic.CA1416.severity = silent
 dotnet_diagnostic.CA1515.severity = silent
+dotnet_diagnostic.CA1707.severity = none # underscores in method names (tests have them)
 dotnet_diagnostic.CA2007.severity = silent
 dotnet_diagnostic.CA2201.severity = silent
 dotnet_diagnostic.CA2234.severity = silent

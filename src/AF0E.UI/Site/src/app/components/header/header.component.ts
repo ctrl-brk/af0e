@@ -120,17 +120,20 @@ export class HeaderComponent implements OnInit {
         icon: 'pi pi-image',
         items: [
           {
-            label: 'Activations',
-            icon: 'pi pi-bolt',
-            command: () => {
-              this._router.navigate(['/pota/activations']);
-            }
-          },
-          {
             label: 'Map',
             icon: 'pi pi-map',
             command: () => {
               this._router.navigate(['/map']);
+            }
+          },
+          {
+            separator: true
+          },
+          {
+            label: 'Activations',
+            icon: 'pi pi-bolt',
+            command: () => {
+              this._router.navigate(['/pota/activations']);
             }
           },
           {
@@ -177,24 +180,40 @@ export class HeaderComponent implements OnInit {
   }
 
   private onAuthChanged(isAuthenticated: boolean) {
+    const potaMenu = this.menuItems()!.find(item => item.label === 'POTA');
     const userMenu = this.menuItems()!.find(item => item.label === 'User');
 
-    if (!userMenu)
-      return;
-
-    userMenu.items = isAuthenticated ? [
-      {
-        label: 'Logout',
-        icon: 'pi pi-sign-out',
-        command: () => this._authSvc.logout()
-      },
-    ] : [
-      {
-        label: 'Login',
-        icon: 'pi pi-sign-in',
-        command: () => this._authSvc.login()
+    if (potaMenu && isAuthenticated) { //TODO: remove menu when not authenticated?
+      const spotsItem = potaMenu.items!.find(item => item.label === 'Spots');
+      if (!spotsItem) {
+        potaMenu.items = [
+          {
+            label: 'Spots',
+            icon: 'pi pi-map-marker',
+            command: () => {
+              this._router.navigate(['/pota/spots']);
+            }
+          },
+          ...potaMenu.items!
+        ];
       }
-    ];
+    }
+
+    if (userMenu) {
+      userMenu.items = isAuthenticated ? [
+        {
+          label: 'Logout',
+          icon: 'pi pi-sign-out',
+          command: () => this._authSvc.logout()
+        },
+      ] : [
+        {
+          label: 'Login',
+          icon: 'pi pi-sign-in',
+          command: () => this._authSvc.login()
+        }
+      ];
+    }
 
     this.menuItems.set([...this.menuItems()!]);
   }

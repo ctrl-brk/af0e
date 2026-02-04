@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using AF0E.DB;
+using AF0E.Services.Pota;
 using Logbook.Api.Handlers;
 using Logbook.Api.Models;
 using Logbook.Api.Security;
@@ -116,6 +117,15 @@ public static class V1Endpoints
         builder.MapGet("log/unconfirmed", async (HrdDbContext dbContext) =>
                 TypedResults.Ok(await PotaHandlers.GetUnconfirmedContacts(dbContext)))
             .WithName("PotaUnconfirmed");
+
+        builder.MapGet("activity/{call}", async (string call, IPotaApiService potaApiService) =>
+                TypedResults.Ok(await PotaHandlers.CheckActivity(WebUtility.UrlDecode(call), potaApiService)))
+            .WithName("PotaActivityCall");
+
+        builder.MapGet("activity", async (string? band, string? mode, IPotaApiService potaApiService, HrdDbContext dbContext) =>
+                TypedResults.Ok(await PotaHandlers.CheckActivity(band, mode, potaApiService, dbContext)))
+            .WithName("PotaActivity");
+
 
         builder = v1Builder.MapGroup("pota").WithTags("Pota GeoJson");
 

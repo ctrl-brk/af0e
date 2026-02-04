@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\AF0E.DB\AF0E.DB.csproj" />
+    <ProjectReference Include="..\..\..\AF0E.Services\AF0E.Services.csproj" />
   </ItemGroup>
 
   <ItemGroup>

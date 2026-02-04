@@ -91,7 +91,7 @@ public class Callsign
 public class Session
 {
     public string? Key { get; set; }
-    public ushort Count { get; set; }
+    public uint Count { get; set; }
     public string? Error { get; set; }
     public string? SubExp { get; set; }
     public string? GMTime { get; set; }

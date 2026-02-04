@@ -22,16 +22,18 @@
 
       <p-floatlabel class="w-freq">
         <p-inputNumber
+          mode="decimal"
           formControlName="freq"
           inputId="freq"
           [minFractionDigits]="0"
-          [maxFractionDigits]="0"
+          [maxFractionDigits]="3"
           [invalid]="isFieldInvalid('freq')"
           [pTooltip]="isFieldInvalid('freq') ? getErrorMessage('freq') : ''"
           tooltipPosition="top"
           [autofocus]="false"
+          (onBlur)="onFreqBlur()"
         />
-        <label for="freq">Frequency (MHz)</label>
+        <label for="freq">Frequency (Hz)</label>
       </p-floatlabel>
 
       <p-floatlabel class="w-ddl">
@@ -71,6 +73,7 @@
           pInputText
           formControlName="call"
           id="call"
+          (blur)="onCallBlur()"
           [class.ng-invalid]="isFieldInvalid('call')"
           [class.ng-dirty]="isFieldInvalid('call')"
           style="text-transform: uppercase"

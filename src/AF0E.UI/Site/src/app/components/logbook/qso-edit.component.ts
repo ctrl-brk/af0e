@@ -17,6 +17,7 @@ import {Fieldset} from 'primeng/fieldset';
 import {Tooltip} from 'primeng/tooltip';
 import {callSignValidator} from '../../shared/validators';
 import {BAND_OPTIONS, MODE_OPTIONS, QSL_OPTIONS, QSL_VIA_OPTIONS} from '../../shared/qso-options';
+import {PotaService} from '../../services/pota.service';
 
 @Component({
   selector: 'app-qso-edit',
@@ -41,6 +42,7 @@ export class QsoEditComponent {
   private _lbSvc = inject(LogbookService);
   private _ntfSvc= inject(NotificationService);
   private _log = inject(LogService);
+  private _potaSvc = inject(PotaService);
 
   logId = input.required<number>();
   editModeChange = output<boolean>();
@@ -58,7 +60,6 @@ export class QsoEditComponent {
 
   constructor() {
     this.initializeForm();
-    this.setupFrequencyToBandMapping();
 
     effect(() => {
       const id = this.logId();
@@ -77,25 +78,13 @@ export class QsoEditComponent {
     });
   }
 
-  private setupFrequencyToBandMapping() {
-    // Subscribe to frequency changes and auto-select band
-    this.qsoForm.get('freq')?.valueChanges.subscribe(freq => {
-      if (freq && freq > 0) {
-        const band = Utils.getBandFromFrequency(freq);
-        if (band) {
-          this.qsoForm.get('band')?.setValue(band, { emitEvent: false });
-        }
-      }
-    });
-  }
-
   private initializeForm() {
     this.qsoForm = this._fb.group({
       id: [0],
       date: [Utils.getCurrentUtcDate(), Validators.required],
       call: ['', [Validators.required, callSignValidator()]],
       band: ['', Validators.required],
-      freq: [0, Validators.min(0)],
+      freq: [undefined, [Validators.required, Validators.min(1.8), Validators.max(450000000)]],
       mode: ['', Validators.required],
       rstSent: ['', Validators.pattern(/^[+-]?[0-9]{2,3}$/)],
       rstRcvd: ['', Validators.pattern(/^[+-]?[0-9]{2,3}$/)],
@@ -132,6 +121,47 @@ export class QsoEditComponent {
       error: e=> {
         Utils.showErrorMessage(e, this._ntfSvc, this._log);
       },
+    });
+  }
+
+  protected onFreqBlur(){
+    const freq = this.qsoForm.get('freq')?.value;
+
+    if (!freq || freq < 1.8 || freq > 450000000) return;
+
+    let freq1 = freq;
+    if (freq < 1000) freq1 *= 1000000;
+    else if (freq < 1000000) freq1 *= 100;
+    if (freq1 !== freq)
+      this.qsoForm.get('freq')?.setValue(freq1, { emitEvent: false });
+
+    this.qsoForm.get('band')?.setValue(Utils.getBandFromFrequency(freq1), { emitEvent: false });
+  }
+
+  onCallBlur() {
+    const callControl = this.qsoForm.get('call');
+    if (!callControl || callControl.invalid) {
+      return;
+    }
+
+    const callSign = (callControl.value || '').trim();
+    if (!callSign) {
+      return;
+    }
+
+    this._potaSvc.getActivityByCall(callSign).subscribe({
+      next: (r) => {
+        if (!r.active)
+          return;
+
+        this.qsoForm.get('comment')?.setValue(`POTA ${r.parkNum}`);
+        this.qsoForm.get('freq')?.setValue(r.freqHz);
+        this.qsoForm.get('mode')?.setValue(r.mode);
+        this.qsoForm.get('band')?.setValue(Utils.getBandFromFrequency(r.freqHz), { emitEvent: false });
+      },
+      error: e => {
+        Utils.showErrorMessage(e, this._ntfSvc, this._log);
+      }
     });
   }
 
@@ -207,7 +237,7 @@ export class QsoEditComponent {
       date: Utils.getCurrentUtcDate(),
       call: '',
       band: '',
-      freq: 0,
+      freq: undefined,
       mode: '',
       rstSent: '',
       rstRcvd: '',
@@ -244,11 +274,11 @@ export class QsoEditComponent {
     const field = this.qsoForm.get(fieldName);
     if (!field || !field.errors) return '';
     if (field.errors['required']) return 'This field is required';
-    if (field.errors['callSignInvalid']) return field.errors['callSignInvalid'].message;
-    if (field.errors['callSignTooShort']) return field.errors['callSignTooShort'].message;
-    if (field.errors['callSignNoDigit']) return field.errors['callSignNoDigit'].message;
-    if (field.errors['callSignTooManySlashes']) return field.errors['callSignTooManySlashes'].message;
-    if (field.errors['callSignEmptyPart']) return field.errors['callSignEmptyPart'].message;
+    if (fieldName === 'call' && field.errors['callSignInvalid']) return field.errors['callSignInvalid'].message;
+    if (fieldName === 'call' && field.errors['callSignTooShort']) return field.errors['callSignTooShort'].message;
+    if (fieldName === 'call' && field.errors['callSignNoDigit']) return field.errors['callSignNoDigit'].message;
+    if (fieldName === 'call' && field.errors['callSignTooManySlashes']) return field.errors['callSignTooManySlashes'].message;
+    if (fieldName === 'call' && field.errors['callSignEmptyPart']) return field.errors['callSignEmptyPart'].message;
     if (field.errors['pattern']) {
       if (fieldName === 'myGrid') return 'Invalid grid square format (e.g., DN70, DN70ab)';
       if (fieldName === 'rstSent' || fieldName === 'rstRcvd') return 'RST must be 2-3 digits, optionally with +/- prefix (e.g., 59, +599, -73)';

@@ -3,7 +3,6 @@
   (some of this is duplicated lower in the file, but this is the one to use with new activations
   Don't forget to run QrzLookup and PotaLookup
 */
---select * from PotaParks where ParkNum = 'US-0190'
 
 create table #tmp (id int, call varchar(32))
 truncate table #tmp
@@ -52,9 +51,23 @@ declare @lat decimal(10,6), @long decimal(10,6)
 --select @parkId = 9585,  @parkNum = 'US-7932',  @grid = 'DM99ce', @city = null,         @county = 'Sherman',    @state = 'KS', @lat = 39.188869, @long = -101.780110 -- US-7932 (Kansas Veterans SWA)
 --select @parkId = 9103,  @parkNum = 'US-7424',  @grid = 'DM99ce', @city = null,         @county = 'Sherman',    @state = 'KS', @lat = 39.188869, @long = -101.780110 -- US-7424 (Sherman State Fishing Lake)
 --select @parkId = 134,   @parkNum = 'US-0190',  @grid = 'DM89mg', @city = 'Flagler',    @county = 'Kit Carson', @state = 'CO', @lat = 39.288943, @long = -102.990060 -- US-0190 (Flagler Reservoir SWA)
+--select @parkId = 5068,  @parkNum = 'US-3295',  @grid = 'DN71je', @city = null,         @county = 'Laramie',    @state = 'WY', @lat = 41.185267, @long = -105.243563 -- US-3295 (Curt Gowdy SP)
+--select @parkId = 1696,  @parkNum = 'US-10792', @grid = 'DN71jf', @city = null,         @county = 'Laramie',    @state = 'WY', @lat = 41.219211, @long = -105.190164 -- US-10792 (Woodhouse SWA)
+--select @parkId = 6156,  @parkNum = 'US-4403',  @grid = 'DN71hf', @city = null,         @county = 'Albany',     @state = 'WY', @lat = 41.225102, @long = -105.361179 -- US-4403 (Medicine Bow - Routt NF)
+--select @parkId = 1695,  @parkNum = 'US-10791', @grid = 'DN71gg', @city = null,         @county = 'Albany',     @state = 'WY', @lat = 41.286880, @long = -105.461878 -- US-10791 (Pilot Hill SWA)
+--select @parkId = 7828,  @parkNum = 'US-6122',  @grid = 'DN71eh', @city = 'Laramie',    @county = 'Albany',     @state = 'WY', @lat = 41.310154, @long = -105.609399 -- US-6122 (Laramie Prison)
+--select @parkId = 1420,  @parkNum = 'US-10533', @grid = 'DN70jp', @city = 'Bellvue',    @county = 'Larimer',    @state = 'CO', @lat = 40.635217, @long = -105.171731 -- US-10533 (Watson Lake SWA)
+--select @parkId = 2908,  @parkNum = 'US-11923', @grid = 'DM79lk', @city = 'null',       @county = 'Douglas',    @state = 'CO', @lat = 39.454713, @long = -105.054195 -- US-11923 (Sharptail Ridge SWA)
+--select @parkId = 3020,  @parkNum = 'US-1238',  @grid = 'DM79lk', @city = 'null',       @county = 'Douglas',    @state = 'CO', @lat = 39.446013, @long = -105.067151 -- US-1238 (Roxborough SP)
+--select @parkId = 6157,  @parkNum = 'US-4404',  @grid = 'DM79kj', @city = 'null',       @county = 'Douglas',    @state = 'CO', @lat = 39.376163, @long = -105.095680 -- US-4404 (Pike NF)
+--select @parkId = 11251,  @parkNum = 'US-9650', @grid = 'DM79lk', @city = 'null',       @county = 'Douglas',    @state = 'CO', @lat = 39.182384, @long = -105.233787 -- US-9650 (Four Mile SWA)
+--select @parkId = 11266,  @parkNum = 'US-9666', @grid = 'DM78mr', @city = 'null',       @county = 'Teller',    @state = 'CO', @lat = 38.730591, @long = -104.950327 -- US-9666 (Rosemont SWA)
+--select @parkId = 2997,  @parkNum = 'US-1214',  @grid = 'DM78or', @city = 'null',       @county = 'El Paso',    @state = 'CO', @lat = 38.738533, @long = -104.823813 -- US-1214 (Cheyenne Mountain SP)
+
+--select * from PotaParks where ParkNum = 'US-1214'
 
 -- MAKE SURE ALL THREE ARE CORRECT and include minutes!
-select @startDate = '2025-11-16 00:45', @endDate = '2025-11-16 01:24', @submitDate = '2025-11-16 18:54'
+select @startDate = '2026-01-25 00:00', @endDate = '2026-01-25 17:33', @submitDate = '2026-01-26 03:34'
 -- MAKE SURE IT'S ONE UTC DAY!
 
 insert into #tmp select COL_PRIMARY_KEY, COL_CALL from [HamLog].[dbo].[TABLE_HRD_CONTACTS_V01] where COL_TIME_ON between @startDate and @endDate
@@ -76,6 +89,16 @@ select c.*, l.col_call, l.COL_TIME_ON, l.COL_COMMENT from PotaContacts c inner j
 
 -- rollback
 -- commit
+
+
+
+
+
+
+
+
+
+
 
 select distinct COL_MY_SIG_INFO from [HamLog].[dbo].[TABLE_HRD_CONTACTS_V01] where COL_COMMENT like 'POTA activation US-0225%'
 /* Activation Upate Script End */
