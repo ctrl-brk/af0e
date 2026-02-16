@@ -106,6 +106,7 @@ else
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapGet("/health", () => Results.Ok(new { ok = true }));
 app.RegisterV1Endpoints();
 
 app.MapFallbackToFile("/index.html");

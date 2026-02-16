@@ -31,6 +31,12 @@ public sealed class PotaApiService(IHttpClientFactory httpClientFactory) : IPota
 
     public async Task<List<PotaActivityInfo>> CheckActivityAsync(string? band = null, string? mode = null, CancellationToken ct = default)
     {
+        var spots = await CheckActivityInternalAsync(band, mode, ct);
+        return [.. spots.WithMaxFrequency(54000)]; //filter out everything above 6m
+    }
+
+    private async Task<List<PotaActivityInfo>> CheckActivityInternalAsync(string? band = null, string? mode = null, CancellationToken ct = default)
+    {
         using var client = httpClientFactory.CreateClient();
 
         var response = await client.GetAsync(SpotsUrl, ct);

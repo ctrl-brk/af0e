@@ -15,7 +15,6 @@
           appendTo="body"
           [pTooltip]="isFieldInvalid('date') ? getErrorMessage('date') : ''"
           tooltipPosition="top"
-          [autofocus]="false"
         />
         <label for="date">UTC Date/Time *</label>
       </p-floatlabel>
@@ -30,7 +29,6 @@
           [invalid]="isFieldInvalid('freq')"
           [pTooltip]="isFieldInvalid('freq') ? getErrorMessage('freq') : ''"
           tooltipPosition="top"
-          [autofocus]="false"
           (onBlur)="onFreqBlur()"
         />
         <label for="freq">Frequency (Hz)</label>
@@ -46,7 +44,6 @@
           [invalid]="isFieldInvalid('band')"
           [pTooltip]="isFieldInvalid('band') ? getErrorMessage('band') : ''"
           tooltipPosition="top"
-          [autofocus]="false"
         />
         <label for="band">Band *</label>
       </p-floatlabel>
@@ -61,7 +58,6 @@
           [invalid]="isFieldInvalid('mode')"
           [pTooltip]="isFieldInvalid('mode') ? getErrorMessage('mode') : ''"
           tooltipPosition="top"
-          [autofocus]="false"
         />
         <label for="mode">Mode *</label>
       </p-floatlabel>
@@ -70,6 +66,7 @@
 
       <p-floatlabel>
         <input
+          #callInput
           pInputText
           formControlName="call"
           id="call"
@@ -79,7 +76,6 @@
           style="text-transform: uppercase"
           [pTooltip]="isFieldInvalid('call') ? getErrorMessage('call') : ''"
           tooltipPosition="top"
-          [autofocus]="true"
         />
         <label for="call">Call Sign *</label>
       </p-floatlabel>

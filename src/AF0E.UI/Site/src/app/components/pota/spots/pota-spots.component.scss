@@ -3,14 +3,34 @@
   font-size: 0.85rem;
   table {
     tr {
-      cursor: pointer; white-space: nowrap;
-      &.top {
-        th {text-align: center}
-        th:nth-child(1), th:nth-child(2) {border-right: 1px solid var(--p-datatable-header-cell-border-color)}
+      white-space: nowrap;
+      &.wrk-no {
+        background-color: rgba(255, 0, 0, 0.08)
       }
-      &.bottom {
-        th:nth-child(2), th:nth-child(4) {border-right: 1px solid var(--p-datatable-header-cell-border-color)}
+
+      &.wrk-bm {
+        background-color: rgba(0, 255, 0, 0.08)
+      }
+
+      &.wrk-other {
+        background-color: rgba(255, 165, 0, 0.08)
       }
     }
+
+    a {
+      color: var(--p-tag-info-color);
+      text-decoration: none;
+      cursor: pointer;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+
+    p-badge {
+      margin-left: 0.5rem;
+      vertical-align: middle;
+    }
   }
+  .spots-caption {display: flex; align-items: center; width: 100%;}
 }

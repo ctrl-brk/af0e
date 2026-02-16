@@ -25,6 +25,7 @@ export class ModeSeverityPipe implements PipeTransform {
       case 'PSK31':
       case 'JT65':
       case 'RTTY':
+      case 'SSTV':
         return 'warn';
     }
     return 'secondary';

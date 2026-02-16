@@ -7,6 +7,7 @@ import {ActivationQsoModel} from '../models/activation-qso.model';
 import {PotaParkModel} from '../models/pota-park.model';
 import {QsoSummaryModel} from '../models/qso-summary.model';
 import {PotaActivityModel} from '../models/pota-activity.model';
+import {PotaActivityStatsModel} from '../models/pota-activity-stats.model';
 
 @Injectable({providedIn: 'root'})
 export class PotaService {
@@ -110,7 +111,7 @@ export class PotaService {
     );
   }
 
-  public getActivity(band?: string, mode?: string): Observable<PotaActivityModel[]> {
+  public getActivity(band?: string, mode?: string): Observable<PotaActivityStatsModel[]> {
     let url = 'activity?band=';
     if (band)
       url += band;
@@ -118,10 +119,10 @@ export class PotaService {
       url += `&mode=${mode}`;
 
     return this._http.get(Configuration.potaUrl(url)).pipe(
-      map((x: PotaActivityModel[]) => {
+      map((x: PotaActivityStatsModel[]) => {
         return x.map((m) => {
-          if (m.freqKhz)
-            m.freqHz = parseFloat(m.freqKhz) * 1000;
+          if (m.activity.freqKhz)
+            m.activity.freqHz = parseFloat(m.activity.freqKhz) * 1000;
           return m;
         })
       })

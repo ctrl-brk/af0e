@@ -41,8 +41,7 @@ public static partial class PotaHandlers
         if (string.IsNullOrEmpty(parkNum))
             return [];
 
-        if (parkNum[0] >= '0' && parkNum[0] <= '9')
-            parkNum = $"US-{parkNum}";
+        parkNum = NormalizeParkNumber(parkNum);
 
         return await dbContext.PotaParks
             .Where(x => x.Active && x.ParkNum.StartsWith(parkNum) || EF.Functions.Like(x.ParkName, $"%{parkNum}%"))
@@ -57,8 +56,7 @@ public static partial class PotaHandlers
         if (string.IsNullOrEmpty(parkNum))
             return null;
 
-        if (parkNum[0] >= '0' && parkNum[0] <= '9')
-            parkNum = $"US-{parkNum}";
+        parkNum = NormalizeParkNumber(parkNum);
 
         var res = await dbContext.PotaParks.Where(x => x.ParkNum == parkNum).FirstOrDefaultAsync();
         return res == null ? null : new PotaParkDetails(res);
@@ -69,8 +67,7 @@ public static partial class PotaHandlers
         if (string.IsNullOrEmpty(parkNum))
             return [];
 
-        if (parkNum[0] >= '0' && parkNum[0] <= '9')
-            parkNum = $"US-{parkNum}";
+        parkNum = NormalizeParkNumber(parkNum);
 
         return await dbContext.PotaHunting
             .Include(l => l.Log)
@@ -78,7 +75,7 @@ public static partial class PotaHandlers
             .Include(p => p.Park)
             .Where(x => x.Park.ParkNum == parkNum)
             .OrderByDescending(x => x.Log.ColTimeOn)
-            .Select( x => new PotaHuntingQsoSummary(x))
+            .Select(x => new PotaHuntingQsoSummary(x))
             .ToListAsync();
     }
 
@@ -89,17 +86,100 @@ public static partial class PotaHandlers
             .Select(x => new QsoSummary(x, ExtractPotaReference(x.ColComment)))
             .ToListAsync();
 
-    public static async Task<List<PotaActivityInfo>> CheckActivity(IPotaApiService potaApiService) =>
-        await potaApiService.CheckActivityAsync();
-
-    public static async Task<List<PotaActivityInfo>> CheckActivity(string? band, string? mode, IPotaApiService potaApiService, HrdDbContext dbContext)
-    {
-        var spots = await potaApiService.CheckActivityAsync(band, mode);
-        return await FilterAlreadyLoggedSpots(spots, dbContext);
-    }
-
     public static async Task<PotaActivityInfo> CheckActivity(string callSign, IPotaApiService potaApiService) =>
         await potaApiService.CheckActivityAsync(callSign: callSign);
+
+    public static async Task<List<PotaActivityWithStats>> CheckActivity(string? band, string? mode, IPotaApiService potaApiService, HrdDbContext dbContext)
+    {
+        var spots = await potaApiService.CheckActivityAsync(band, mode);
+        var filteredSpots = await FilterAlreadyLoggedSpots(spots, dbContext);
+        
+        if (filteredSpots.Count == 0)
+            return [];
+
+        // Get unique park numbers and call signs
+        var parkNumbers = filteredSpots
+            .Where(s => !string.IsNullOrEmpty(s.ParkNum))
+            .Select(s => s.ParkNum!)
+            .Distinct()
+            .ToList();
+        
+        var callSigns = filteredSpots
+            .Select(s => s.CallSign)
+            .Distinct()
+            .ToList();
+
+        // Normalize park numbers
+        var normalizedParkNums = parkNumbers
+            .Select(NormalizeParkNumber)
+            .ToList();
+
+        // Query park contacts grouped by park, band, mode
+        var parkStats = normalizedParkNums.Count > 0
+            ? await dbContext.PotaHunting
+                .Include(p => p.Park)
+                .Include(l => l.Log)
+                .Where(x => normalizedParkNums.Contains(x.Park.ParkNum))
+                .GroupBy(x => new { x.Park.ParkNum, x.Log.ColBand, x.Log.ColMode })
+                .Select(g => new
+                {
+                    ParkNum = g.Key.ParkNum,
+                    Band = g.Key.ColBand ?? "",
+                    Mode = g.Key.ColMode ?? "",
+                    Count = g.Count()
+                })
+                .ToListAsync()
+            : [];
+
+        // Query total contacts per call sign
+        var callSignStats = await dbContext.Log
+            .Where(l => callSigns.Contains(l.ColCall))
+            .GroupBy(l => l.ColCall)
+            .Select(g => new
+            {
+                CallSign = g.Key,
+                Count = g.Count()
+            })
+            .ToListAsync();
+
+        // Create lookup dictionaries
+        var parkStatsLookup = parkStats
+            .GroupBy(s => s.ParkNum)
+            .ToDictionary(
+                g => g.Key,
+                g => g.ToList()
+            );
+
+        var callSignStatsLookup = callSignStats
+            .ToDictionary(s => s.CallSign, s => s.Count, StringComparer.OrdinalIgnoreCase);
+
+        // Combine data
+        return filteredSpots.Select(spot =>
+        {
+            var parkNum = spot.ParkNum ?? "";
+            var normalizedParkNum = string.IsNullOrEmpty(parkNum) ? "" : NormalizeParkNumber(parkNum);
+            
+            var parkContactStats = parkStatsLookup.TryGetValue(normalizedParkNum, out var stats)
+                ? stats.Select(s => new ParkContactStats
+                {
+                    Band = s.Band,
+                    Mode = s.Mode,
+                    Count = s.Count
+                }).ToList()
+                : [];
+
+            var totalParkContacts = parkContactStats.Sum(s => s.Count);
+            var totalCallSignContacts = callSignStatsLookup.TryGetValue(spot.CallSign, out var count) ? count : 0;
+
+            return new PotaActivityWithStats
+            {
+                Activity = spot,
+                ParkContactsByBandMode = parkContactStats,
+                TotalParkContacts = totalParkContacts,
+                TotalCallSignContacts = totalCallSignContacts
+            };
+        }).ToList();
+    }
 
     private static async Task<List<PotaActivityInfo>> FilterAlreadyLoggedSpots(List<PotaActivityInfo> spots, HrdDbContext dbContext)
     {
@@ -150,10 +230,6 @@ public static partial class PotaHandlers
                 if (!string.Equals(contact.ColBand, spot.Band, StringComparison.OrdinalIgnoreCase))
                     return false;
 
-                var contactDate = DateOnly.FromDateTime(contact.ColTimeOn!.Value);
-                if (contactDate != spotDate)
-                    return false;
-
                 // Extract park reference from comment (format: "POTA XXX ...")
                 var parkRef = ExtractPotaReference(contact.ColComment);
                 return string.Equals(parkRef, spot.ParkNum, StringComparison.OrdinalIgnoreCase);
@@ -169,6 +245,14 @@ public static partial class PotaHandlers
         var match = PotaReferenceRegex().Match(comment);
         return match.Success ? match.Value : string.Empty;
     }
+
+    /// <summary>
+    /// Normalizes a park number by adding "US-" prefix if it starts with a digit
+    /// </summary>
+    private static string NormalizeParkNumber(string parkNum) =>
+        parkNum.Length > 0 && parkNum[0] >= '0' && parkNum[0] <= '9' 
+            ? $"US-{parkNum}" 
+            : parkNum;
 }
 
 static partial class PotaHandlers

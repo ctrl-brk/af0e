@@ -32,6 +32,9 @@
     <Project Path="AF0E.App/QslLabel/QslLabel.csproj">
       <BuildType Solution="Development|*" Project="Debug" />
     </Project>
+    <Project Path="AF0E.App/RigCommander/RigCommander.csproj">
+      <BuildType Solution="Development|*" Project="Release" />
+    </Project>
   </Folder>
   <Folder Name="/Tests/">
     <Project Path="../tests/AF0E.Services.UnitTests/AF0E.Services.UnitTests.csproj">

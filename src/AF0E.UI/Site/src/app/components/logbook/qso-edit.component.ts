@@ -1,4 +1,14 @@
-import {Component, effect, inject, input, output, untracked, ViewEncapsulation} from '@angular/core';
+import {
+  Component,
+  effect,
+  ElementRef,
+  inject,
+  input,
+  output,
+  untracked,
+  viewChild,
+  ViewEncapsulation
+} from '@angular/core';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {NotificationService} from '../../shared/notification.service';
 import {LogService} from '../../shared/log.service';
@@ -43,10 +53,13 @@ export class QsoEditComponent {
   private _ntfSvc= inject(NotificationService);
   private _log = inject(LogService);
   private _potaSvc = inject(PotaService);
+  private _callInput = viewChild<ElementRef>('callInput');
 
   logId = input.required<number>();
+  callSign = input<string>();
   editModeChange = output<boolean>();
   saved = output<boolean>();
+
 
   protected qso: QsoDetailModel = null!;
   protected qsoForm!: FormGroup;
@@ -63,6 +76,9 @@ export class QsoEditComponent {
 
     effect(() => {
       const id = this.logId();
+      const call = this.callSign();
+      const callInputEl = this._callInput();
+
       // Use untracked to prevent form operations from triggering this effect again
       untracked(() => {
         if (id > 0) {
@@ -73,6 +89,17 @@ export class QsoEditComponent {
           this.isEditMode = false;
           this.editModeChange.emit(false);
           this.initializeNewQso();
+
+          if (call)
+            this.qsoForm.patchValue({ call });
+        }
+
+        // Focus the call input field after a short delay to ensure DOM is ready
+        if (callInputEl?.nativeElement) {
+          setTimeout(() => {
+            callInputEl.nativeElement.focus();
+            callInputEl.nativeElement.select();
+          }, 0);
         }
       });
     });
@@ -158,6 +185,8 @@ export class QsoEditComponent {
         this.qsoForm.get('freq')?.setValue(r.freqHz);
         this.qsoForm.get('mode')?.setValue(r.mode);
         this.qsoForm.get('band')?.setValue(Utils.getBandFromFrequency(r.freqHz), { emitEvent: false });
+
+        this.qsoForm.markAsDirty();
       },
       error: e => {
         Utils.showErrorMessage(e, this._ntfSvc, this._log);
