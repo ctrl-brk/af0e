@@ -33,7 +33,7 @@ describe('Utils', () => {
       const now = new Date();
       const result = Utils.getCurrentUtcDate();
       expect(result).toBeInstanceOf(Date);
-      
+
       expect(result.getFullYear()).toBe(now.getUTCFullYear());
       expect(result.getMonth()).toBe(now.getUTCMonth());
       expect(result.getDate()).toBe(now.getUTCDate());
@@ -44,48 +44,48 @@ describe('Utils', () => {
 
   describe('getBandFromFrequency', () => {
     it('should return correct band for 160m frequencies', () => {
-      expect(Utils.getBandFromFrequency(1.850)).toBe('160m');
-      expect(Utils.getBandFromFrequency(1.999)).toBe('160m');
+      expect(Utils.getBandFromFrequency(1850000)).toBe('160m');
+      expect(Utils.getBandFromFrequency(1999000)).toBe('160m');
     });
 
     it('should return correct band for 80m frequencies', () => {
-      expect(Utils.getBandFromFrequency(3.500)).toBe('80m');
-      expect(Utils.getBandFromFrequency(4.000)).toBe('80m');
+      expect(Utils.getBandFromFrequency(3500000)).toBe('80m');
+      expect(Utils.getBandFromFrequency(4000000)).toBe('80m');
     });
 
     it('should return correct band for 40m frequencies', () => {
-      expect(Utils.getBandFromFrequency(7.000)).toBe('40m');
-      expect(Utils.getBandFromFrequency(7.300)).toBe('40m');
+      expect(Utils.getBandFromFrequency(7000000)).toBe('40m');
+      expect(Utils.getBandFromFrequency(7300000)).toBe('40m');
     });
 
     it('should return correct band for 20m frequencies', () => {
-      expect(Utils.getBandFromFrequency(14.000)).toBe('20m');
-      expect(Utils.getBandFromFrequency(14.350)).toBe('20m');
+      expect(Utils.getBandFromFrequency(14000000)).toBe('20m');
+      expect(Utils.getBandFromFrequency(14350000)).toBe('20m');
     });
 
     it('should return correct band for 15m frequencies', () => {
-      expect(Utils.getBandFromFrequency(21.000)).toBe('15m');
-      expect(Utils.getBandFromFrequency(21.450)).toBe('15m');
+      expect(Utils.getBandFromFrequency(21000000)).toBe('15m');
+      expect(Utils.getBandFromFrequency(21450000)).toBe('15m');
     });
 
     it('should return correct band for 10m frequencies', () => {
-      expect(Utils.getBandFromFrequency(28.000)).toBe('10m');
-      expect(Utils.getBandFromFrequency(29.700)).toBe('10m');
+      expect(Utils.getBandFromFrequency(28000000)).toBe('10m');
+      expect(Utils.getBandFromFrequency(29700000)).toBe('10m');
     });
 
     it('should return correct band for 6m frequencies', () => {
-      expect(Utils.getBandFromFrequency(50.000)).toBe('6m');
-      expect(Utils.getBandFromFrequency(54.000)).toBe('6m');
+      expect(Utils.getBandFromFrequency(50000000)).toBe('6m');
+      expect(Utils.getBandFromFrequency(54000000)).toBe('6m');
     });
 
     it('should return correct band for 2m frequencies', () => {
-      expect(Utils.getBandFromFrequency(144.000)).toBe('2m');
-      expect(Utils.getBandFromFrequency(148.000)).toBe('2m');
+      expect(Utils.getBandFromFrequency(144000000)).toBe('2m');
+      expect(Utils.getBandFromFrequency(148000000)).toBe('2m');
     });
 
     it('should return null for out-of-band frequencies', () => {
-      expect(Utils.getBandFromFrequency(0.5)).toBeNull();
-      expect(Utils.getBandFromFrequency(1000)).toBeNull();
+      expect(Utils.getBandFromFrequency(500)).toBeNull();
+      expect(Utils.getBandFromFrequency(1000000)).toBeNull();
     });
 
     it('should return null for negative frequencies', () => {
