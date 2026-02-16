@@ -4,7 +4,8 @@ export class Configuration {
   private static _apiUrl = environment.apiUrl;
   private static _logbookUrl = `${Configuration._apiUrl}/logbook`;
   private static _potaUrl = `${Configuration._apiUrl}/pota`;
-    private static _notificationUrl = `${Configuration._apiUrl}/notification`;
+  private static _notificationUrl = `${Configuration._apiUrl}/notification`;
+  public static infraUrl = environment.infraUrl;
 
   public static get LoadingDelay(): number {
     return 200;

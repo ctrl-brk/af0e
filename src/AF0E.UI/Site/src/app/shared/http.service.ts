@@ -23,7 +23,7 @@ export class HttpService {
     // else if (error.status === 403)
     //     alert("Access denied");
 
-    return throwError(() => new Error(error.message || 'Server error'));
+    return throwError(() => new Error(error.message || 'Server error', { cause: error }));
   }
 
   get(url: string): Observable<any> {

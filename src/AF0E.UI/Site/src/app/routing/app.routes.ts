@@ -46,6 +46,11 @@ export const routes: Routes = [
     path: 'pota',
     children: [
       {
+        path: 'spots',
+        loadComponent: () => import('../components/pota/spots/pota-spots.component').then(m => m.PotaSpotsComponent),
+        canActivate: [rolePermissionGuard([Roles.Admin])],
+      },
+      {
         path: 'activations',
         loadComponent: () => import('../components/pota/activations/activations.component').then(m => m.PotaActivationsComponent),
       },

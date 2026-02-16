@@ -6,6 +6,8 @@ import {PotaActivationModel} from '../models/pota-activation.model';
 import {ActivationQsoModel} from '../models/activation-qso.model';
 import {PotaParkModel} from '../models/pota-park.model';
 import {QsoSummaryModel} from '../models/qso-summary.model';
+import {PotaActivityModel} from '../models/pota-activity.model';
+import {PotaActivityStatsModel} from '../models/pota-activity-stats.model';
 
 @Injectable({providedIn: 'root'})
 export class PotaService {
@@ -96,6 +98,34 @@ export class PotaService {
           x.parkDesc = `${x.parkNum} - ${x.parkName}`;
           return x;
         })
+    );
+  }
+
+  public getActivityByCall(call: string): Observable<PotaActivityModel> {
+    return this._http.get(Configuration.potaUrl(`activity/${encodeURIComponent(call)}`)).pipe(
+      map((x: PotaActivityModel) => {
+        if (x.freqKhz)
+          x.freqHz = parseFloat(x.freqKhz) * 1000;
+        return x;
+      })
+    );
+  }
+
+  public getActivity(band?: string, mode?: string): Observable<PotaActivityStatsModel[]> {
+    let url = 'activity?band=';
+    if (band)
+      url += band;
+    if (mode)
+      url += `&mode=${mode}`;
+
+    return this._http.get(Configuration.potaUrl(url)).pipe(
+      map((x: PotaActivityStatsModel[]) => {
+        return x.map((m) => {
+          if (m.activity.freqKhz)
+            m.activity.freqHz = parseFloat(m.activity.freqKhz) * 1000;
+          return m;
+        })
+      })
     );
   }
 }

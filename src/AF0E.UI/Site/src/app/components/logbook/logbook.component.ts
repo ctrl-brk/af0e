@@ -1,5 +1,5 @@
 import {Component, DestroyRef, inject, model, OnInit, signal, ViewEncapsulation} from '@angular/core';
-import {ActivatedRoute, Router} from '@angular/router';
+import {ActivatedRoute} from '@angular/router';
 import {TableLazyLoadEvent, TableModule} from 'primeng/table';
 import {LogbookService} from '../../services/logbook.service';
 import {Utils} from '../../shared/utils';
@@ -47,7 +47,6 @@ import {QsoEditComponent} from './qso-edit.component';
 export class LogbookComponent implements OnInit {
   private _activatedRoute = inject(ActivatedRoute)
   private _destroyRef = inject(DestroyRef);
-  private _router = inject(Router);
   protected _authSvc = inject(AppAuthService);
   private _logbookSvc = inject(LogbookService);
   private _ntfSvc = inject(NotificationService);
@@ -55,7 +54,6 @@ export class LogbookComponent implements OnInit {
 
   private _call: string | null = null;
 
-  // Convert to signals for better zoneless change detection
   logEntries = signal<QsoSummaryModel[]>([]);
   totalRecords = signal(0);
   selectedId = signal(0);

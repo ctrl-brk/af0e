@@ -32,6 +32,14 @@
     <Project Path="AF0E.App/QslLabel/QslLabel.csproj">
       <BuildType Solution="Development|*" Project="Debug" />
     </Project>
+    <Project Path="AF0E.App/RigCommander/RigCommander.csproj">
+      <BuildType Solution="Development|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="../tests/AF0E.Services.UnitTests/AF0E.Services.UnitTests.csproj">
+      <BuildType Solution="Development|*" Project="Release" />
+    </Project>
   </Folder>
   <Folder Name="/Web.Api/">
     <Project Path="AF0E.WebApi/DX/DX.Api.csproj">
@@ -47,13 +55,16 @@
       <Platform Project="?" />
     </Project>
   </Folder>
+  <Project Path="AF0E.Common/AF0E.Common.csproj">
+    <BuildType Solution="Development|*" Project="Debug" />
+  </Project>
   <Project Path="AF0E.DB/AF0E.DB.csproj">
     <BuildType Solution="Development|*" Project="Debug" />
   </Project>
   <Project Path="AF0E.Functions/AF0E.Functions.csproj">
     <BuildType Solution="Development|*" Project="Debug" />
   </Project>
-  <Project Path="AF0E.Common/AF0E.Common.csproj">
-    <BuildType Solution="Development|*" Project="Debug" />
+  <Project Path="AF0E.Services/AF0E.Services.csproj">
+    <BuildType Solution="Development|*" Project="Release" />
   </Project>
 </Solution>

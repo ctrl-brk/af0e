@@ -83,20 +83,23 @@ export class Utils {
     return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
   }
 
-  public static getBandFromFrequency(freqMHz: number): string | null {
-    if (freqMHz >= 1.8 && freqMHz <= 2.0) return '160m';
-    if (freqMHz >= 3.5 && freqMHz <= 4.0) return '80m';
-    if (freqMHz >= 5.3 && freqMHz <= 5.4) return '60m';
-    if (freqMHz >= 7.0 && freqMHz <= 7.3) return '40m';
-    if (freqMHz >= 10.1 && freqMHz <= 10.15) return '30m';
-    if (freqMHz >= 14.0 && freqMHz <= 14.35) return '20m';
-    if (freqMHz >= 18.068 && freqMHz <= 18.168) return '17m';
-    if (freqMHz >= 21.0 && freqMHz <= 21.45) return '15m';
-    if (freqMHz >= 24.89 && freqMHz <= 24.99) return '12m';
-    if (freqMHz >= 28.0 && freqMHz <= 29.7) return '10m';
-    if (freqMHz >= 50.0 && freqMHz <= 54.0) return '6m';
-    if (freqMHz >= 144.0 && freqMHz <= 148.0) return '2m';
-    if (freqMHz >= 420.0 && freqMHz <= 450.0) return '70cm';
+  public static getBandFromFrequency(freqHz: number | null): string | null {
+    if (!freqHz) return null;
+
+    if (freqHz >= 1800000 && freqHz <= 2000000) return '160m';
+    if (freqHz >= 3500000 && freqHz <= 4000000) return '80m';
+    if (freqHz >= 5330500 && freqHz <= 5403500) return '60m';
+    if (freqHz >= 7000000 && freqHz <= 7300000) return '40m';
+    if (freqHz >= 10100000 && freqHz <= 10150000) return '30m';
+    if (freqHz >= 14000000 && freqHz <= 14350000) return '20m';
+    if (freqHz >= 18068000 && freqHz <= 18168000) return '17m';
+    if (freqHz >= 21000000 && freqHz <= 21450000) return '15m';
+    if (freqHz >= 24890000 && freqHz <= 24990000) return '12m';
+    if (freqHz >= 28000000 && freqHz <= 29700000) return '10m';
+    if (freqHz >= 50000000 && freqHz <= 54000000) return '6m';
+    if (freqHz >= 144000000 && freqHz <= 148000000) return '2m';
+    if (freqHz >= 222000000 && freqHz <= 225000000) return '1.25m';
+    if (freqHz >= 420000000 && freqHz <= 450000000) return '70cm';
 
     return null;
   }

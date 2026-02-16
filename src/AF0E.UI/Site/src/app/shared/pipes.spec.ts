@@ -61,6 +61,7 @@ describe('Pipes', () => {
       expect(pipe.transform('PSK31')).toBe('warn');
       expect(pipe.transform('JT65')).toBe('warn');
       expect(pipe.transform('RTTY')).toBe('warn');
+      expect(pipe.transform('SSTV')).toBe('warn');
     });
 
     it('should return default severity for unknown modes', () => {

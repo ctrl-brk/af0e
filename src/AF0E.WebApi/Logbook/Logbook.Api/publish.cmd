@@ -1,5 +1,7 @@
 @echo off
 rmdir dist /s /q > nul
+dotnet test ..\..\..\AF0E.slnx
+if %errorlevel% neq 0 exit 1
 dotnet publish -p:PublishProfile=FolderProfile
 if %errorlevel% neq 0 exit 1
 cd ..\..\..\AF0E.UI\Site
