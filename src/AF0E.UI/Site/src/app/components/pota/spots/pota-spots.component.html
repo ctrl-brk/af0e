@@ -1,0 +1,80 @@
+<div class="top-spacer"></div>
+<p-table
+  [value]="spots()"
+  dataKey="activity.callSign"
+  sortField="activity.lastSpotTime"
+  [sortOrder]="-1"
+  sortMode="multiple"
+  [scrollable]="true"
+  scrollHeight="calc(100vh - 9.6rem)"
+  class="tbl-activity">
+
+  <ng-template pTemplate="caption">
+    <div class='spots-caption'>
+      <p-button severity="primary" icon="pi pi-refresh" (onClick)="refreshSpots()" />&nbsp;
+      <p-checkbox
+        inputId="autoRefresh"
+        [ngModel]="autoRefresh()"
+        (ngModelChange)="autoRefresh.set($event)"
+        [binary]="true" />
+      &nbsp;<label for="autoRefresh">Auto</label>
+      &nbsp;|&nbsp;
+      <p-checkbox
+        inputId="rigControl"
+        [ngModel]="rigControl()"
+        (ngModelChange)="rigControl.set($event)"
+        [binary]="true" />
+      &nbsp;<label for="rigControl">Rig Control</label>
+    </div>
+  </ng-template>
+
+    <ng-template pTemplate="header">
+    <tr>
+      <th pSortableColumn="activity.lastSpotTime">Time <p-sortIcon field="activity.lastSpotTime" /></th>
+      <th>Call</th>
+      <th>Park</th>
+      <th pSortableColumn="activity.band">Band <p-sortIcon field="activity.band" /></th>
+      <th>Freq</th>
+      <th pSortableColumn="activity.mode">Mode <p-sortIcon field="activity.mode" /></th>
+    </tr>
+  </ng-template>
+
+  <ng-template pTemplate="body" let-act>
+    <tr [ngClass]="getRowClass(act)">
+      <td>{{ act.activity.lastSpotTime | timeAgo }}</td>
+      <td>
+        <a (click)="onCallSignClick(act.activity.callSign, act.activity.freqKhz, act.activity.mode)">{{ act.activity.callSign }}</a>
+        @if (act.totalCallSignContacts > 0) {
+          <p-badge [value]="act.totalCallSignContacts" severity="info" />
+        }
+      </td>
+      <td>
+        <a (click)="onParkClick(act.activity.parkNum)">{{ act.activity.parkNum }}</a>
+        @if (act.totalParkContacts > 0) {
+          <p-badge [value]="act.totalParkContacts" severity="info" />
+        }
+      </td>
+      <td>{{ act.activity.band }}</td>
+      <td>{{ act.activity.freqKhz }}</td>
+      <td>
+        @if (act.activity.mode !== '') {
+          <p-tag [value]="act.activity.mode|qsoMode" [severity]="act.activity.mode|modeSeverity" />
+        }
+      </td>
+    </tr>
+  </ng-template>
+</p-table>
+
+<p-scrollTop />
+
+<p-dialog header="Add QSO" [modal]="true" [(visible)]="qsoEditVisible" [style]="{ width: '60rem' }" [focusOnShow]="false">
+  @if (qsoEditVisible()) {
+    <app-qso-edit [logId]="-1" [callSign]="selectedCall()" (saved)="onQsoSaved()" />
+  }
+</p-dialog>
+
+<p-dialog header="Hunting stats" [modal]="true" [(visible)]="huntingStatsVisible" [style]="{ width: '90rem' }" [focusOnShow]="false">
+  @if (huntingStatsVisible()) {
+    <app-park-hunting-stats [parkNum]="selectedParkNum()" />
+  }
+</p-dialog>

@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using AF0E.DB;
+using AF0E.Services.Pota;
 using Logbook.Api.Converters;
 using Logbook.Api.Endpoints;
 using Logbook.Api.Security;
@@ -50,6 +51,8 @@ builder.Services.AddOpenApi(options =>
 });
 
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<IPotaApiService, PotaApiService>();
 //builder.Services.AddDbContext<HrdDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("HrdLog")));
 builder.Services.AddScoped<HrdDbContext>(_ => new HrdDbContext(builder.Configuration.GetConnectionString("HrdLog")!));
 builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =>
@@ -103,6 +106,7 @@ else
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapGet("/health", () => Results.Ok(new { ok = true }));
 app.RegisterV1Endpoints();
 
 app.MapFallbackToFile("/index.html");

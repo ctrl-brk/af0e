@@ -30,6 +30,7 @@ export const BAND_OPTIONS: DropdownOption[] = [
   { label: '10m', value: '10m' },
   { label: '6m', value: '6m' },
   { label: '2m', value: '2m' },
+  { label: '1.25m', value: '1.25m' },
   { label: '70cm', value: '70cm' },
 ];
 

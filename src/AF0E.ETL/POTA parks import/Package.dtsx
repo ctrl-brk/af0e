@@ -7,12 +7,12 @@
   DTS:CreatorName="HOME\rook"
   DTS:DTSID="{F8253DC2-D0B7-4BCD-9983-3E5F6CE46353}"
   DTS:ExecutableType="Microsoft.Package"
-  DTS:LastModifiedProductVersion="16.0.5685.0"
+  DTS:LastModifiedProductVersion="17.0.1008.3"
   DTS:LocaleID="1033"
   DTS:ObjectName="Package"
   DTS:PackageType="5"
-  DTS:VersionBuild="4"
-  DTS:VersionGUID="{8E43C670-44EE-4423-868B-EEC12E69915F}">
+  DTS:VersionBuild="5"
+  DTS:VersionGUID="{30F8A91B-7478-4E01-8C82-6BDAA7C84968}">
   <DTS:Property
     DTS:Name="PackageFormatVersion">8</DTS:Property>
   <DTS:Variables />
@@ -1071,7 +1071,7 @@
       <GraphLayout
         Capacity="8" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml">
         <NodeLayout
-          Size="188,42"
+          Size="167,42"
           Id="Package\CSV to staging\Extract parks data"
           TopLeft="123,161" />
         <NodeLayout
@@ -1084,18 +1084,30 @@
           TopLeft="123,261.5" />
         <EdgeLayout
           Id="Package\CSV to staging.Paths[Flat File Source Output]"
-          TopLeft="217,203">
+          TopLeft="206.5,203">
           <EdgeLayout.Curve>
             <mssgle:Curve
               StartConnector="{assembly:Null}"
-              EndConnector="0,58.5"
+              EndConnector="10.5,58.5"
               Start="0,0"
-              End="0,51">
+              End="10.5,51">
               <mssgle:Curve.Segments>
                 <mssgle:SegmentCollection
                   Capacity="5">
                   <mssgle:LineSegment
-                    End="0,51" />
+                    End="0,25.25" />
+                  <mssgle:CubicBezierSegment
+                    Point1="0,25.25"
+                    Point2="0,29.25"
+                    Point3="4,29.25" />
+                  <mssgle:LineSegment
+                    End="6.5,29.25" />
+                  <mssgle:CubicBezierSegment
+                    Point1="6.5,29.25"
+                    Point2="10.5,29.25"
+                    Point3="10.5,33.25" />
+                  <mssgle:LineSegment
+                    End="10.5,51" />
                 </mssgle:SegmentCollection>
               </mssgle:Curve.Segments>
             </mssgle:Curve>

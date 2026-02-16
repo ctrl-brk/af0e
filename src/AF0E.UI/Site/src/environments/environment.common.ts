@@ -9,5 +9,5 @@ export const commonEnvironment = {
   auth0domain: 'dev-4l6joodw0kczibgl.us.auth0.com',
   auth0clientId: 'sNpxyLre7xkR55bd6kHXURvJSGLkzaRX',
   auth0audience: 'https://af0e.logbook.api',
+  infraUrl: 'http://localhost:5050',
 };
-
