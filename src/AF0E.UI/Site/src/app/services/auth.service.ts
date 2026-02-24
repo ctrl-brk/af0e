@@ -51,8 +51,6 @@ export class AppAuthService {
 
   hasRole(role: string): boolean {
     const claims = this.currentClaims();
-    console.log("claims");
-    console.log(claims);
     const claimedRoles = claims?.[`${environment.claimType}/roles`] as string[] | undefined;
     return claimedRoles ? claimedRoles.includes(role) : false;
   }

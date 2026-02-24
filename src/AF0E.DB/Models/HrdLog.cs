@@ -2,6 +2,17 @@
 
 public sealed class HrdLog
 {
+    /// <summary>
+    /// Initializes class with default values for HRD logbook. It doesn't handle nulls well.
+    /// </summary>
+    public HrdLog()
+    {
+        ColAge = ColAIndex = ColAntAz = ColAntEl = ColCqz = ColDistance = ColForceInit = ColFreqRx = 0;
+        ColHeading = ColKIndex = ColLat = ColMyLat = ColLon = ColMyLon = ColMaxBursts = ColNrBursts = ColNrPings = 0;
+        ColQsoRandom = ColRxPwr = ColSfi = ColSrx = ColStx = ColSwl = ColTenTen = 0;
+        ColTxPwr = 0;
+    }
+
     public int ColPrimaryKey { get; set; }
     public string? ColAddress { get; set; }
     public double? ColAge { get; set; }

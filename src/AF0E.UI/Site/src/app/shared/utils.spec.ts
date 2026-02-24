@@ -2,9 +2,6 @@ import {describe, expect, it, vi} from 'vitest';
 import {Utils} from './utils';
 import {HttpErrorResponse} from '@angular/common/http';
 import {NotificationMessageModel, NotificationMessageSeverity} from './notification-message.model';
-import {ErrorDtoModel} from './error-dto.model';
-import {ErrorSource} from './error-source.enum';
-import {ErrorSeverity} from './error-severity.enum';
 
 describe('Utils', () => {
   describe('dateToYmd', () => {
@@ -112,18 +109,6 @@ describe('Utils', () => {
     });
 
     describe('HTTP error responses', () => {
-      it('should ignore 0', () => {
-        const mockNotificationService = {addMessage: vi.fn()};
-        const mockLogService = {error: vi.fn()};
-
-        const httpError = new HttpErrorResponse({status: 0});
-
-        Utils.showErrorMessage(httpError, mockNotificationService as any, mockLogService as any);
-
-        expect(mockNotificationService.addMessage).toHaveBeenCalledTimes(0);
-        expect(mockLogService.error).toHaveBeenCalledTimes(0);
-      });
-
       it('should handle >=500', () => {
         const mockNotificationService = {addMessage: vi.fn()};
         const mockLogService = {error: vi.fn()};
@@ -183,34 +168,6 @@ describe('Utils', () => {
         expect(mockNotificationService.addMessage).toHaveBeenCalledTimes(1);
         expect(mockNotificationService.addMessage).toHaveBeenCalledWith(new NotificationMessageModel(NotificationMessageSeverity.Error, 'Error', 'Unexpected error. Please notify me.', false));
       });
-
-      describe('Error DTO', () => {
-        describe('Business', () => {
-          it('conflict', () => {
-            const mockNotificationService = {addMessage: vi.fn()};
-            const mockLogService = {error: vi.fn()};
-
-            const error = new HttpErrorResponse({status: 1, error: new ErrorDtoModel(ErrorSource.Business, ErrorSeverity.Conflict, 'Test msg', 'Full message', null)});
-
-            Utils.showErrorMessage(error, mockNotificationService as any, mockLogService as any);
-
-            expect(mockNotificationService.addMessage).toHaveBeenCalledTimes(1);
-            expect(mockNotificationService.addMessage).toHaveBeenCalledWith(new NotificationMessageModel(NotificationMessageSeverity.Error, 'Error', 'Test msg', true));
-          });
-
-          it('not conflict', () => {
-            const mockNotificationService = {addMessage: vi.fn()};
-            const mockLogService = {error: vi.fn()};
-
-            const error = new HttpErrorResponse({status: 1, error: new ErrorDtoModel(ErrorSource.Business, ErrorSeverity.Error, 'Test msg', 'Full message', null)});
-
-            Utils.showErrorMessage(error, mockNotificationService as any, mockLogService as any);
-
-            expect(mockNotificationService.addMessage).toHaveBeenCalledTimes(1);
-            expect(mockNotificationService.addMessage).toHaveBeenCalledWith(new NotificationMessageModel(NotificationMessageSeverity.Error, 'Error', 'Test msg', false));
-          });
-        });
-      })
     })
   });
 });

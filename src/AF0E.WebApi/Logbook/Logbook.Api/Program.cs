@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using AF0E.DB;
 using AF0E.Services.Pota;
+using AF0E.Services.Qrz;
 using Logbook.Api.Converters;
 using Logbook.Api.Endpoints;
 using Logbook.Api.Security;
@@ -53,6 +54,8 @@ builder.Services.AddOpenApi(options =>
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IPotaApiService, PotaApiService>();
+builder.Services.Configure<QrzSettings>(builder.Configuration.GetSection("QrzSettings"));
+builder.Services.AddSingleton<IQrzService, QrzService>();
 //builder.Services.AddDbContext<HrdDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("HrdLog")));
 builder.Services.AddScoped<HrdDbContext>(_ => new HrdDbContext(builder.Configuration.GetConnectionString("HrdLog")!));
 builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =>

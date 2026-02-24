@@ -18,6 +18,15 @@
         />
         <label for="date">UTC Date/Time *</label>
       </p-floatlabel>
+      <p-button
+        icon="pi pi-angle-double-left"
+        [text]="true"
+        [rounded]="true"
+        size="small"
+        severity="info"
+        (onClick)="setCurrentDateTime()"
+        class="date-now-btn"
+      />
 
       <p-floatlabel class="w-freq">
         <p-inputNumber
@@ -31,9 +40,8 @@
           tooltipPosition="top"
           (onBlur)="onFreqBlur()"
         />
-        <label for="freq">Frequency (Hz)</label>
+        <label for="freq">Frequency (Hz) *</label>
       </p-floatlabel>
-
       <p-floatlabel class="w-ddl">
         <p-select
           formControlName="band"
@@ -47,7 +55,6 @@
         />
         <label for="band">Band *</label>
       </p-floatlabel>
-
       <p-floatlabel class="w-ddl">
         <p-select
           formControlName="mode"
@@ -83,19 +90,6 @@
       <p-floatlabel class="w-rst">
         <input
           pInputText
-          formControlName="rstSent"
-          id="rstSent"
-          [class.ng-invalid]="isFieldInvalid('rstSent')"
-          [class.ng-dirty]="isFieldInvalid('rstSent')"
-          [pTooltip]="isFieldInvalid('rstSent') ? getErrorMessage('rstSent') : ''"
-          tooltipPosition="top"
-        />
-        <label for="rstSent">RST Sent</label>
-      </p-floatlabel>
-
-      <p-floatlabel class="w-rst">
-        <input
-          pInputText
           formControlName="rstRcvd"
           id="rstRcvd"
           [class.ng-invalid]="isFieldInvalid('rstRcvd')"
@@ -105,10 +99,65 @@
         />
         <label for="rstRcvd">RST Rcvd</label>
       </p-floatlabel>
+      <p-floatlabel class="w-rst">
+        <input
+          pInputText
+          formControlName="rstSent"
+          id="rstSent"
+          [class.ng-invalid]="isFieldInvalid('rstSent')"
+          [class.ng-dirty]="isFieldInvalid('rstSent')"
+          [pTooltip]="isFieldInvalid('rstSent') ? getErrorMessage('rstSent') : ''"
+          tooltipPosition="top"
+        />
+        <label for="rstSent">RST Sent</label>
+      </p-floatlabel>
     </div>
 
     <p-fieldset legend="Info" [toggleable]="true">
       <div class="qso-form-fields inner">
+        <p-floatlabel>
+          <input pInputText formControlName="name_fmt" id="name_fmt" />
+          <label for="name_fmt">Name</label>
+        </p-floatlabel>
+        <p-floatlabel>
+          <input pInputText formControlName="country" id="country" />
+          <label for="country">Country</label>
+        </p-floatlabel>
+        <p-floatlabel class="w-grid">
+          <input
+            pInputText
+            formControlName="grid"
+            id="grid"
+            [class.ng-invalid]="isFieldInvalid('grid')"
+            [class.ng-dirty]="isFieldInvalid('grid')"
+            style="text-transform: uppercase"
+            [pTooltip]="isFieldInvalid('grid') ? getErrorMessage('grid') : ''"
+            tooltipPosition="top"
+          />
+          <label for="grid">Grid</label>
+        </p-floatlabel>
+        <p-floatlabel>
+          <input pInputText formControlName="county" id="county" />
+          <label for="county">County</label>
+        </p-floatlabel>
+        <p-floatlabel class="w-zone">
+          <input pInputText formControlName="state" id="state" style="text-transform: uppercase"/>
+          <label for="state">State</label>
+        </p-floatlabel>
+
+        <div class="line-break"></div>
+
+        <p-floatlabel class="w-zone">
+          <input pInputText formControlName="cqZone" id="cqZone" />
+          <label for="cqZone">CQ Zone</label>
+        </p-floatlabel>
+        <p-floatlabel class="w-zone">
+          <input pInputText formControlName="ituZone" id="ituZone" />
+          <label for="ituZone">ITU Zone</label>
+        </p-floatlabel>
+
+        <div class="line-break"></div>
+
         <p-floatlabel class="w-comment">
           <textarea
             pTextarea
@@ -198,7 +247,7 @@
 
     <p-fieldset legend="My Station" [toggleable]="true" [collapsed]="true">
       <div class="qso-form-fields inner">
-        <p-floatlabel>
+        <p-floatlabel class="w-grid">
           <input
             pInputText
             formControlName="myGrid"
@@ -222,7 +271,7 @@
           <label for="myCounty">County</label>
         </p-floatlabel>
 
-        <p-floatlabel>
+        <p-floatlabel class="w-zone">
           <input pInputText formControlName="myState" id="myState" />
           <label for="myState">State</label>
         </p-floatlabel>
@@ -232,12 +281,12 @@
           <label for="myCountry">Country</label>
         </p-floatlabel>
 
-        <p-floatlabel>
+        <p-floatlabel class="w-zone">
           <input pInputText formControlName="myCqZone" id="myCqZone" />
           <label for="myCqZone">CQ Zone</label>
         </p-floatlabel>
 
-        <p-floatlabel>
+        <p-floatlabel class="w-zone">
           <input pInputText formControlName="myItuZone" id="myItuZone" />
           <label for="myItuZone">ITU Zone</label>
         </p-floatlabel>

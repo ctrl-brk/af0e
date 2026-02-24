@@ -83,7 +83,8 @@ app.MapPost("/radio/mode", (SetModeRequest req) =>
     var isUsbD = raw.Equals("USB-D", StringComparison.OrdinalIgnoreCase) ||
                  raw.Equals("USBD", StringComparison.OrdinalIgnoreCase) ||
                  raw.Equals("FT8", StringComparison.OrdinalIgnoreCase) ||
-                 raw.Equals("FT4", StringComparison.OrdinalIgnoreCase);
+                 raw.Equals("FT4", StringComparison.OrdinalIgnoreCase) ||
+                 raw.Equals("FT2", StringComparison.OrdinalIgnoreCase);
     var isLsbD = raw.Equals("LSB-D", StringComparison.OrdinalIgnoreCase) ||
                  raw.Equals("LSBD", StringComparison.OrdinalIgnoreCase);
 
@@ -95,7 +96,7 @@ app.MapPost("/radio/mode", (SetModeRequest req) =>
         dataOn = false;
 
         if (!Enum.TryParse<IcomMode>(raw, ignoreCase: true, out var parsed))
-            return Results.BadRequest(new { error = "Unsupported Mode. Try: LSB, USB, CW, AM, FM, WFM, RTTY, RTTYR, USB-D, LSB-D, FT8, FT4" });
+            return Results.BadRequest(new { error = "Unsupported Mode. Try: LSB, USB, CW, AM, FM, WFM, RTTY, RTTYR, USB-D, LSB-D, FT8, FT4, FT2" });
 
         baseMode = parsed;
     }
@@ -139,7 +140,8 @@ app.MapPost("/radio/status", (SetStatusRequest req) =>
         var isUsbD = raw.Equals("USB-D", StringComparison.OrdinalIgnoreCase) ||
                      raw.Equals("USBD", StringComparison.OrdinalIgnoreCase) ||
                      raw.Equals("FT8", StringComparison.OrdinalIgnoreCase) ||
-                     raw.Equals("FT4", StringComparison.OrdinalIgnoreCase);
+                     raw.Equals("FT4", StringComparison.OrdinalIgnoreCase) ||
+                     raw.Equals("FT2", StringComparison.OrdinalIgnoreCase);
         var isLsbD = raw.Equals("LSB-D", StringComparison.OrdinalIgnoreCase) ||
                      raw.Equals("LSBD", StringComparison.OrdinalIgnoreCase);
 
@@ -151,7 +153,7 @@ app.MapPost("/radio/status", (SetStatusRequest req) =>
             dataOn = false;
 
             if (!Enum.TryParse<IcomMode>(raw, ignoreCase: true, out var parsed))
-                return Results.BadRequest(new { error = "Unsupported Mode. Try: LSB, USB, CW, AM, FM, WFM, RTTY, RTTYR, USB-D, LSB-D, FT8, FT4." });
+                return Results.BadRequest(new { error = "Unsupported Mode. Try: LSB, USB, CW, AM, FM, WFM, RTTY, RTTYR, USB-D, LSB-D, FT8, FT4, FT2" });
 
             baseMode = parsed;
         }

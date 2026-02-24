@@ -60,14 +60,15 @@ declare @lat decimal(10,6), @long decimal(10,6)
 --select @parkId = 2908,  @parkNum = 'US-11923', @grid = 'DM79lk', @city = 'null',       @county = 'Douglas',    @state = 'CO', @lat = 39.454713, @long = -105.054195 -- US-11923 (Sharptail Ridge SWA)
 --select @parkId = 3020,  @parkNum = 'US-1238',  @grid = 'DM79lk', @city = 'null',       @county = 'Douglas',    @state = 'CO', @lat = 39.446013, @long = -105.067151 -- US-1238 (Roxborough SP)
 --select @parkId = 6157,  @parkNum = 'US-4404',  @grid = 'DM79kj', @city = 'null',       @county = 'Douglas',    @state = 'CO', @lat = 39.376163, @long = -105.095680 -- US-4404 (Pike NF)
---select @parkId = 11251,  @parkNum = 'US-9650', @grid = 'DM79lk', @city = 'null',       @county = 'Douglas',    @state = 'CO', @lat = 39.182384, @long = -105.233787 -- US-9650 (Four Mile SWA)
---select @parkId = 11266,  @parkNum = 'US-9666', @grid = 'DM78mr', @city = 'null',       @county = 'Teller',    @state = 'CO', @lat = 38.730591, @long = -104.950327 -- US-9666 (Rosemont SWA)
+--select @parkId = 11251, @parkNum = 'US-9650',  @grid = 'DM79lk', @city = 'null',       @county = 'Douglas',    @state = 'CO', @lat = 39.182384, @long = -105.233787 -- US-9650 (Four Mile SWA)
+--select @parkId = 11266, @parkNum = 'US-9666',  @grid = 'DM78mr', @city = 'null',       @county = 'Teller',     @state = 'CO', @lat = 38.730591, @long = -104.950327 -- US-9666 (Rosemont SWA)
 --select @parkId = 2997,  @parkNum = 'US-1214',  @grid = 'DM78or', @city = 'null',       @county = 'El Paso',    @state = 'CO', @lat = 38.738533, @long = -104.823813 -- US-1214 (Cheyenne Mountain SP)
+select @parkId = 1428,  @parkNum = 'US-10540', @grid = 'DN70jp', @city = 'Bellvue',    @county = 'Larimer',    @state = 'CO', @lat = 40.632469, @long = -105.170188 -- US-10540 (Bellvue-Watson State Fish Hatchery)
 
---select * from PotaParks where ParkNum = 'US-1214'
+--select * from PotaParks where ParkNum = 'US-10540'
 
 -- MAKE SURE ALL THREE ARE CORRECT and include minutes!
-select @startDate = '2026-01-25 00:00', @endDate = '2026-01-25 17:33', @submitDate = '2026-01-26 03:34'
+select @startDate = '2026-02-16 21:20', @endDate = '2026-02-16 22:00', @submitDate = '2026-02-17 03:41'
 -- MAKE SURE IT'S ONE UTC DAY!
 
 insert into #tmp select COL_PRIMARY_KEY, COL_CALL from [HamLog].[dbo].[TABLE_HRD_CONTACTS_V01] where COL_TIME_ON between @startDate and @endDate

@@ -23,9 +23,15 @@
 
     > p-floatlabel,
     > .flex,
-    > .field-hint {
+    > .field-hint,
+    > .date-now-btn {
       margin-top: 2rem;
       margin-left: 1rem;
+    }
+
+    > .date-now-btn {
+      margin-left: 0;
+      align-self: flex-start;
     }
 
     > p-floatlabel {
@@ -43,6 +49,8 @@
       &.w-rst { width: 4.5rem; }
       &.w-freq { width: 7.5rem; }
       &.w-ddl { min-width: 5.5rem; }
+      &.w-grid { width: 6rem; }
+      &.w-zone { width: 4rem; }
       &.w-comment { min-width: 20rem; }
       &.w-auto { width: auto; }
 
@@ -110,6 +118,12 @@
     }
     > p-floatlabel.w-ddl {
       .p-select { min-width: 5.5rem }
+    }
+    > p-floatlabel.w-grid {
+      .p-inputtext { width: 6rem }
+    }
+    > p-floatlabel.w-zone {
+      .p-inputtext { width: 4rem }
     }
     > p-floatlabel.w-comment {
       textarea { min-width: 20rem }

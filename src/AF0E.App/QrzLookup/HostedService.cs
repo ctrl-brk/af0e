@@ -1,6 +1,4 @@
-﻿using System.Web;
-using System.Xml;
-using System.Xml.Serialization;
+﻿using AF0E.Services.Qrz;
 using AF0E.DB;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
@@ -9,13 +7,10 @@ using Microsoft.Extensions.Options;
 
 namespace QrzLookup;
 
-internal sealed class HostedService(ILogger<HostedService> logger, IHostApplicationLifetime appLifeTime, IOptions<AppSettings> settings) : IHostedService, IDisposable
+internal sealed class HostedService(ILogger<HostedService> logger, IHostApplicationLifetime appLifeTime, IOptions<AppSettings> settings, IQrzService qrzService) : IHostedService, IDisposable
 {
-    private const string Agent = "af0e_lookup";
     private Task? _task;
     private CancellationTokenSource? _cts;
-    private HttpClient? _httpClient;
-    private string? _sessionKey;
     private HrdDbContext? _dbContext;
 
     public Task StartAsync(CancellationToken ct)
@@ -23,7 +18,6 @@ internal sealed class HostedService(ILogger<HostedService> logger, IHostApplicat
         logger.LogStarted();
 
         _dbContext = new HrdDbContext(settings.Value.ConnectionString);
-        _httpClient = new HttpClient { BaseAddress = settings.Value.QrzApiUrl };
         // Create a linked token, so we can trigger cancellation outside of this token's cancellation
         _cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
 
@@ -51,7 +45,7 @@ internal sealed class HostedService(ILogger<HostedService> logger, IHostApplicat
         var cnt = 0;
         foreach (var qso in contacts)
         {
-            var (response, notFound) = await QueryQrz(qso.Log.ColCall, ct);
+            var (response, notFound) = await qrzService.QueryCallsignAsync(qso.Log.ColCall, ct);
 
             if (notFound)
             {
@@ -60,7 +54,7 @@ internal sealed class HostedService(ILogger<HostedService> logger, IHostApplicat
                 if (callParts.Length == 2)
                 {
                     var call = callParts[0].Length > callParts[1].Length ? callParts[0] : callParts[1];
-                    (response, notFound) = await QueryQrz(call, ct);
+                    (response, notFound) = await qrzService.QueryCallsignAsync(call, ct);
                     if (notFound)
                     {
                         logger.LogCallNotFound(call);
@@ -117,90 +111,9 @@ internal sealed class HostedService(ILogger<HostedService> logger, IHostApplicat
         return false;
     }
 
-    private async Task<(QRZDatabase? response, bool notFound)> QueryQrz(string callSign, CancellationToken ct)
-    {
-        var retry = false;
-        QRZDatabase? result;
-
-    RETRY_SESSION:
-        await GetSessionKey(ct);
-
-        if (string.IsNullOrEmpty(_sessionKey))
-            return (null, false);
-
-        var response = await _httpClient!.GetAsync($"?s={_sessionKey};callsign={HttpUtility.UrlEncode(callSign)};agent={Agent}", ct);
-        //for debug: response.Content.ReadAsStringAsync()
-        await using (var stream = await response.Content.ReadAsStreamAsync(ct))
-        {
-            using var reader = XmlReader.Create(stream);
-            var serializer = new XmlSerializer(typeof(QRZDatabase), "http://xmldata.qrz.com");
-            try
-            {
-                result = serializer.Deserialize(reader) as QRZDatabase;
-            }
-            catch (Exception e)
-            {
-                logger.LogInvalidXml(await response.Content.ReadAsStringAsync(ct), e);
-                return (null, false);
-            }
-        }
-
-        if (result?.Session.Error is null) //everything is OK
-            return (result, false);
-
-        if (string.Equals(result.Session.Error, "Invalid session key", StringComparison.OrdinalIgnoreCase) && !retry)
-        {
-            _sessionKey = null;
-            retry = true;
-            goto RETRY_SESSION; // :))
-        }
-
-        if (result.Session.Error.StartsWith("Not found", StringComparison.OrdinalIgnoreCase))
-            return (null, true);
-
-        logger.LogInvalidQrzResponse(result.Session.Error);
-        return (null, false);
-    }
-
-    private async Task GetSessionKey(CancellationToken ct)
-    {
-        if (!string.IsNullOrEmpty(_sessionKey))
-            return;
-
-        if (string.IsNullOrEmpty(settings.Value.QrzUser) || string.IsNullOrEmpty(settings.Value.QrzPassword))
-        {
-            logger.LogConfigurationError("Qrz XML user name or password is missing.");
-            return;
-        }
-
-        var response = await _httpClient!.GetAsync($"?username={settings.Value.QrzUser};password={settings.Value.QrzPassword};agent={Agent}", ct);
-        var body = await response.Content.ReadAsStringAsync(ct);
-        var xmlDoc = new XmlDocument();
-        xmlDoc.LoadXml(body);
-        var node = xmlDoc.SelectSingleNode("/*[local-name()='QRZDatabase']/*[local-name()='Session']");
-        if (node is null)
-        {
-            _sessionKey = null;
-            logger.LogInvalidQrzResponse(body);
-            return;
-        }
-
-        var key = node["Key"]?.InnerText;
-        if (!string.IsNullOrEmpty(key))
-        {
-            _sessionKey = key;
-            return;
-        }
-
-        logger.LogQrzApiError(node["Error"]?.InnerText, node["Message"]?.InnerText);
-        _sessionKey = null;
-    }
-
     public void Dispose()
     {
-        _httpClient?.Dispose();
         _cts?.Dispose();
-        _httpClient?.Dispose();
         _dbContext?.Dispose();
     }
 }

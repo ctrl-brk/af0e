@@ -25,6 +25,27 @@
         (ngModelChange)="rigControl.set($event)"
         [binary]="true" />
       &nbsp;<label for="rigControl">Rig Control</label>
+      &nbsp;|&nbsp;
+      <p-checkbox
+        inputId="showDigi"
+        [ngModel]="showDigi()"
+        (ngModelChange)="showDigi.set($event)"
+        [binary]="true" />
+      &nbsp;<label for="showDigi">Digi</label>
+      &nbsp;
+      <p-checkbox
+        inputId="showPhone"
+        [ngModel]="showPhone()"
+        (ngModelChange)="showPhone.set($event)"
+        [binary]="true" />
+      &nbsp;<label for="showPhone">Phone</label>
+      &nbsp;
+      <p-checkbox
+        inputId="showCw"
+        [ngModel]="showCw()"
+        (ngModelChange)="showCw.set($event)"
+        [binary]="true" />
+      &nbsp;<label for="showCw">CW</label>
     </div>
   </ng-template>
 

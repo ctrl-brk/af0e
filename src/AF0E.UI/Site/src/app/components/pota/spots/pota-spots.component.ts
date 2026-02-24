@@ -1,4 +1,4 @@
-import {Component, effect, inject, model, OnDestroy, OnInit, signal, ViewEncapsulation} from '@angular/core';
+import {Component, computed, effect, inject, model, OnDestroy, OnInit, signal, ViewEncapsulation} from '@angular/core';
 import {Utils} from '../../../shared/utils';
 import {PotaService} from '../../../services/pota.service';
 import {InfraService} from '../../../services/infra.service';
@@ -44,9 +44,35 @@ export class PotaSpotsComponent implements OnInit, OnDestroy {
   private _ntfSvc= inject(NotificationService);
   private _infraSvc= inject(InfraService);
   private _log = inject(LogService);
-  protected spots = signal<PotaActivityStatsModel[]>([]);
+  private allSpots = signal<PotaActivityStatsModel[]>([]);
+
+  protected spots = computed(() => {
+    const all = this.allSpots();
+    const showDigitalModes = this.showDigi();
+    const showPhoneModes = this.showPhone();
+    const showCwMode = this.showCw();
+
+    if (showDigitalModes && showPhoneModes && showCwMode)
+      return all;
+
+    // Filter out modes
+    return all.filter(spot => {
+      const mode = spot.activity.mode ? spot.activity.mode.toUpperCase() : '';
+
+      if (!showDigitalModes && mode.startsWith('FT'))
+        return false;
+      if (!showPhoneModes && mode.startsWith('SSB'))
+        return false;
+
+      return !(!showCwMode && mode === 'CW');
+    });
+  });
+
   protected autoRefresh = signal(false);
   protected rigControl = signal(true);
+  protected showDigi = signal(false);
+  protected showPhone = signal(true);
+  protected showCw = signal(true);
   protected selectedCall = signal('');
   protected selectedParkNum = signal('');
   private refreshInterval?: ReturnType<typeof setInterval>;
@@ -75,7 +101,7 @@ export class PotaSpotsComponent implements OnInit, OnDestroy {
   protected refreshSpots() {
     this._potaSvc.getActivity().subscribe({
       next: (r: PotaActivityStatsModel[]) => {
-        this.spots.set(r);
+        this.allSpots.set(r);
       },
       error: e=> Utils.showErrorMessage(e, this._ntfSvc, this._log),
     });
@@ -94,7 +120,10 @@ export class PotaSpotsComponent implements OnInit, OnDestroy {
       mode = freq > 14000 ? 'USB' : 'LSB';
     }
     this._infraSvc.setRigStatus(Number(freqKhz)*1000, mode).subscribe({
-      error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
+      error: e => {
+        Utils.showErrorMessage(e, this._ntfSvc, this._log);
+        this.rigControl.set(false);
+      }
     });
   }
 

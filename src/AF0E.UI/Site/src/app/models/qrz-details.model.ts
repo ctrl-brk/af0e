@@ -1,0 +1,18 @@
+export interface QrzDetailsModel {
+  call: string,
+  dxcc: number,
+  fname: string,
+  name: string,
+  nickname: string,
+  name_fmt: string,
+  addr1: string,
+  addr2: string,
+  state: string,
+  zip: string,
+  country: string,
+  ccode: number,
+  grid: string,
+  county: string,
+  cqzone: number,
+  ituzone: number,
+}
