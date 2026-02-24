@@ -8,7 +8,7 @@ public static partial class QsoDetailsValidator
     // Valid modes
     private static readonly HashSet<string> _validModes = new(StringComparer.OrdinalIgnoreCase)
     {
-        "FT8", "CW", "SSB", "FM", "FT4", "MFSK", "PSK31", "JT65", "USB", "LSB", "AM", "RTTY", "PSK"
+        "FT8", "CW", "SSB", "FM", "FT4", "FT2", "MFSK", "PSK31", "JT65", "USB", "LSB", "AM", "RTTY", "PSK"
     };
 
     // Valid bands

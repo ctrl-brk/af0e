@@ -10,6 +10,7 @@ import {
   ViewEncapsulation
 } from '@angular/core';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
+import {toSignal} from '@angular/core/rxjs-interop';
 import {NotificationService} from '../../shared/notification.service';
 import {LogService} from '../../shared/log.service';
 import {LogbookService} from '../../services/logbook.service';
@@ -28,6 +29,8 @@ import {Tooltip} from 'primeng/tooltip';
 import {callSignValidator} from '../../shared/validators';
 import {BAND_OPTIONS, MODE_OPTIONS, QSL_OPTIONS, QSL_VIA_OPTIONS} from '../../shared/qso-options';
 import {PotaService} from '../../services/pota.service';
+import {QrzService} from '../../services/qrz.service';
+import {QrzDetailsModel} from '../../models/qrz-details.model';
 
 @Component({
   selector: 'app-qso-edit',
@@ -53,13 +56,13 @@ export class QsoEditComponent {
   private _ntfSvc= inject(NotificationService);
   private _log = inject(LogService);
   private _potaSvc = inject(PotaService);
+  private _qrzSvc = inject(QrzService);
   private _callInput = viewChild<ElementRef>('callInput');
 
   logId = input.required<number>();
   callSign = input<string>();
   editModeChange = output<boolean>();
   saved = output<boolean>();
-
 
   protected qso: QsoDetailModel = null!;
   protected qsoForm!: FormGroup;
@@ -73,6 +76,19 @@ export class QsoEditComponent {
 
   constructor() {
     this.initializeForm();
+
+    // Convert mode field valueChanges to a signal
+    const modeSignal = toSignal(this.qsoForm.get('mode')!.valueChanges);
+
+    // Watch for mode changes and auto-adjust RST values
+    effect(() => {
+      const mode = modeSignal();
+      if (mode) {
+        untracked(() => {
+          this.adjustRstForMode(mode);
+        });
+      }
+    });
 
     effect(() => {
       const id = this.logId();
@@ -106,31 +122,69 @@ export class QsoEditComponent {
   }
 
   private initializeForm() {
+    const defaults = this.getDefaultFormValues();
+
     this.qsoForm = this._fb.group({
-      id: [0],
+      id: [defaults.id],
       date: [Utils.getCurrentUtcDate(), Validators.required],
-      call: ['', [Validators.required, callSignValidator()]],
-      band: ['', Validators.required],
-      freq: [undefined, [Validators.required, Validators.min(1.8), Validators.max(450000000)]],
-      mode: ['', Validators.required],
-      rstSent: ['', Validators.pattern(/^[+-]?[0-9]{2,3}$/)],
-      rstRcvd: ['', Validators.pattern(/^[+-]?[0-9]{2,3}$/)],
-      myCity: [''],
-      myCounty: [''],
-      myState: [''],
-      myCountry: [''],
-      myCqZone: [''],
-      myItuZone: [''],
-      myGrid: ['', Validators.pattern(/^[A-R]{2}[0-9]{2}([A-X]{2})?$/i)],
-      qslSent: ['N'],
-      qslSentDate: [null],
-      qslSentVia: [null],
-      qslRcvd: ['N'],
-      qslRcvdDate: [null],
-      qslRcvdVia: [null],
-      comment: ['', Validators.maxLength(4000)],
-      siteComment: ['', Validators.maxLength(64)],
+      call: [defaults.call, [Validators.required, callSignValidator()]],
+      band: [defaults.band, Validators.required],
+      county: [defaults.country, Validators.maxLength(32)],
+      state: [defaults.state, Validators.maxLength(2)],
+      country: [defaults.country, Validators.maxLength(64)],
+      freq: [defaults.freq, [Validators.required, Validators.min(1.8), Validators.max(450000000)]],
+      grid: [defaults.grid, Validators.pattern(/^[A-R]{2}[0-9]{2}([A-X]{2})?$/i)],
+      mode: [defaults.mode, Validators.required],
+      rstSent: [defaults.rstSent, Validators.pattern(/^[+-]?[0-9]{2,3}$/)],
+      rstRcvd: [defaults.rstRcvd, Validators.pattern(/^[+-]?[0-9]{2,3}$/)],
+      name_fmt: [defaults.name_fmt, Validators.maxLength(128)],
+      cqZone: [defaults.cqZone, Validators.pattern(/^[0-9]{1,2}$/)],
+      ituZone: [defaults.ituZone, Validators.pattern(/^[0-9]{1,2}$/)],
+      dxcc: [defaults.dxcc, Validators.pattern(/^[0-9]{3}$/)],
+      myCity: [defaults.myCity, Validators.maxLength(32)],
+      myCounty: [defaults.myCounty, Validators.maxLength(32)],
+      myState: [defaults.myState, Validators.maxLength(2)],
+      myCountry: [defaults.myCountry, Validators.maxLength(64)],
+      myCqZone: [defaults.myCqZone, Validators.pattern(/^[0-9]{1,2}$/)],
+      myItuZone: [defaults.myItuZone, Validators.pattern(/^[0-9]{1,2}$/)],
+      myGrid: [defaults.myGrid, Validators.pattern(/^[A-R]{2}[0-9]{2}([A-X]{2})?$/i)],
+      qslSent: [defaults.qslSent],
+      qslSentDate: [defaults.qslSentDate],
+      qslSentVia: [defaults.qslSentVia],
+      qslRcvd: [defaults.qslRcvd],
+      qslRcvdDate: [defaults.qslRcvdDate],
+      qslRcvdVia: [defaults.qslRcvdVia],
+      comment: [defaults.comment, Validators.maxLength(4000)],
+      siteComment: [defaults.siteComment, Validators.maxLength(64)],
     });
+  }
+
+  private adjustRstForMode(mode: string) {
+    if (!mode) return;
+
+    const rstRcvdControl = this.qsoForm.get('rstRcvd');
+    const rstSentControl = this.qsoForm.get('rstSent');
+
+    const rstRcvdValue = rstRcvdControl?.value?.trim() || '';
+    const rstSentValue = rstSentControl?.value?.trim() || '';
+
+    if (mode === 'CW') {
+      // For CW: if empty or "59", set to "599"
+      if (rstRcvdValue === '' || rstRcvdValue === '59') {
+        rstRcvdControl?.setValue('599', { emitEvent: false });
+      }
+      if (rstSentValue === '' || rstSentValue === '59') {
+        rstSentControl?.setValue('599', { emitEvent: false });
+      }
+    } else if (mode === 'SSB') {
+      // For SSB: if empty or "599", set to "59"
+      if (rstRcvdValue === '' || rstRcvdValue === '599') {
+        rstRcvdControl?.setValue('59', { emitEvent: false });
+      }
+      if (rstSentValue === '' || rstSentValue === '599') {
+        rstSentControl?.setValue('59', { emitEvent: false });
+      }
+    }
   }
 
   private onQsoChange(id: number) {
@@ -165,6 +219,11 @@ export class QsoEditComponent {
     this.qsoForm.get('band')?.setValue(Utils.getBandFromFrequency(freq1), { emitEvent: false });
   }
 
+  protected setCurrentDateTime() {
+    this.qsoForm.get('date')?.setValue(Utils.getCurrentUtcDate());
+    this.qsoForm.markAsDirty();
+  }
+
   onCallBlur() {
     const callControl = this.qsoForm.get('call');
     if (!callControl || callControl.invalid) {
@@ -184,7 +243,7 @@ export class QsoEditComponent {
         this.qsoForm.get('comment')?.setValue(`POTA ${r.parkNum}`);
         this.qsoForm.get('freq')?.setValue(r.freqHz);
         this.qsoForm.get('mode')?.setValue(r.mode);
-        this.qsoForm.get('band')?.setValue(Utils.getBandFromFrequency(r.freqHz), { emitEvent: false });
+        this.qsoForm.get('band')?.setValue(Utils.getBandFromFrequency(r.freqHz), {emitEvent: false});
 
         this.qsoForm.markAsDirty();
       },
@@ -192,6 +251,58 @@ export class QsoEditComponent {
         Utils.showErrorMessage(e, this._ntfSvc, this._log);
       }
     });
+
+    this._qrzSvc.lookup(callSign).subscribe({
+      next: (r) => {
+        this.populateQrzDetails(r);
+      },
+      error: e => {
+        console.log(e);
+        if (e.status !== 404)
+          Utils.showErrorMessage(e, this._ntfSvc, this._log);
+      }
+    });
+  }
+
+  private populateQrzDetails(r: QrzDetailsModel) {
+    const name_fmt = r.name_fmt || '';
+    const country = r.country || '';
+    const grid = r.grid || '';
+    const county = r.county || '';
+    const state = r.state || '';
+    const cqzone = r.cqzone || '';
+    const ituzone = r.ituzone || '';
+    const dxcc = r.dxcc || '';
+
+    if (name_fmt && !this.qsoForm.get('name_fmt')?.value) {
+      this.qsoForm.get('name_fmt')?.setValue(name_fmt);
+      this.qsoForm.markAsDirty();
+    }
+    if (country && !this.qsoForm.get('country')?.value) {
+      this.qsoForm.get('country')?.setValue(country);
+      this.qsoForm.markAsDirty();
+    }
+    if (grid && !this.qsoForm.get('grid')?.value) {
+      this.qsoForm.get('grid')?.setValue(grid);
+      this.qsoForm.markAsDirty();
+    }
+    if (county && !this.qsoForm.get('county')?.value) {
+      this.qsoForm.get('county')?.setValue(county);
+      this.qsoForm.markAsDirty();
+    }
+    if (state && !this.qsoForm.get('state')?.value) {
+      this.qsoForm.get('state')?.setValue(state);
+      this.qsoForm.markAsDirty();
+    }
+    if (cqzone && !this.qsoForm.get('cqZone')?.value) {
+      this.qsoForm.get('cqZone')?.setValue(cqzone);
+      this.qsoForm.markAsDirty();
+    }
+    if (ituzone && !this.qsoForm.get('ituZone')?.value) {
+      this.qsoForm.get('ituZone')?.setValue(ituzone);
+      this.qsoForm.markAsDirty();
+    }
+    this.qsoForm.get('dxcc')?.setValue(dxcc);
   }
 
   private initializeNewQso() {
@@ -205,6 +316,7 @@ export class QsoEditComponent {
 
   onSave() {
     if (this.qsoForm.invalid) {
+      console.log(this.qsoForm);
       this._ntfSvc.addMessage(
         new NotificationMessageModel(
           NotificationMessageSeverity.Warn,
@@ -266,17 +378,25 @@ export class QsoEditComponent {
       date: Utils.getCurrentUtcDate(),
       call: '',
       band: '',
+      country: '',
+      county: '',
+      state: '',
       freq: undefined,
+      grid: '',
       mode: '',
       rstSent: '',
       rstRcvd: '',
-      myCity: '',
-      myCounty: '',
-      myState: '',
-      myCountry: '',
-      myCqZone: '',
-      myItuZone: '',
-      myGrid: '',
+      name_fmt: '',
+      cqZone: '',
+      ituZone: '',
+      dxcc: '',
+      myCity: 'Broomfield',
+      myCounty: 'Broomfield',
+      myState: 'CO',
+      myCountry: 'United States',
+      myCqZone: '4',
+      myItuZone: '7',
+      myGrid: 'DM79lw',
       qslSent: 'N',
       qslSentDate: null,
       qslSentVia: null,
@@ -309,13 +429,17 @@ export class QsoEditComponent {
     if (fieldName === 'call' && field.errors['callSignTooManySlashes']) return field.errors['callSignTooManySlashes'].message;
     if (fieldName === 'call' && field.errors['callSignEmptyPart']) return field.errors['callSignEmptyPart'].message;
     if (field.errors['pattern']) {
-      if (fieldName === 'myGrid') return 'Invalid grid square format (e.g., DN70, DN70ab)';
+      if (fieldName === 'grid' || fieldName === 'myGrid') return 'Invalid grid square format (e.g., DN70, DN70ab)';
       if (fieldName === 'rstSent' || fieldName === 'rstRcvd') return 'RST must be 2-3 digits, optionally with +/- prefix (e.g., 59, +599, -73)';
     }
     if (field.errors['min']) return `Minimum value is ${field.errors['min'].min}`;
     if (field.errors['max']) return `Maximum value is ${field.errors['max'].max}`;
     if (field.errors['maxlength']) {
       const limit = field.errors['maxlength'].requiredLength;
+      if (fieldName === 'name_fmt') return `Name exceeds ${limit} characters.`;
+      if (fieldName === 'county') return `County exceeds ${limit} characters.`;
+      if (fieldName === 'state') return `State exceeds ${limit} characters.`;
+      if (fieldName === 'country') return `Country exceeds ${limit} characters.`;
       if (fieldName === 'siteComment') return `Site Comment exceeds ${limit} characters.`;
       if (fieldName === 'comment') return `Comment exceeds ${limit} characters.`;
       return `Maximum length is ${limit} characters.`;

@@ -1,6 +1,8 @@
 ﻿using System.Net;
+using AF0E.Common.Qrz;
 using AF0E.DB;
 using AF0E.Services.Pota;
+using AF0E.Services.Qrz;
 using Logbook.Api.Handlers;
 using Logbook.Api.Models;
 using Logbook.Api.Security;
@@ -19,6 +21,7 @@ public static class V1Endpoints
         RegisterLogbookEndpoints(builder);
         RegisterPotaEndpoints(builder);
         RegisterGridTrackerEndpoints(builder);
+        RegisterQrzEndpoints(builder);
     }
 
     private static void RegisterLogbookEndpoints(IEndpointRouteBuilder v1Builder)
@@ -164,5 +167,22 @@ public static class V1Endpoints
         builder.MapGet("pota/{parkNum}", async (string parkNum, HrdDbContext dbContext) =>
                 TypedResults.Ok(await GridTrackerHandlers.GetGridTrackerParkStats(parkNum, dbContext)))
             .WithName("GridtrackerParkStats");
+    }
+
+    private static void RegisterQrzEndpoints(IEndpointRouteBuilder v1Builder)
+    {
+        var builder = v1Builder.MapGroup("qrz").WithTags("qrz.com");
+
+        builder.MapGet("{call}", async Task<Results<NotFound, Ok<QrzCallsign>, ProblemHttpResult>> (string call, IQrzService qrzService, CancellationToken ct) =>
+        {
+            var (response, notFound) = await QrzHandlers.Lookup(call, qrzService, ct);
+
+            if (notFound)
+                return TypedResults.NotFound();
+
+            return response is null ? TypedResults.Problem("QRZ lookup failed") : TypedResults.Ok(response.Callsign);
+        })
+        .RequireAuthorization(Policies.AdminOnly)
+        .WithName("QrzCallLookup");
     }
 }

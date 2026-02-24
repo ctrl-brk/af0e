@@ -36,6 +36,11 @@ export const appConfig: ApplicationConfig = {
             uri: '/api/v1/logbook/qso*',
             httpMethod: 'PUT',
           },
+          {
+            // QSZ services - require authentication
+            uri: '/api/v1/qrz/*',
+            httpMethod: 'GET',
+          },
           // {
           //   // POTA unconfirmed log - requires authentication
           //   uri: '/api/v1/pota/log/unconfirmed*',

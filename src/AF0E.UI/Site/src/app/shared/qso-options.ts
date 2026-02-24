@@ -9,6 +9,7 @@ export const MODE_OPTIONS: DropdownOption[] = [
   { label: 'SSB', value: 'SSB' },
   { label: 'FM', value: 'FM' },
   { label: 'FT4', value: 'FT4' },
+  { label: 'FT2', value: 'FT2' },
   { label: 'MFSK', value: 'MFSK' },
   { label: 'PSK31', value: 'PSK31' },
   { label: 'JT65', value: 'JT65' },

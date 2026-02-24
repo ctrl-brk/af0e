@@ -9,7 +9,6 @@ export class InfraService {
   private _infraUrl = Configuration.infraUrl;
 
   public setRigStatus(frequencyHz: number, mode: string): Observable<any> {
-    console.log('setRigStatus', frequencyHz, mode);
     return this._http.post(`${this._infraUrl}/radio/status`, {frequencyHz, mode});
   }
 }
