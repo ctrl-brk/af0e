@@ -31,6 +31,7 @@ import {BAND_OPTIONS, MODE_OPTIONS, QSL_OPTIONS, QSL_VIA_OPTIONS} from '../../sh
 import {PotaService} from '../../services/pota.service';
 import {QrzService} from '../../services/qrz.service';
 import {QrzDetailsModel} from '../../models/qrz-details.model';
+import {SpaceAsTabDirective} from '../../shared/directives/space-as-tab.directive';
 
 @Component({
   selector: 'app-qso-edit',
@@ -48,6 +49,7 @@ import {QrzDetailsModel} from '../../models/qrz-details.model';
     Textarea,
     Fieldset,
     Tooltip,
+    SpaceAsTabDirective,
   ],
 })
 export class QsoEditComponent {
@@ -58,6 +60,7 @@ export class QsoEditComponent {
   private _potaSvc = inject(PotaService);
   private _qrzSvc = inject(QrzService);
   private _callInput = viewChild<ElementRef>('callInput');
+  private _rstRcvdInput = viewChild<ElementRef>('rstRcvdInput');
 
   logId = input.required<number>();
   callSign = input<string>();
@@ -255,13 +258,24 @@ export class QsoEditComponent {
     this._qrzSvc.lookup(callSign).subscribe({
       next: (r) => {
         this.populateQrzDetails(r);
+        // @ts-ignore
+        this._rstRcvdInput().nativeElement.select();
       },
       error: e => {
-        console.log(e);
         if (e.status !== 404)
           Utils.showErrorMessage(e, this._ntfSvc, this._log);
+        else
+          // @ts-ignore
+          this._rstRcvdInput().nativeElement.select();
       }
     });
+  }
+
+  protected onCallKeyDown(event: KeyboardEvent) {
+    // Handle Tab key - trigger lookup
+    if (event.key === 'Tab') {
+      this.onCallBlur();
+    }
   }
 
   private populateQrzDetails(r: QrzDetailsModel) {
@@ -316,7 +330,6 @@ export class QsoEditComponent {
 
   onSave() {
     if (this.qsoForm.invalid) {
-      console.log(this.qsoForm);
       this._ntfSvc.addMessage(
         new NotificationMessageModel(
           NotificationMessageSeverity.Warn,

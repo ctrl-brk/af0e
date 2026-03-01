@@ -77,7 +77,9 @@
           pInputText
           formControlName="call"
           id="call"
-          (blur)="onCallBlur()"
+          spaceAsTab
+          [spaceAsTabCallback]="onCallBlur.bind(this)"
+          (keydown)="onCallKeyDown($event)"
           [class.ng-invalid]="isFieldInvalid('call')"
           [class.ng-dirty]="isFieldInvalid('call')"
           style="text-transform: uppercase"
@@ -89,9 +91,11 @@
 
       <p-floatlabel class="w-rst">
         <input
+          #rstRcvdInput
           pInputText
           formControlName="rstRcvd"
           id="rstRcvd"
+          spaceAsTab
           [class.ng-invalid]="isFieldInvalid('rstRcvd')"
           [class.ng-dirty]="isFieldInvalid('rstRcvd')"
           [pTooltip]="isFieldInvalid('rstRcvd') ? getErrorMessage('rstRcvd') : ''"
@@ -104,6 +108,7 @@
           pInputText
           formControlName="rstSent"
           id="rstSent"
+          spaceAsTab
           [class.ng-invalid]="isFieldInvalid('rstSent')"
           [class.ng-dirty]="isFieldInvalid('rstSent')"
           [pTooltip]="isFieldInvalid('rstSent') ? getErrorMessage('rstSent') : ''"

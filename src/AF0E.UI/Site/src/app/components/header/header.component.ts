@@ -150,6 +150,13 @@ export class HeaderComponent implements OnInit {
         icon: 'pi pi-info-circle',
         items: [
           {
+            label: 'Links',
+            icon: 'pi pi-bookmark',
+            command: () => {
+              this._router.navigate(['/utils']);
+            }
+          },
+          {
             label: 'Stats',
             icon: 'pi pi-chart-bar',
             command: () => {

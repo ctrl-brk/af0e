@@ -22,6 +22,7 @@ public static class V1Endpoints
         RegisterPotaEndpoints(builder);
         RegisterGridTrackerEndpoints(builder);
         RegisterQrzEndpoints(builder);
+        RegisterToolsEndpoints(builder);
     }
 
     private static void RegisterLogbookEndpoints(IEndpointRouteBuilder v1Builder)
@@ -184,5 +185,30 @@ public static class V1Endpoints
         })
         .RequireAuthorization(Policies.AdminOnly)
         .WithName("QrzCallLookup");
+    }
+
+    private static void RegisterToolsEndpoints(IEndpointRouteBuilder v1Builder)
+    {
+        var builder = v1Builder.MapGroup("tools").WithTags("tools");
+
+        builder.MapGet("grid", Results<BadRequest<string>, Ok<string>> (string? latitude, string? longitude) =>
+        {
+            if (string.IsNullOrWhiteSpace(latitude) || string.IsNullOrWhiteSpace(longitude))
+                return TypedResults.BadRequest("Both latitude and longitude parameters are required");
+
+            if (!double.TryParse(latitude, out var lat))
+                return TypedResults.BadRequest($"Invalid latitude value: {latitude}");
+
+            if (!double.TryParse(longitude, out var lon))
+                return TypedResults.BadRequest($"Invalid longitude value: {longitude}");
+
+            var square = UtilsHandlers.CoordinatesToGridSquare(lat, lon);
+
+            if (square.Length != 6)
+                return TypedResults.BadRequest(square);
+
+            return TypedResults.Ok(square);
+        })
+        .WithName("GridLookup");
     }
 }

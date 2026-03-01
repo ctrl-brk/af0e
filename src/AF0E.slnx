@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/Solution Items/">
+    <File Path="../tests/Directory.Packages.props" />
     <File Path=".editorconfig" />
     <File Path="Directory.Build.props" />
     <File Path="Directory.Packages.props" />
@@ -37,6 +38,9 @@
     </Project>
   </Folder>
   <Folder Name="/Tests/">
+    <Project Path="../tests/AF0E.LogbookApi.UnitTests/AF0E.LogbookApi.UnitTests.csproj">
+      <BuildType Solution="Development|*" Project="Debug" />
+    </Project>
     <Project Path="../tests/AF0E.Services.UnitTests/AF0E.Services.UnitTests.csproj">
       <BuildType Solution="Development|*" Project="Release" />
     </Project>

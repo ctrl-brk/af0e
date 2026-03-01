@@ -1,3 +1,5 @@
 # IDEs
 .vs/
 .idea/
+.TODO
+*.log
