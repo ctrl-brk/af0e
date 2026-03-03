@@ -59,7 +59,7 @@ export class PotaSpotsComponent implements OnInit, OnDestroy {
     return all.filter(spot => {
       const mode = spot.activity.mode ? spot.activity.mode.toUpperCase() : '';
 
-      if (!showDigitalModes && mode.startsWith('FT'))
+      if (!showDigitalModes && (mode.startsWith('FT') || mode === 'RTTY'))
         return false;
       if (!showPhoneModes && mode.startsWith('SSB'))
         return false;

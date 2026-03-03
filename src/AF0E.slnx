@@ -38,6 +38,9 @@
     </Project>
   </Folder>
   <Folder Name="/Tests/">
+    <Project Path="../tests/AF0E.App.RigCommander.Tests/RigCommander.Tests.csproj">
+      <BuildType Solution="Development|*" Project="Debug" />
+    </Project>
     <Project Path="../tests/AF0E.LogbookApi.UnitTests/AF0E.LogbookApi.UnitTests.csproj">
       <BuildType Solution="Development|*" Project="Debug" />
     </Project>

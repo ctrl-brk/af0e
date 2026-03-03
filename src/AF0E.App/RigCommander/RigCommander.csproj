@@ -2,4 +2,22 @@
   <ItemGroup>
     <PackageReference Include="System.IO.Ports" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="dist\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Remove="dist\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Remove="dist\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="dist\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="dist\web.config" />
+    <_ContentIncludedByDefault Remove="dist\appsettings.Development.json" />
+    <_ContentIncludedByDefault Remove="dist\appsettings.json" />
+    <_ContentIncludedByDefault Remove="dist\RigCommander.staticwebassets.endpoints.json" />
+  </ItemGroup>
 </Project>
