@@ -1,9 +1,7 @@
-<div class="qso-edit-container">
-
-  <form [formGroup]="qsoForm" (ngSubmit)="onSave()">
-
-    <div class="qso-form-fields">
-      <p-floatlabel class="w-datetime">
+<div class="qso-edit-container" (keydown)="onKeyDown($event)">
+  <form id="qsoForm" [formGroup]="qsoForm" (ngSubmit)="onSave()">
+    <div class="qso-form-fields" style="margin-left: -1rem">
+      <p-floatlabel class="w-datetime" variant="on">
         <p-datePicker
           formControlName="date"
           inputId="date"
@@ -28,7 +26,7 @@
         class="date-now-btn"
       />
 
-      <p-floatlabel class="w-freq">
+      <p-floatlabel class="w-freq" variant="on">
         <p-inputNumber
           mode="decimal"
           formControlName="freq"
@@ -42,7 +40,7 @@
         />
         <label for="freq">Frequency (Hz) *</label>
       </p-floatlabel>
-      <p-floatlabel class="w-ddl">
+      <p-floatlabel class="w-ddl" variant="on">
         <p-select
           formControlName="band"
           inputId="band"
@@ -55,7 +53,7 @@
         />
         <label for="band">Band *</label>
       </p-floatlabel>
-      <p-floatlabel class="w-ddl">
+      <p-floatlabel class="w-ddl" variant="on">
         <p-select
           formControlName="mode"
           inputId="mode"
@@ -71,7 +69,7 @@
 
       <div class="line-break"></div>
 
-      <p-floatlabel>
+      <p-floatlabel variant="on">
         <input
           #callInput
           pInputText
@@ -89,7 +87,7 @@
         <label for="call">Call Sign *</label>
       </p-floatlabel>
 
-      <p-floatlabel class="w-rst">
+      <p-floatlabel class="w-rst" variant="on">
         <input
           #rstRcvdInput
           pInputText
@@ -103,7 +101,7 @@
         />
         <label for="rstRcvd">RST Rcvd</label>
       </p-floatlabel>
-      <p-floatlabel class="w-rst">
+      <p-floatlabel class="w-rst" variant="on">
         <input
           pInputText
           formControlName="rstSent"
@@ -120,15 +118,15 @@
 
     <p-fieldset legend="Info" [toggleable]="true">
       <div class="qso-form-fields inner">
-        <p-floatlabel>
+        <p-floatlabel variant="on">
           <input pInputText formControlName="name_fmt" id="name_fmt" />
           <label for="name_fmt">Name</label>
         </p-floatlabel>
-        <p-floatlabel>
+        <p-floatlabel variant="on">
           <input pInputText formControlName="country" id="country" />
           <label for="country">Country</label>
         </p-floatlabel>
-        <p-floatlabel class="w-grid">
+        <p-floatlabel class="w-grid" variant="on">
           <input
             pInputText
             formControlName="grid"
@@ -141,52 +139,52 @@
           />
           <label for="grid">Grid</label>
         </p-floatlabel>
-        <p-floatlabel>
+        <p-floatlabel variant="on">
           <input pInputText formControlName="county" id="county" />
           <label for="county">County</label>
         </p-floatlabel>
-        <p-floatlabel class="w-zone">
+        <p-floatlabel class="w-zone" variant="on">
           <input pInputText formControlName="state" id="state" style="text-transform: uppercase"/>
           <label for="state">State</label>
         </p-floatlabel>
 
         <div class="line-break"></div>
 
-        <p-floatlabel class="w-zone">
+        <p-floatlabel class="w-zone" variant="on">
           <input pInputText formControlName="cqZone" id="cqZone" />
           <label for="cqZone">CQ Zone</label>
         </p-floatlabel>
-        <p-floatlabel class="w-zone">
+        <p-floatlabel class="w-zone" variant="on">
           <input pInputText formControlName="ituZone" id="ituZone" />
           <label for="ituZone">ITU Zone</label>
         </p-floatlabel>
 
         <div class="line-break"></div>
 
-        <p-floatlabel class="w-comment">
+        <p-floatlabel class="w-comment" variant="on">
           <textarea
             pTextarea
             formControlName="comment"
             id="comment"
-            rows="3"
+            rows="2"
           ></textarea>
           <label for="comment">Comment</label>
         </p-floatlabel>
-        <p-floatlabel class="w-comment">
+        <p-floatlabel class="w-comment" variant="on">
           <textarea
             pTextarea
             formControlName="siteComment"
             id="siteComment"
-            rows="3"
+            rows="2"
           ></textarea>
           <label for="siteComment">Site Comment</label>
         </p-floatlabel>
       </div>
     </p-fieldset>
 
-    <p-fieldset legend="QSL" [toggleable]="true">
+    <p-fieldset legend="QSL" [toggleable]="true" collapsed="true">
       <div class="qso-form-fields inner">
-        <p-floatlabel>
+        <p-floatlabel variant="on">
           <p-select
             formControlName="qslSent"
             inputId="qslSent"
@@ -197,7 +195,7 @@
           <label for="qslSent">Sent</label>
         </p-floatlabel>
 
-        <p-floatlabel class="w-date">
+        <p-floatlabel class="w-date" variant="on">
           <p-datePicker
             formControlName="qslSentDate"
             inputId="qslSentDate"
@@ -206,7 +204,7 @@
           <label for="qslSentDate">Sent Date</label>
         </p-floatlabel>
 
-        <p-floatlabel class="w-ddl">
+        <p-floatlabel class="w-ddl" variant="on">
           <p-select
             formControlName="qslSentVia"
             inputId="qslSentVia"
@@ -217,7 +215,7 @@
           <label for="qslSentVia">Sent Via</label>
         </p-floatlabel>
 
-        <p-floatlabel>
+        <p-floatlabel variant="on">
           <p-select
             formControlName="qslRcvd"
             inputId="qslRcvd"
@@ -228,7 +226,7 @@
           <label for="qslRcvd">Rcvd</label>
         </p-floatlabel>
 
-        <p-floatlabel class="w-date">
+        <p-floatlabel class="w-date" variant="on">
           <p-datePicker
             formControlName="qslRcvdDate"
             inputId="qslRcvdDate"
@@ -237,7 +235,7 @@
           <label for="qslRcvdDate">Rcvd Date</label>
         </p-floatlabel>
 
-        <p-floatlabel class="w-ddl">
+        <p-floatlabel class="w-ddl" variant="on">
           <p-select
             formControlName="qslRcvdVia"
             inputId="qslRcvdVia"
@@ -250,9 +248,9 @@
       </div>
     </p-fieldset>
 
-    <p-fieldset legend="My Station" [toggleable]="true" [collapsed]="true">
+    <p-fieldset legend="My Station" [toggleable]="true" collapsed="true">
       <div class="qso-form-fields inner">
-        <p-floatlabel class="w-grid">
+        <p-floatlabel class="w-grid" variant="on">
           <input
             pInputText
             formControlName="myGrid"
@@ -266,41 +264,54 @@
           <label for="myGrid">Grid</label>
         </p-floatlabel>
 
-        <p-floatlabel>
+        <p-floatlabel variant="on">
           <input pInputText formControlName="myCity" id="myCity" />
           <label for="myCity">City</label>
         </p-floatlabel>
 
-        <p-floatlabel>
+        <p-floatlabel variant="on">
           <input pInputText formControlName="myCounty" id="myCounty" />
           <label for="myCounty">County</label>
         </p-floatlabel>
 
-        <p-floatlabel class="w-zone">
+        <p-floatlabel class="w-zone" variant="on">
           <input pInputText formControlName="myState" id="myState" />
           <label for="myState">State</label>
         </p-floatlabel>
 
-        <p-floatlabel>
+        <p-floatlabel variant="on">
           <input pInputText formControlName="myCountry" id="myCountry" />
           <label for="myCountry">Country</label>
         </p-floatlabel>
 
-        <p-floatlabel class="w-zone">
+        <p-floatlabel class="w-zone" variant="on">
           <input pInputText formControlName="myCqZone" id="myCqZone" />
           <label for="myCqZone">CQ Zone</label>
         </p-floatlabel>
 
-        <p-floatlabel class="w-zone">
+        <p-floatlabel class="w-zone" variant="on">
           <input pInputText formControlName="myItuZone" id="myItuZone" />
           <label for="myItuZone">ITU Zone</label>
         </p-floatlabel>
       </div>
     </p-fieldset>
-
-    <div class="form-actions">
-      <p-button label="Clear" icon="pi pi-times" severity="secondary" (onClick)="onClear()" />
-      <p-button [label]="isEditMode ? 'Update QSO' : 'Create QSO'" [icon]="isEditMode ? 'pi pi-check' : 'pi pi-plus'" type="submit" [disabled]="qsoForm.pristine" />
-    </div>
   </form>
+    <div class="form-actions">
+      @if (showCwButtons() || qsoForm.get('mode')?.value === 'CW') {
+        <div class="form-actions-left">
+          <p-button label="F4&middot;AFØE" severity="contrast" (onClick)="sendCw('AF0E')" />
+          <p-button label="F3&middot;Exch" severity="info" (onClick)="sendCw(cwExchLabel(), true)" [pTooltip]="cwExchLabel()" tooltipPosition="top"  />
+          <p-button label="x2" severity="info" size="small" class="x2-btn" (onClick)="sendCw(cwExch2Label(), true)" [pTooltip]="cwExch2Label()" tooltipPosition="top" />
+          <p-button label="F5&middot;{{cwCallLabel()}}" severity="warn" [disabled]="cwCallLabel() === '???'" />
+          <p-button label="F8&middot;?" severity="secondary" />
+          <p-inputNumber [(ngModel)]="cwSpeed" [showButtons]="true" inputId="minmax-buttons" [min]="10" [max]="32" size="small" class="cw-speed" />
+          <p-button label="Stop" severity="danger" class="stop-btn" (onClick)="stopCw()" [disabled]="!cwSending()" />
+        </div>
+      }
+      <div class="form-actions-right">
+        <p-button label="Clear" icon="pi pi-times" severity="secondary" (onClick)="onClear()" title="F12" />
+        <p-button [label]="isEditMode ? 'Save' : 'Add'" [icon]="isEditMode ? 'pi pi-check' : 'pi pi-plus'" type="submit" [disabled]="qsoForm.pristine" (onClick)="onSave()" title="Ctrl-Enter" />
+      </div>
+    </div>
+
 </div>

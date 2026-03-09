@@ -8,6 +8,7 @@ public sealed class RigCommanderSettings
 #pragma warning disable CA1002 // Do not expose generic lists
     public List<RadioProfileSettings> Profiles { get; init; } = [];
 #pragma warning restore CA1002
+    public WinkeyerSettings? Winkeyer { get; init; }
 
     public RadioProfileSettings? FindProfileByName(string? name)
     {
@@ -49,4 +50,15 @@ public sealed class YaesuSettings
     public bool? RtsEnable { get; init; }
     public int ReplyDelayMs { get; init; } = 40;
     public int ReadTimeoutMs { get; init; } = 1000;
+}
+
+public sealed class WinkeyerSettings
+{
+    public bool Enabled { get; init; }
+    public required string PortName { get; init; }
+    public int BaudRate { get; init; } = 1200;
+    public bool KeepHostOpen { get; init; } = true;
+    public int IdleCloseSeconds { get; init; } = 60;
+    public int MinWpm { get; set; } = 10;
+    public int MaxWpm { get; set; } = 35;
 }

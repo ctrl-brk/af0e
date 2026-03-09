@@ -5,15 +5,19 @@ import {
   inject,
   input,
   output,
+  signal,
   untracked,
   viewChild,
   ViewEncapsulation
 } from '@angular/core';
-import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
+import {FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {NotificationService} from '../../shared/notification.service';
 import {LogService} from '../../shared/log.service';
 import {LogbookService} from '../../services/logbook.service';
+import {InfraService} from '../../services/infra.service';
+import {PotaService} from '../../services/pota.service';
+import {QrzService} from '../../services/qrz.service';
 import {QsoDetailModel} from '../../models/qso-detail.model';
 import {Utils} from '../../shared/utils';
 import {NotificationMessageModel, NotificationMessageSeverity} from '../../shared/notification-message.model';
@@ -28,10 +32,10 @@ import {Fieldset} from 'primeng/fieldset';
 import {Tooltip} from 'primeng/tooltip';
 import {callSignValidator} from '../../shared/validators';
 import {BAND_OPTIONS, MODE_OPTIONS, QSL_OPTIONS, QSL_VIA_OPTIONS} from '../../shared/qso-options';
-import {PotaService} from '../../services/pota.service';
-import {QrzService} from '../../services/qrz.service';
 import {QrzDetailsModel} from '../../models/qrz-details.model';
 import {SpaceAsTabDirective} from '../../shared/directives/space-as-tab.directive';
+
+//import {disabled} from '@angular/forms/signals';
 
 @Component({
   selector: 'app-qso-edit',
@@ -50,6 +54,7 @@ import {SpaceAsTabDirective} from '../../shared/directives/space-as-tab.directiv
     Fieldset,
     Tooltip,
     SpaceAsTabDirective,
+    FormsModule,
   ],
 })
 export class QsoEditComponent {
@@ -59,18 +64,26 @@ export class QsoEditComponent {
   private _log = inject(LogService);
   private _potaSvc = inject(PotaService);
   private _qrzSvc = inject(QrzService);
+  private _infraSvc = inject(InfraService);
   private _callInput = viewChild<ElementRef>('callInput');
   private _rstRcvdInput = viewChild<ElementRef>('rstRcvdInput');
+  private lastCwSpeed = 0;
 
   logId = input.required<number>();
   callSign = input<string>();
+  showCwButtons = input<boolean>(false);
   editModeChange = output<boolean>();
   saved = output<boolean>();
 
   protected qso: QsoDetailModel = null!;
   protected qsoForm!: FormGroup;
   isEditMode = false;
-
+  protected cwCallLabel = signal('???');
+  protected cwExchLabel = signal('');
+  protected cwExch2Label = signal('');
+  private altCwExch = '';
+  protected cwSending = signal(false);
+  protected cwSpeed = signal(22);
   // Dropdown options
   protected modeOptions = MODE_OPTIONS;
   protected bandOptions = BAND_OPTIONS;
@@ -80,17 +93,24 @@ export class QsoEditComponent {
   constructor() {
     this.initializeForm();
 
-    // Convert mode field valueChanges to a signal
+    const callSignal = toSignal(this.qsoForm.get('call')!.valueChanges);
     const modeSignal = toSignal(this.qsoForm.get('mode')!.valueChanges);
+    const rstSentSignal = toSignal(this.qsoForm.get('rstSent')!.valueChanges);
+    const stateSignal = toSignal(this.qsoForm.get('state')!.valueChanges);
 
-    // Watch for mode changes and auto-adjust RST values
+    effect(() => {
+      const call = callSignal();
+      this.cwCallLabel.set(call ? call : '???');
+    });
+
     effect(() => {
       const mode = modeSignal();
-      if (mode) {
-        untracked(() => {
-          this.adjustRstForMode(mode);
-        });
-      }
+      if (mode)
+        this.adjustRstForMode(mode);
+    });
+
+    effect(() => {
+      this.setExchangeText(rstSentSignal(), stateSignal());
     });
 
     effect(() => {
@@ -143,7 +163,7 @@ export class QsoEditComponent {
       name_fmt: [defaults.name_fmt, Validators.maxLength(128)],
       cqZone: [defaults.cqZone, Validators.pattern(/^[0-9]{1,2}$/)],
       ituZone: [defaults.ituZone, Validators.pattern(/^[0-9]{1,2}$/)],
-      dxcc: [defaults.dxcc, Validators.pattern(/^[0-9]{3}$/)],
+      dxcc: [defaults.dxcc, Validators.pattern(/^[0-9]{1,3}$/)],
       myCity: [defaults.myCity, Validators.maxLength(32)],
       myCounty: [defaults.myCounty, Validators.maxLength(32)],
       myState: [defaults.myState, Validators.maxLength(2)],
@@ -190,6 +210,18 @@ export class QsoEditComponent {
     }
   }
 
+  private setExchangeText(rstSent: string, state: string) {
+    let greet = Utils.getTimeOfDay(state);
+    const rst = rstSent ? rstSent.replaceAll('9', 'n') : '5nn';
+    const name = Utils.extractNameOrNickname(this.qsoForm.get('name_fmt')?.value);
+    if (name)
+      greet += `${name} `;
+
+    this.cwExchLabel.set(`R ${greet}UR ${rst} CO`);
+    this.cwExch2Label.set(`R TU ${rst} ${rst} CO CO`);
+    this.altCwExch = `R TU ${rst} CO`;
+  }
+
   private onQsoChange(id: number) {
     this._lbSvc.getQso(id).subscribe({
       next: (r: QsoDetailModel) => {
@@ -219,7 +251,7 @@ export class QsoEditComponent {
     if (freq1 !== freq)
       this.qsoForm.get('freq')?.setValue(freq1, { emitEvent: false });
 
-    this.qsoForm.get('band')?.setValue(Utils.getBandFromFrequency(freq1), { emitEvent: false });
+    this.qsoForm.get('band')?.setValue(Utils.getBandFromFrequency(freq1), {emitEvent: false});
   }
 
   protected setCurrentDateTime() {
@@ -328,8 +360,66 @@ export class QsoEditComponent {
     this.qsoForm.markAsPristine();
   }
 
+  sendCw(text: string, k = false) {
+    let speed = '';
+
+    this.cwSending.set(true);
+
+    if (this.lastCwSpeed !== this.cwSpeed()) {
+      this.lastCwSpeed = this.cwSpeed();
+      speed = `/S${this.cwSpeed()}`;
+    }
+
+    this._infraSvc.sendCw(`${speed}${text}${k ? ' K' : ''}`).subscribe({
+      next: () => {
+        setTimeout(() => this.checkKeyerStatus(), 2500);
+      },
+      error: e => {
+        this.cwSending.set(false);
+        Utils.showErrorMessage(e, this._ntfSvc, this._log);
+      }
+    })
+  }
+
+  stopCw() {
+    this._infraSvc.cancelCw().subscribe({
+      next: () => {
+        this.cwSending.set(false);
+      },
+      error: e => {
+        this.cwSending.set(false);
+        Utils.showErrorMessage(e, this._ntfSvc, this._log);
+      }
+    })
+  }
+
+  checkKeyerStatus() {
+    this._infraSvc.getKeyerStatus().subscribe({
+      next: (r) => {
+        if (r.busy) {
+          setTimeout(() => this.checkKeyerStatus(), 1000);
+          return;
+        }
+        this.cwSending.set(false);
+      },
+      error: e => {
+        this.cwSending.set(false);
+        Utils.showErrorMessage(e, this._ntfSvc, this._log);
+      }
+    })
+  }
+
   onSave() {
     if (this.qsoForm.invalid) {
+      const errors = Object.keys(this.qsoForm.controls).map(key => {
+         return {
+           name: key,
+           errors: this.qsoForm.get(key)?.errors,
+         }
+      }).filter(x => x.errors != null);
+
+      console.warn('Form is invalid:', errors);
+
       this._ntfSvc.addMessage(
         new NotificationMessageModel(
           NotificationMessageSeverity.Warn,
@@ -348,6 +438,9 @@ export class QsoEditComponent {
       qslSentDate: Utils.dateToUtcString(this.qsoForm.value.qslSentDate),
       qslRcvdDate: Utils.dateToUtcString(this.qsoForm.value.qslRcvdDate),
     };
+
+    formValue.call = formValue.call.toUpperCase();
+    formValue.state = formValue.state.toUpperCase();
 
     if (this.isEditMode) {
       this._lbSvc.updateQso(formValue).subscribe({
@@ -458,5 +551,64 @@ export class QsoEditComponent {
       return `Maximum length is ${limit} characters.`;
     }
     return 'Invalid value';
+  }
+
+  protected onKeyDown($event: KeyboardEvent) {
+    let handled = false;
+
+    switch ($event.key) {
+      case 'F4':
+        handled = true;
+        $event.preventDefault();
+        this.sendCw('AF0E');
+        break;
+      case 'F3':
+        handled = true;
+        $event.preventDefault();
+        if ($event.altKey)
+          this.sendCw(this.altCwExch, true);
+        else if ($event.ctrlKey)
+          this.sendCw(this.cwExch2Label(), true)
+        else
+          this.sendCw(this.cwExchLabel(), true)
+        break;
+      case 'F8':
+        handled = true;
+        $event.preventDefault();
+        this.sendCw('?');
+        break;
+      case 'Escape':
+        if (!this.cwSending()) return;
+        handled = true;
+        this.stopCw();
+        break;
+      case 'Enter':
+        if ($event.ctrlKey) {
+          handled = true;
+          this.onSave();
+        }
+        break;
+      case 'F12':
+        handled = true;
+        this.onClear();
+        break;
+      case 'PageDown':
+        handled = true;
+        let speed = this.cwSpeed();
+        if (speed <= 10) return;
+        this.cwSpeed.set(speed - 2);
+        break;
+      case 'PageUp':
+        handled = true;
+        let speed1 = this.cwSpeed();
+        if (speed1 >= 32) return;
+        this.cwSpeed.set(speed1 + 2);
+        break;
+    }
+
+    if (handled) {
+      $event.preventDefault();
+      $event.stopPropagation();
+    }
   }
 }

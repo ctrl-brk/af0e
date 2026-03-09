@@ -1,6 +1,7 @@
 <div class="top-spacer"></div>
 <p-table
   [value]="spots()"
+
   dataKey="activity.callSign"
   sortField="activity.lastSpotTime"
   [sortOrder]="-1"
@@ -11,7 +12,7 @@
 
   <ng-template pTemplate="caption">
     <div class='spots-caption'>
-      <p-button severity="primary" icon="pi pi-refresh" (onClick)="refreshSpots()" />&nbsp;
+      <p-button severity="primary" icon="pi pi-refresh" [disabled]="isRefreshing()" (onClick)="refreshSpots()" />&nbsp;
       <p-checkbox
         inputId="autoRefresh"
         [ngModel]="autoRefresh()"
@@ -24,7 +25,15 @@
         [ngModel]="rigControl()"
         (ngModelChange)="rigControl.set($event)"
         [binary]="true" />
-      &nbsp;<label for="rigControl">Rig Control</label>
+      &nbsp;<label for="rigControl">Rig</label>
+      &nbsp;
+      <p-checkbox
+        inputId="keyerControl"
+        [ngModel]="keyerControl()"
+        (ngModelChange)="keyerControl.set($event)"
+        [binary]="true" />
+      &nbsp;<label for="keyerControl">Keyer</label>
+
       &nbsp;|&nbsp;
       <p-checkbox
         inputId="showDigi"
@@ -84,17 +93,25 @@
       </td>
     </tr>
   </ng-template>
+  <ng-template pTemplate="emptymessage">
+    <tr>
+      <!-- Use [attr.colspan] to span across all columns -->
+      <td [attr.colspan]="6" style="text-align: center;">
+        NO ACTIVITY
+      </td>
+    </tr>
+  </ng-template>
 </p-table>
 
 <p-scrollTop />
 
-<p-dialog header="Add QSO" [modal]="true" [(visible)]="qsoEditVisible" [style]="{ width: '60rem' }" [focusOnShow]="false">
+<p-dialog header="Add QSO" [modal]="true" [(visible)]="qsoEditVisible" [style]="{width:'54rem'}" [focusOnShow]="false">
   @if (qsoEditVisible()) {
-    <app-qso-edit [logId]="-1" [callSign]="selectedCall()" (saved)="onQsoSaved()" />
+    <app-qso-edit [logId]="-1" [callSign]="selectedCall()" [showCwButtons]="keyerControl()" (saved)="onQsoSaved()" />
   }
 </p-dialog>
 
-<p-dialog header="Hunting stats" [modal]="true" [(visible)]="huntingStatsVisible" [style]="{ width: '90rem' }" [focusOnShow]="false">
+<p-dialog header="Hunting stats" [modal]="true" [(visible)]="huntingStatsVisible" [style]="{width:'90rem'}" [focusOnShow]="false">
   @if (huntingStatsVisible()) {
     <app-park-hunting-stats [parkNum]="selectedParkNum()" />
   }

@@ -70,6 +70,7 @@ export class PotaSpotsComponent implements OnInit, OnDestroy {
 
   protected autoRefresh = signal(false);
   protected rigControl = signal(true);
+  protected keyerControl = signal(false);
   protected showDigi = signal(false);
   protected showPhone = signal(true);
   protected showCw = signal(true);
@@ -78,6 +79,7 @@ export class PotaSpotsComponent implements OnInit, OnDestroy {
   private refreshInterval?: ReturnType<typeof setInterval>;
   protected qsoEditVisible = model(false); // model() for two-way binding with dialog
   protected huntingStatsVisible = model(false);
+  protected isRefreshing = signal(false);
 
   constructor() {
     effect(() => {
@@ -99,11 +101,16 @@ export class PotaSpotsComponent implements OnInit, OnDestroy {
   }
 
   protected refreshSpots() {
+    this.isRefreshing.set(true);
     this._potaSvc.getActivity().subscribe({
       next: (r: PotaActivityStatsModel[]) => {
         this.allSpots.set(r);
+        this.isRefreshing.set(false);
       },
-      error: e=> Utils.showErrorMessage(e, this._ntfSvc, this._log),
+      error: (e)=> {
+        this.isRefreshing.set(false);
+        Utils.showErrorMessage(e, this._ntfSvc, this._log)
+      },
     });
   }
 
@@ -134,6 +141,7 @@ export class PotaSpotsComponent implements OnInit, OnDestroy {
 
   protected onQsoSaved() {
     this.qsoEditVisible.set(false);
+    this.refreshSpots();
   }
 
   protected getRowClass(spot: PotaActivityStatsModel): string {

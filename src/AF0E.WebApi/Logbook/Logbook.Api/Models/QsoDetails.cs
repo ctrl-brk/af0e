@@ -112,9 +112,14 @@ public sealed class QsoDetails
             ColState = N(State)?.ToUpperInvariant(),
             ColCountry = N(Country),
             ColGridsquare = N(Grid),
-            ColCqz = CqZone,
+            ColCqz = N(CqZone, 0),
             ColItuz = ItuZone,
             ColDxcc = Dxcc?.ToString(),
+            ColEqslQslRcvd = "N",
+            ColEqslQslSent = "N",
+            ColForceInit = null,
+            ColLotwQslRcvd = "N",
+            ColLotwQslSent = "N",
             ColMyCity = N(MyCity),
             ColMyCnty = N(MyCounty),
             ColMyState = N(MyState),
@@ -124,14 +129,18 @@ public sealed class QsoDetails
             ColMyGridsquare = N(MyGrid),
             ColQslSent = N(QslSent, "N"),
             ColQslsdate = QslSentDate,
-            ColQslSentVia = N(QslSentVia),
+            ColQslSentVia = N(QslSentVia, "D"),
             ColQslRcvd = N(QslRcvd, "N"),
             ColQslrdate = QslRcvdDate,
-            ColQslRcvdVia = N(QslRcvdVia),
+            ColQslRcvdVia = N(QslRcvdVia, "D"),
+            ColQsoRandom = null,
+            ColRxPwr = 0,
+            ColSwl = 1,
             SiteComment = N(SiteComment),
             ColComment = includeAdminFields ? N(Comment) : null
         };
     }
 
     private static string? N(string? value, string? def = null) => string.IsNullOrWhiteSpace(value) ? def : value;
+    private static double? N(double? value, double? def = null) => value ?? def;
 }

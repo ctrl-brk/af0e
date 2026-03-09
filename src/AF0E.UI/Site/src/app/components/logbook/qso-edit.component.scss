@@ -1,23 +1,29 @@
+.p-dialog-header {
+  padding: 0 0 0 1rem;
+}
+
+.p-dialog-content {
+ padding: 0 0.5rem 0.5rem 0.5rem;
+}
+
 .qso-edit-container {
   width: 100%;
+
+  .p-fieldset {
+    padding: 0 0 0.25rem 0;
+  }
 
   form {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
-  }
-
-  .form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 1rem;
+    gap: 0.75rem;
   }
 
   .qso-form-fields {
     display: flex;
     flex-wrap: wrap;
     align-items: flex-start;
-    margin-left: -1rem; // counter left margins for alignment
+    margin-left: -0.5rem; // counter left margins for alignment
 
     &.inner { margin-top: -0.5rem; } // base -2rem overridden to add extra 0.5rem space below legends
 
@@ -25,7 +31,7 @@
     > .flex,
     > .field-hint,
     > .date-now-btn {
-      margin-top: 2rem;
+      margin-top: 0.5rem;
       margin-left: 1rem;
     }
 
@@ -130,6 +136,36 @@
     }
   }
 
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 7px;
+    gap: 0.5rem;
+    .form-actions-left {
+      display: flex;
+      gap: 0.5rem;
+      margin-right: auto;
+    }
+    .form-actions-right {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .x2-btn {
+      margin-top: 0.2rem;
+      margin-left: -0.4rem;
+    }
+    .cw-speed {
+      width: 5rem;
+      > input {
+        width: 4rem;
+        padding: 2px;
+      }
+    }
+    .stop-btn {
+      margin-left: 0.5rem;
+    }
+  }
+
   /* Utility: ensure very long labels or elements wrap gracefully */
   p-floatlabel { white-space: nowrap; }
   p-floatlabel.form-field-full { white-space: normal; }
@@ -139,7 +175,12 @@
   .qso-edit-container {
 
     .form-actions {
-      flex-direction: column-reverse;
+      flex-direction: column;
+
+      .form-actions-left,
+      .form-actions-right {
+        flex-direction: column;
+      }
     }
 
     p-button {
