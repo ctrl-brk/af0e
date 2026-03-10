@@ -389,12 +389,17 @@ app.MapPost("/winkeyer/send", (WinkeyerSendRequest req) =>
 
         try
         {
+            if (req.Wpm is not null)
+                winkey.SetWpm(req.Wpm.Value);
+
             winkey.SendScript(req.Text, repeat, repeatDelaySeconds);
+
             var status = winkey.GetStatus();
 
             return Results.Ok(new
             {
                 ok = true,
+                wpm = req.Wpm,
                 repeat,
                 repeatDelaySeconds,
                 hostWpm = status.HostWpm,
@@ -406,14 +411,28 @@ app.MapPost("/winkeyer/send", (WinkeyerSendRequest req) =>
                 xoff = status.Xoff
             });
         }
+        catch (ArgumentOutOfRangeException ex)
+        {
+            return Results.BadRequest(new
+            {
+                ok = false,
+                error = ex.Message
+            });
+        }
         catch (ArgumentException ex)
         {
-            return Results.BadRequest(new { ok = false, error = ex.Message });
+            return Results.BadRequest(new
+            {
+                ok = false,
+                error = ex.Message
+            });
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "[/winkeyer/send] Failed");
-            return Results.Json(new { ok = false, error = "Failed to send Winkeyer text." }, statusCode: StatusCodes.Status500InternalServerError);
+
+            return Results.Json(
+                new { ok = false, error = "Failed to send Winkeyer text." }, statusCode: StatusCodes.Status500InternalServerError);
         }
     })
     .Accepts<WinkeyerSendRequest>(MediaTypeNames.Application.Json)

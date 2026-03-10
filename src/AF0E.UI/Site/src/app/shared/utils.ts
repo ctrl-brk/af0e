@@ -294,4 +294,87 @@ export class Utils {
 
     return firstWord;
   }
+
+  /**
+   * Calculates the approximate time required to send a Morse code message
+   * @param text The text message to send in Morse code
+   * @param wpm Words per minute (standard is based on "PARIS" which is 50 units)
+   * @returns Time in milliseconds required to transmit the message
+   *
+   * @example
+   * Utils.calculateMorseTime('CQ CQ CQ', 20) // Returns time in ms for sending at 20 WPM
+   * Utils.calculateMorseTime('TU 599 CO', 25) // Returns time in ms for sending at 25 WPM
+   *
+   * @remarks
+   * Morse code timing is based on the standard word "PARIS" which has 50 units:
+   * - Dot: 1 unit
+   * - Dash: 3 units
+   * - Space between elements: 1 unit
+   * - Space between letters: 3 units
+   * - Space between words: 7 units
+   * At 20 WPM, each unit is 60ms (1200ms / 20 words = 60ms per unit)
+   */
+  public static calculateMorseTime(text: string, wpm: number): number {
+    if (!text || wpm <= 0) {
+      return 0;
+    }
+
+    // Morse code lookup table (International Morse Code)
+    const morseCode: { [key: string]: string } = {
+      'A': '.-', 'B': '-...', 'C': '-.-.', 'D': '-..', 'E': '.', 'F': '..-.',
+      'G': '--.', 'H': '....', 'I': '..', 'J': '.---', 'K': '-.-', 'L': '.-..',
+      'M': '--', 'N': '-.', 'O': '---', 'P': '.--.', 'Q': '--.-', 'R': '.-.',
+      'S': '...', 'T': '-', 'U': '..-', 'V': '...-', 'W': '.--', 'X': '-..-',
+      'Y': '-.--', 'Z': '--..',
+      '0': '-----', '1': '.----', '2': '..---', '3': '...--', '4': '....-',
+      '5': '.....', '6': '-....', '7': '--...', '8': '---..', '9': '----.',
+      '.': '.-.-.-', ',': '--..--', '?': '..--..', '/': '-..-.', '-': '-....-',
+      '(': '-.--.', ')': '-.--.-', '=': '-...-', '+': '.-.-.', '@': '.--.-.',
+      ' ': ' ' // Space between words
+    };
+
+    // Calculate time per unit (dot length) in milliseconds
+    // Standard: "PARIS" = 50 units, so at X WPM: (60000ms / X) / 50 units
+    const dotDuration = 1200 / wpm; // milliseconds per dot
+
+    let totalUnits = 0;
+    const upperText = text.toUpperCase();
+    let previousWasLetter = false;
+
+    for (let i = 0; i < upperText.length; i++) {
+      const char = upperText[i];
+
+      if (char === ' ') {
+        // Space between words = 7 units (but we already counted 1 after previous letter)
+        totalUnits += 6; // Add 6 more to make 7 total
+        previousWasLetter = false;
+      } else if (morseCode[char]) {
+        const morse = morseCode[char];
+
+        // Add space between letters (3 units) if this isn't the first character
+        if (previousWasLetter) {
+          totalUnits += 3;
+        }
+
+        // Count dots and dashes
+        for (const symbol of morse) {
+          if (symbol === '.') {
+            totalUnits += 1; // Dot = 1 unit
+          } else if (symbol === '-') {
+            totalUnits += 3; // Dash = 3 units
+          }
+          // Add 1 unit space between elements (dots/dashes) within a letter
+          totalUnits += 1;
+        }
+
+        // Remove the last element space (we added one too many)
+        totalUnits -= 1;
+
+        previousWasLetter = true;
+      }
+      // Ignore characters not in the morse code table
+    }
+
+    return Math.round(totalUnits * dotDuration) + 250; //add some gap
+  }
 }

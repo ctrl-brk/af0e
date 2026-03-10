@@ -67,7 +67,6 @@ export class QsoEditComponent {
   private _infraSvc = inject(InfraService);
   private _callInput = viewChild<ElementRef>('callInput');
   private _rstRcvdInput = viewChild<ElementRef>('rstRcvdInput');
-  private lastCwSpeed = 0;
 
   logId = input.required<number>();
   callSign = input<string>();
@@ -361,18 +360,13 @@ export class QsoEditComponent {
   }
 
   sendCw(text: string, k = false) {
-    let speed = '';
-
     this.cwSending.set(true);
 
-    if (this.lastCwSpeed !== this.cwSpeed()) {
-      this.lastCwSpeed = this.cwSpeed();
-      speed = `/S${this.cwSpeed()}`;
-    }
-
-    this._infraSvc.sendCw(`${speed}${text}${k ? ' K' : ''}`).subscribe({
+    text = `${text}${k ? ' K' : ''}`;
+    const timeToSend = Utils.calculateMorseTime(text, this.cwSpeed());
+    this._infraSvc.sendCw(`/S${this.cwSpeed()}${text}/S22`, null).subscribe({
       next: () => {
-        setTimeout(() => this.checkKeyerStatus(), 2500);
+        setTimeout(() => this.checkKeyerStatus(), timeToSend);
       },
       error: e => {
         this.cwSending.set(false);

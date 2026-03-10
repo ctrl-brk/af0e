@@ -13,8 +13,9 @@ export class InfraService {
     return this._http.post(`${this._infraUrl}/radio/status`, {frequencyHz, mode});
   }
 
-  public sendCw(text: string): Observable<any> {
-    return this._http.post(`${this._infraUrl}/winkeyer/send`, {text});
+  //speed = 0 resets to pot speed
+  public sendCw(text: string, wpm: number|null): Observable<any> {
+    return this._http.post(`${this._infraUrl}/winkeyer/send`, {text, wpm});
   }
 
   public cancelCw(): Observable<any> {

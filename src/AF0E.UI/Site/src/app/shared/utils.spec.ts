@@ -488,5 +488,133 @@ describe('Utils', () => {
       expect(Utils.extractNameOrNickname('M "Mike" Johnson')).toBe('Mike');
     });
   });
+
+  describe('calculateMorseTime', () => {
+    it('should return 0 for empty string', () => {
+      expect(Utils.calculateMorseTime('', 20)).toBe(0);
+      expect(Utils.calculateMorseTime('   ', 20)).toBe(0);
+    });
+
+    it('should return 0 for invalid WPM', () => {
+      expect(Utils.calculateMorseTime('TEST', 0)).toBe(0);
+      expect(Utils.calculateMorseTime('TEST', -5)).toBe(0);
+    });
+
+    it('should calculate time for single letter', () => {
+      // 'E' = '.' = 1 unit at 20 WPM (60ms per unit) = 60ms
+      const timeE = Utils.calculateMorseTime('E', 20);
+      expect(timeE).toBe(60);
+
+      // 'T' = '-' = 3 units at 20 WPM = 180ms
+      const timeT = Utils.calculateMorseTime('T', 20);
+      expect(timeT).toBe(180);
+    });
+
+    it('should calculate time for standard word PARIS', () => {
+      // "PARIS" is the standard 50-unit word in Morse code
+      // At 20 WPM: 50 units * 60ms = 3000ms = 3 seconds
+      const time = Utils.calculateMorseTime('PARIS', 20);
+      // Allow small rounding tolerance
+      expect(time).toBeGreaterThan(2900);
+      expect(time).toBeLessThan(3100);
+    });
+
+    it('should calculate different times for different WPM', () => {
+      const text = 'CQ';
+      const time20 = Utils.calculateMorseTime(text, 20);
+      const time40 = Utils.calculateMorseTime(text, 40);
+
+      // At 40 WPM should be approximately half the time of 20 WPM
+      expect(time40).toBeLessThan(time20);
+      expect(time40).toBeGreaterThan(time20 / 2 - 50);
+      expect(time40).toBeLessThan(time20 / 2 + 50);
+    });
+
+    it('should handle numbers', () => {
+      // '5' = '.....' = 5 dots + 4 spaces = 9 units
+      const time = Utils.calculateMorseTime('5', 20);
+      expect(time).toBe(540); // 9 * 60ms
+    });
+
+    it('should handle special characters', () => {
+      // '?' = '..--..'
+      const time = Utils.calculateMorseTime('?', 20);
+      expect(time).toBeGreaterThan(0);
+    });
+
+    it('should handle spaces between words', () => {
+      // Space adds 7 units total between words
+      const singleWord = Utils.calculateMorseTime('CQ', 20);
+      const twoWords = Utils.calculateMorseTime('CQ CQ', 20);
+
+      // Two words should be more than double (due to 7-unit space)
+      expect(twoWords).toBeGreaterThan(singleWord * 2);
+    });
+
+    it('should handle typical CW exchanges', () => {
+      const exchanges = [
+        'CQ CQ CQ DE AF0E',
+        'TU 599 CO',
+        'R TU 599 599 CO CO',
+        '73 GL'
+      ];
+
+      exchanges.forEach(exchange => {
+        const time = Utils.calculateMorseTime(exchange, 25);
+        expect(time).toBeGreaterThan(0);
+        // Reasonable time check (should be under 30 seconds for typical exchanges)
+        expect(time).toBeLessThan(30000);
+      });
+    });
+
+    it('should be case insensitive', () => {
+      const timeLower = Utils.calculateMorseTime('test', 20);
+      const timeUpper = Utils.calculateMorseTime('TEST', 20);
+      const timeMixed = Utils.calculateMorseTime('TeSt', 20);
+
+      expect(timeLower).toBe(timeUpper);
+      expect(timeLower).toBe(timeMixed);
+    });
+
+    it('should ignore unsupported characters', () => {
+      // Should calculate for 'A' and 'B', ignore '#' and '$'
+      const timeAB = Utils.calculateMorseTime('AB', 20);
+      const timeWithSpecial = Utils.calculateMorseTime('A#$B', 20);
+
+      expect(timeAB).toBe(timeWithSpecial);
+    });
+
+    it('should handle realistic callsigns', () => {
+      const callsigns = ['AF0E', 'W1AW', 'VE3XYZ', 'K2ABC'];
+
+      callsigns.forEach(call => {
+        const time = Utils.calculateMorseTime(call, 20);
+        expect(time).toBeGreaterThan(0);
+        expect(time).toBeLessThan(10000); // Should be under 10 seconds
+      });
+    });
+
+    it('should calculate faster times for higher WPM', () => {
+      const text = 'AF0E AF0E K';
+      const times = [10, 15, 20, 25, 30].map(wpm =>
+        Utils.calculateMorseTime(text, wpm)
+      );
+
+      // Each subsequent speed should be faster (less time)
+      for (let i = 1; i < times.length; i++) {
+        expect(times[i]).toBeLessThan(times[i - 1]);
+      }
+    });
+
+    it('should handle contest exchanges', () => {
+      const exchange = 'R TU 5NN CO';
+      const time20 = Utils.calculateMorseTime(exchange, 20);
+      const time35 = Utils.calculateMorseTime(exchange, 35);
+
+      expect(time20).toBeGreaterThan(0);
+      expect(time35).toBeGreaterThan(0);
+      expect(time35).toBeLessThan(time20);
+    });
+  });
 });
 
