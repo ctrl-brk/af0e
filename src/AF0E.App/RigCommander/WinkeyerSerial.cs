@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.IO.Ports;
 using System.Text;
+using Timer = System.Threading.Timer;
 
 namespace RigCommander;
 

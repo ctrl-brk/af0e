@@ -9,6 +9,7 @@ public sealed class RigCommanderSettings
     public List<RadioProfileSettings> Profiles { get; init; } = [];
 #pragma warning restore CA1002
     public WinkeyerSettings? Winkeyer { get; init; }
+    public Ui Ui { get; init; } = new();
 
     public RadioProfileSettings? FindProfileByName(string? name)
     {
@@ -61,4 +62,9 @@ public sealed class WinkeyerSettings
     public int IdleCloseSeconds { get; init; } = 60;
     public int MinWpm { get; set; } = 10;
     public int MaxWpm { get; set; } = 35;
+}
+
+public sealed class Ui
+{
+    public bool StartMinimized { get; init; } = false;
 }
