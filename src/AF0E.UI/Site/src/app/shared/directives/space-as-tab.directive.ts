@@ -15,7 +15,7 @@ import {Directive, HostListener, input} from '@angular/core';
 })
 export class SpaceAsTabDirective {
   /**
-   * Optional callback function to execute before moving to next field.
+   * Optional callback function to execute before moving to the next field.
    * Useful for triggering lookups, validations, or other side effects.
    */
   spaceAsTabCallback = input<(() => void) | undefined>();

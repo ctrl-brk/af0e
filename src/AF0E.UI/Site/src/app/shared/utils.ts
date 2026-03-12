@@ -299,6 +299,7 @@ export class Utils {
    * Calculates the approximate time required to send a Morse code message
    * @param text The text message to send in Morse code
    * @param wpm Words per minute (standard is based on "PARIS" which is 50 units)
+   * @param addedTime Additional time (in milliseconds) to add to the calculation (default 250ms)
    * @returns Time in milliseconds required to transmit the message
    *
    * @example
@@ -306,7 +307,7 @@ export class Utils {
    * Utils.calculateMorseTime('TU 599 CO', 25) // Returns time in ms for sending at 25 WPM
    *
    * @remarks
-   * Morse code timing is based on the standard word "PARIS" which has 50 units:
+   * Morse code timing is based on the standard word "PARIS," which has 50 units:
    * - Dot: 1 unit
    * - Dash: 3 units
    * - Space between elements: 1 unit
@@ -314,8 +315,8 @@ export class Utils {
    * - Space between words: 7 units
    * At 20 WPM, each unit is 60ms (1200ms / 20 words = 60ms per unit)
    */
-  public static calculateMorseTime(text: string, wpm: number): number {
-    if (!text || wpm <= 0) {
+  public static calculateMorseTime(text: string, wpm: number, addedTime: number = 250): number {
+    if (!text.trim() || wpm <= 0) {
       return 0;
     }
 
@@ -345,7 +346,7 @@ export class Utils {
       const char = upperText[i];
 
       if (char === ' ') {
-        // Space between words = 7 units (but we already counted 1 after previous letter)
+        // Space between words = 7 units (but we already counted 1 after a previous letter)
         totalUnits += 6; // Add 6 more to make 7 total
         previousWasLetter = false;
       } else if (morseCode[char]) {
@@ -374,7 +375,10 @@ export class Utils {
       }
       // Ignore characters not in the morse code table
     }
+    let time = Math.round(totalUnits * dotDuration);
+    if (time > 0)
+      time += addedTime;
 
-    return Math.round(totalUnits * dotDuration) + 250; //add some gap
+    return time;
   }
 }
