@@ -6,10 +6,12 @@ import {SortDirection} from '../shared/sort-direction.enum';
 import {QsoDetailModel} from '../models/qso-detail.model';
 import {Utils} from '../shared/utils';
 import {LogSearchResponseModel} from '../models/logsearch-response.model';
+import {GridTrackerLookupModel} from '../models/gridtracker-lookup.model';
 
 @Injectable({providedIn: 'root'})
 export class LogbookService {
   private _svcUrl = Configuration.logbookUrl();
+  private _gridtrackerUrl = Configuration.gridtrackerUrl();
   private _http = inject(HttpService);
 
   public lookupPartial(call: string): Observable<string[]> {
@@ -32,6 +34,17 @@ export class LogbookService {
       map((q: QsoDetailModel) => {
         q.date = new Date(q.date);
         return q;
+      })
+    );
+  }
+
+  public getGridTrackerLog(call: string): Observable<GridTrackerLookupModel[]> {
+    return this._http.get(`${this._gridtrackerUrl}/${call}`).pipe(
+      map((x: GridTrackerLookupModel[]) => {
+        return x.map((m) => {
+          m.date = new Date(m.date);
+          return m;
+        });
       })
     );
   }

@@ -55,14 +55,31 @@
         (ngModelChange)="showCw.set($event)"
         [binary]="true" />
       &nbsp;<label for="showCw">CW</label>
+
+      &nbsp;|&nbsp;
+      <p-checkbox
+        inputId="showDups"
+        [ngModel]="showDups()"
+        (ngModelChange)="onDupsChange($event)"
+        [binary]="true" />
+      &nbsp;<label for="showDups">Dups</label>
+      <div style="flex: 1;"></div>
+      <div class="last-call">
+        @if (lastQso()) {
+          {{lastQso().call}} |{{lastQso().date | date:'HH:mm':'UTC'}}|{{lastQso().band}} {{lastQso().mode}}|{{lastQso().comment}}
+        }
+      </div>
+      <p-button severity="primary" icon="pi pi-plus" (onClick)="onAddQso()" />
     </div>
   </ng-template>
 
-    <ng-template pTemplate="header">
+  <ng-template pTemplate="header">
     <tr>
       <th pSortableColumn="activity.lastSpotTime">Time <p-sortIcon field="activity.lastSpotTime" /></th>
       <th>Call</th>
       <th>Park</th>
+      <th>Loc</th>
+      <th>Grid</th>
       <th pSortableColumn="activity.band">Band <p-sortIcon field="activity.band" /></th>
       <th>Freq</th>
       <th pSortableColumn="activity.mode">Mode <p-sortIcon field="activity.mode" /></th>
@@ -71,7 +88,9 @@
 
   <ng-template pTemplate="body" let-act>
     <tr [ngClass]="getRowClass(act)">
-      <td>{{ act.activity.lastSpotTime | timeAgo }}</td>
+      <td>
+        @if (act.activity.callSign == this.selectedCall()) {&#9654;} @else { &nbsp; } {{ act.activity.lastSpotTime | timeAgo }}
+      </td>
       <td>
         <a (click)="onCallSignClick(act.activity.callSign, act.activity.freqKhz, act.activity.mode)">{{ act.activity.callSign }}</a>
         @if (act.totalCallSignContacts > 0) {
@@ -84,6 +103,8 @@
           <p-badge [value]="act.totalParkContacts" severity="info" />
         }
       </td>
+      <td>{{ act.activity.location }}</td>
+      <td>{{ act.activity.grid }}</td>
       <td>{{ act.activity.band }}</td>
       <td>{{ act.activity.freqKhz }}</td>
       <td>
@@ -105,9 +126,9 @@
 
 <p-scrollTop />
 
-<p-dialog header="Add QSO" [modal]="true" [(visible)]="qsoEditVisible" [style]="{width:'54rem'}" [focusOnShow]="false">
+<p-dialog header="Add QSO" [modal]="true" [(visible)]="qsoEditVisible" [style]="{width:'54rem'}" [focusOnShow]="false" (onHide)="this.selectedCall.set('')">
   @if (qsoEditVisible()) {
-    <app-qso-edit [logId]="-1" [callSign]="selectedCall()" [showCwButtons]="keyerControl()" (saved)="onQsoSaved()" />
+    <app-qso-edit [logId]="-1" [callSign]="selectedCall()" [showCwButtons]="keyerControl()" [potaMode]="true" (saved)="onQsoSaved($event)" />
   }
 </p-dialog>
 

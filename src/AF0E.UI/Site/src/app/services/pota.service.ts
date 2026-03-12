@@ -111,12 +111,14 @@ export class PotaService {
     );
   }
 
-  public getActivity(band?: string, mode?: string): Observable<PotaActivityStatsModel[]> {
+  public getActivity(band?: string, mode?: string, dups?: boolean): Observable<PotaActivityStatsModel[]> {
     let url = 'activity?band=';
     if (band)
       url += band;
     if (mode)
       url += `&mode=${mode}`;
+    if (dups)
+      url += `&dups=true`;
 
     return this._http.get(Configuration.potaUrl(url)).pipe(
       map((x: PotaActivityStatsModel[]) => {

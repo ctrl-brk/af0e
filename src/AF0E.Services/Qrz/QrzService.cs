@@ -58,7 +58,7 @@ public sealed class QrzService : IQrzService
         if (result?.Session.Error is null)
             return (result, false);
 
-        if (string.Equals(result.Session.Error, "Invalid session key", StringComparison.OrdinalIgnoreCase) && !retry)
+        if (string.Equals(result.Session.Error, "Invalid session key", StringComparison.OrdinalIgnoreCase) || string.Equals(result.Session.Error, "Session timeout", StringComparison.OrdinalIgnoreCase) && !retry)
         {
             _sessionKey = null;
             retry = true;

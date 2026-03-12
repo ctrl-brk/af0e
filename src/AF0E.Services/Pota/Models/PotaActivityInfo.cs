@@ -5,6 +5,8 @@ public record PotaActivityInfo
     string CallSign,
     bool Active,
     string? ParkNum,
+    string? Location,
+    string? Grid,
     string? FreqKhz,
     string? Band,
     string? Mode,

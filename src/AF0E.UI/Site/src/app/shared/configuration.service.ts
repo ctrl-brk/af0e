@@ -3,6 +3,7 @@ import {environment} from '../../environments/environment';
 export class Configuration {
   private static _apiUrl = environment.apiUrl;
   private static _logbookUrl = `${Configuration._apiUrl}/logbook`;
+  private static _gridtrackerUrl = `${Configuration._apiUrl}/gridtracker`;
   private static _potaUrl = `${Configuration._apiUrl}/pota`;
   private static _qrzUrl = `${Configuration._apiUrl}/qrz`;
   private static _utilsUrl = `${Configuration._apiUrl}/tools`;
@@ -19,6 +20,10 @@ export class Configuration {
 
   public static logbookUrl(url?: string): string {
     return url === undefined ? this._logbookUrl : `${this._logbookUrl}/${url}`;
+  }
+
+  public static gridtrackerUrl(url?: string): string {
+    return url === undefined ? this._gridtrackerUrl : `${this._gridtrackerUrl}/${url}`;
   }
 
   public static potaUrl(url?: string): string {

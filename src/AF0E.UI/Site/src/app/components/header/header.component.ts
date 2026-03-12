@@ -146,8 +146,8 @@ export class HeaderComponent implements OnInit {
         ]
       },
       {
-        label: 'Info',
-        icon: 'pi pi-info-circle',
+        label: 'Tools',
+        icon: 'pi pi-box',
         items: [
           {
             label: 'Links',

@@ -89,11 +89,11 @@ public static partial class PotaHandlers
     public static async Task<PotaActivityInfo> CheckActivity(string callSign, IPotaApiService potaApiService) =>
         await potaApiService.CheckActivityAsync(callSign: callSign);
 
-    public static async Task<List<PotaActivityWithStats>> CheckActivity(string? band, string? mode, IPotaApiService potaApiService, HrdDbContext dbContext)
+    public static async Task<List<PotaActivityWithStats>> CheckActivity(string? band, string? mode, bool dups, IPotaApiService potaApiService, HrdDbContext dbContext)
     {
         var spots = await potaApiService.CheckActivityAsync(band, mode);
-        var filteredSpots = await FilterAlreadyLoggedSpots(spots, dbContext);
-        
+        var filteredSpots = dups ? spots : await FilterAlreadyLoggedSpots(spots, dbContext);
+
         if (filteredSpots.Count == 0)
             return [];
 
@@ -103,7 +103,7 @@ public static partial class PotaHandlers
             .Select(s => s.ParkNum!)
             .Distinct()
             .ToList();
-        
+
         var callSigns = filteredSpots
             .Select(s => s.CallSign)
             .Distinct()
@@ -158,7 +158,7 @@ public static partial class PotaHandlers
         {
             var parkNum = spot.ParkNum ?? "";
             var normalizedParkNum = string.IsNullOrEmpty(parkNum) ? "" : NormalizeParkNumber(parkNum);
-            
+
             var parkContactStats = parkStatsLookup.TryGetValue(normalizedParkNum, out var stats)
                 ? stats.Select(s => new ParkContactStats
                 {
@@ -169,7 +169,7 @@ public static partial class PotaHandlers
                 : [];
 
             var totalParkContacts = parkContactStats.Sum(s => s.Count);
-            var totalCallSignContacts = callSignStatsLookup.TryGetValue(spot.CallSign, out var count) ? count : 0;
+            var totalCallSignContacts = callSignStatsLookup.GetValueOrDefault(spot.CallSign, 0);
 
             return new PotaActivityWithStats
             {
@@ -188,7 +188,7 @@ public static partial class PotaHandlers
 
         // Get all call signs from spots
         var callSigns = spots.Select(s => s.CallSign).Distinct().ToList();
-        
+
         // Get today's date range
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var todayStart = today.ToDateTime(TimeOnly.MinValue);
@@ -196,10 +196,10 @@ public static partial class PotaHandlers
 
         // Query all today's contacts for these call signs
         var todaysContacts = await dbContext.Log
-            .Where(l => callSigns.Contains(l.ColCall) 
-                && l.ColTimeOn >= todayStart 
+            .Where(l => callSigns.Contains(l.ColCall)
+                && l.ColTimeOn >= todayStart
                 && l.ColTimeOn <= todayEnd
-                && l.ColComment != null 
+                && l.ColComment != null
                 && l.ColComment.StartsWith("POTA "))
             .Select(l => new
             {
@@ -218,7 +218,7 @@ public static partial class PotaHandlers
                 return true;
 
             var spotDate = DateOnly.FromDateTime(spot.LastSpotTime.Value.UtcDateTime);
-            
+
             return !todaysContacts.Any(contact =>
             {
                 if (!string.Equals(contact.ColCall, spot.CallSign, StringComparison.OrdinalIgnoreCase))
@@ -250,8 +250,8 @@ public static partial class PotaHandlers
     /// Normalizes a park number by adding "US-" prefix if it starts with a digit
     /// </summary>
     private static string NormalizeParkNumber(string parkNum) =>
-        parkNum.Length > 0 && parkNum[0] >= '0' && parkNum[0] <= '9' 
-            ? $"US-{parkNum}" 
+        parkNum.Length > 0 && parkNum[0] >= '0' && parkNum[0] <= '9'
+            ? $"US-{parkNum}"
             : parkNum;
 }
 

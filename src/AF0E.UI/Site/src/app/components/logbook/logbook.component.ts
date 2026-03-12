@@ -149,10 +149,10 @@ export class LogbookComponent implements OnInit {
     this.qsoDetailsVisible.set(true);
   }
 
-  onQsoSaved(isUpdate: boolean) {
+  onQsoSaved(qso: any) {
     this.qsoEditVisible.set(false);
 
-    if (!isUpdate) {
+    if (!qso.id) {
       this.loadLog(this._call, 0, 50, this.qsoDateRange());
     }
   }

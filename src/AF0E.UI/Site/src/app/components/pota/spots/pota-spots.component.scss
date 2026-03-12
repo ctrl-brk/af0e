@@ -33,4 +33,14 @@
     }
   }
   .spots-caption {display: flex; align-items: center; width: 100%;}
+  .last-call {
+    border: 1px #ccc solid;
+    border-radius: 4px;
+    background: var(--p-tag-info-background);
+    padding: 2px;
+    color: var(--p-tag-info-color);
+    margin-right: 5px;
+    min-width: 20rem;
+    height: 1.5rem;
+  }
 }

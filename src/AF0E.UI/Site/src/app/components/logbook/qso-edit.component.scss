@@ -171,6 +171,23 @@
   p-floatlabel.form-field-full { white-space: normal; }
 }
 
+.tbl-qso-history {
+  margin-top: 5px;
+  font-family: var(--mono-font);
+  font-size: 0.85rem;
+  table {
+    tr {
+      white-space: nowrap;
+      td {
+        &.qso-edit-hist-date {width: 8rem;}
+        &.qso-edit-hist-comment {font-size: 0.5rem;}
+        &.qso-edit-hist-bm {width: 2rem;}
+        &.qso-edit-hist-grid {width: 3rem;}
+      }
+    }
+  }
+}
+
 @media (max-width: 768px) {
   .qso-edit-container {
 

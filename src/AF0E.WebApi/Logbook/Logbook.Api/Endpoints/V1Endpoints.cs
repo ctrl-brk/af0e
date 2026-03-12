@@ -126,8 +126,8 @@ public static class V1Endpoints
                 TypedResults.Ok(await PotaHandlers.CheckActivity(WebUtility.UrlDecode(call), potaApiService)))
             .WithName("PotaActivityCall");
 
-        builder.MapGet("activity", async (string? band, string? mode, IPotaApiService potaApiService, HrdDbContext dbContext) =>
-                TypedResults.Ok(await PotaHandlers.CheckActivity(band, mode, potaApiService, dbContext)))
+        builder.MapGet("activity", async (string? band, string? mode, string? dups, IPotaApiService potaApiService, HrdDbContext dbContext) =>
+                TypedResults.Ok(await PotaHandlers.CheckActivity(band, mode, !string.IsNullOrEmpty(dups), potaApiService, dbContext)))
             .WithName("PotaActivity");
 
 

@@ -12,7 +12,7 @@ import {ModeSeverityPipe, QsoModePipe, TimeAgoPipe} from '../../../shared/pipes'
 import {Button} from 'primeng/button';
 import {Checkbox} from 'primeng/checkbox';
 import {FormsModule} from '@angular/forms';
-import {NgClass} from '@angular/common';
+import {DatePipe, NgClass} from '@angular/common';
 import {Dialog} from 'primeng/dialog';
 import {QsoEditComponent} from '../../logbook/qso-edit.component';
 import {ParkHuntingStatsComponent} from '../park/stats/park-hunting-stats.component';
@@ -37,6 +37,7 @@ import {Badge} from 'primeng/badge';
     QsoEditComponent,
     ParkHuntingStatsComponent,
     Badge,
+    DatePipe,
   ]
 })
 export class PotaSpotsComponent implements OnInit, OnDestroy {
@@ -74,12 +75,14 @@ export class PotaSpotsComponent implements OnInit, OnDestroy {
   protected showDigi = signal(false);
   protected showPhone = signal(true);
   protected showCw = signal(true);
+  protected showDups = signal(false);
   protected selectedCall = signal('');
   protected selectedParkNum = signal('');
   private refreshInterval?: ReturnType<typeof setInterval>;
   protected qsoEditVisible = model(false); // model() for two-way binding with dialog
   protected huntingStatsVisible = model(false);
   protected isRefreshing = signal(false);
+  protected lastQso = signal<any>(null);
 
   constructor() {
     effect(() => {
@@ -100,9 +103,14 @@ export class PotaSpotsComponent implements OnInit, OnDestroy {
     this.refreshSpots();
   }
 
+  protected onDupsChange(checked: boolean) {
+    this.showDups.set(checked);
+    this.refreshSpots();
+  }
+
   protected refreshSpots() {
     this.isRefreshing.set(true);
-    this._potaSvc.getActivity().subscribe({
+    this._potaSvc.getActivity(undefined, undefined, this.showDups()).subscribe({
       next: (r: PotaActivityStatsModel[]) => {
         this.allSpots.set(r);
         this.isRefreshing.set(false);
@@ -134,12 +142,18 @@ export class PotaSpotsComponent implements OnInit, OnDestroy {
     });
   }
 
+  protected onAddQso() {
+    this.selectedCall.set('');
+    this.qsoEditVisible.set(true);
+  }
+
   protected onParkClick(parkNum: string): void {
     this.selectedParkNum.set(parkNum);
     this.huntingStatsVisible.set(true);
   }
 
-  protected onQsoSaved() {
+  protected onQsoSaved(qso: any) {
+    this.lastQso.set(qso);
     this.qsoEditVisible.set(false);
     this.refreshSpots();
   }
