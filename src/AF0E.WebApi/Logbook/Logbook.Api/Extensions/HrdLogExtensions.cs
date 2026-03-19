@@ -20,7 +20,9 @@ public static class HrdLogExtensions
         log.ColMode = qso.Mode;
         log.ColRstSent = N(qso.RstSent);
         log.ColRstRcvd = N(qso.RstRcvd);
+        log.ColName = N(qso.Name);
         log.ColCnty = N(qso.County);
+        log.ColState = N(qso.State)?.ToUpperInvariant();
         log.ColCountry = N(qso.Country);
         log.ColGridsquare = N(qso.Grid);
         log.ColCqz = qso.CqZone;

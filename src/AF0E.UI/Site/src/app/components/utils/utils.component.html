@@ -1,0 +1,62 @@
+<main class="utils-content">
+  <p-card>
+    <p>Some useful (IMHO) tools and resources</p>
+    <p-divider />
+    <div class="utils-links">
+      <p-button
+        label="Find grid by lat/long"
+        [link]="true"
+        styleClass="utils-link-button blue-link"
+        routerLink="/tools/grid"
+      />
+      <p-button
+        label="1x1 Callsign Database"
+        icon="pi pi-external-link"
+        iconPos="right"
+        [link]="true"
+        styleClass="utils-link-button blue-link"
+        (onClick)="openExternal('https://www.1x1callsigns.org/index.php/search-1x1-database')"
+      />
+      <p-button
+        label="County Lines"
+        icon="pi pi-external-link"
+        iconPos="right"
+        [link]="true"
+        styleClass="utils-link-button blue-link"
+        (onClick)="openExternal('https://www.randymajors.org/countygmap')"
+      />
+      <p-button
+        label="DXCC Json"
+        icon="pi pi-external-link"
+        iconPos="right"
+        [link]="true"
+        styleClass="utils-link-button blue-link"
+        (onClick)="openExternal('https://github.com/k0swe/dxcc-json?tab=readme-ov-file')"
+      />
+      <p-button
+        label="QTH locator"
+        icon="pi pi-external-link"
+        iconPos="right"
+        [link]="true"
+        styleClass="utils-link-button blue-link"
+        (onClick)="openExternal('https://k7fry.com/grid')"
+      />
+      <p-button
+        label="My CW qso's :)"
+        icon="pi pi-external-link"
+        iconPos="right"
+        [link]="true"
+        styleClass="utils-link-button blue-link"
+        (onClick)="openExternal('https://ve2zdx.com/toolkit/youtube/videos/ALL?callsign=AF0E')"
+      />
+      <p-button
+        label="My QRZ page"
+        icon="pi pi-external-link"
+        iconPos="right"
+        [link]="true"
+        styleClass="utils-link-button blue-link"
+        (onClick)="openExternal('https://www.qrz.com/db/AF0E')"
+      />
+    </div>
+  </p-card>
+</main>

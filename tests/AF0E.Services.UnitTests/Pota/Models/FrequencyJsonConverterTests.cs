@@ -1,20 +1,17 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using AF0E.Services.Pota.Models;
 
 namespace AF0E.Services.UnitTests.Pota.Models;
 
+[SuppressMessage("Naming", "CA1707:Identifiers should not contain underscores")]
 public class FrequencyJsonConverterTests
 {
-    private readonly JsonSerializerOptions _options;
-
-    public FrequencyJsonConverterTests()
+    private readonly JsonSerializerOptions _options = new()
     {
-        _options = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        };
-    }
+        PropertyNameCaseInsensitive = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+    };
 
     [Theory]
     [InlineData("\"14074\"", "14074")]
@@ -53,7 +50,7 @@ public class FrequencyJsonConverterTests
     [Fact]
     public void Read_InvalidTokenType_ThrowsJsonException()
     {
-        var json = "{\"nested\": \"object\"}";
+        const string json = "{\"nested\": \"object\"}";
 
         var exception = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Frequency>(json));
 

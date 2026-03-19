@@ -5,15 +5,19 @@ import {
   inject,
   input,
   output,
+  signal,
   untracked,
   viewChild,
   ViewEncapsulation
 } from '@angular/core';
-import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
+import {FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {NotificationService} from '../../shared/notification.service';
 import {LogService} from '../../shared/log.service';
 import {LogbookService} from '../../services/logbook.service';
+import {InfraService} from '../../services/infra.service';
+import {PotaService} from '../../services/pota.service';
+import {QrzService} from '../../services/qrz.service';
 import {QsoDetailModel} from '../../models/qso-detail.model';
 import {Utils} from '../../shared/utils';
 import {NotificationMessageModel, NotificationMessageSeverity} from '../../shared/notification-message.model';
@@ -23,14 +27,20 @@ import {InputNumber} from 'primeng/inputnumber';
 import {DatePicker} from 'primeng/datepicker';
 import {Select} from 'primeng/select';
 import {Button} from 'primeng/button';
+import {RadioButton} from 'primeng/radiobutton';
 import {Textarea} from 'primeng/textarea';
 import {Fieldset} from 'primeng/fieldset';
 import {Tooltip} from 'primeng/tooltip';
 import {callSignValidator} from '../../shared/validators';
 import {BAND_OPTIONS, MODE_OPTIONS, QSL_OPTIONS, QSL_VIA_OPTIONS} from '../../shared/qso-options';
-import {PotaService} from '../../services/pota.service';
-import {QrzService} from '../../services/qrz.service';
 import {QrzDetailsModel} from '../../models/qrz-details.model';
+import {SpaceAsTabDirective} from '../../shared/directives/space-as-tab.directive';
+import {PotaActivityModel} from '../../models/pota-activity.model';
+import {GridTrackerLookupModel} from '../../models/gridtracker-lookup.model';
+import {TableModule} from 'primeng/table';
+import {DatePipe} from '@angular/common';
+import {Dialog} from 'primeng/dialog';
+import {Checkbox, CheckboxChangeEvent} from 'primeng/checkbox';
 
 @Component({
   selector: 'app-qso-edit',
@@ -48,6 +58,14 @@ import {QrzDetailsModel} from '../../models/qrz-details.model';
     Textarea,
     Fieldset,
     Tooltip,
+    SpaceAsTabDirective,
+    FormsModule,
+    TableModule,
+    DatePipe,
+    Dialog,
+    RadioButton,
+    Checkbox,
+
   ],
 })
 export class QsoEditComponent {
@@ -57,16 +75,31 @@ export class QsoEditComponent {
   private _log = inject(LogService);
   private _potaSvc = inject(PotaService);
   private _qrzSvc = inject(QrzService);
+  private _infraSvc = inject(InfraService);
   private _callInput = viewChild<ElementRef>('callInput');
+  private _rstSentInput = viewChild<ElementRef>('rstSentInput');
 
   logId = input.required<number>();
   callSign = input<string>();
+  keyerControl = input<boolean>(false);
+  potaMode = input<boolean>(false);
+  rigControl = input(false);
+  filtersEnabled = input(false);
   editModeChange = output<boolean>();
-  saved = output<boolean>();
+  saved = output<any>();
 
   protected qso: QsoDetailModel = null!;
   protected qsoForm!: FormGroup;
   isEditMode = false;
+  protected imgUrl = signal('');
+  protected cwCallLabel = signal('???');
+  protected cwExchLabel = signal('');
+  protected cwExch2Label = signal('');
+  private altCwExch = '';
+  protected cwSending = signal(false);
+  protected cwSpeed = signal(22);
+  protected callHistory = signal<GridTrackerLookupModel[]>([]);
+  protected cwTextVisible = signal(false);
 
   // Dropdown options
   protected modeOptions = MODE_OPTIONS;
@@ -77,17 +110,27 @@ export class QsoEditComponent {
   constructor() {
     this.initializeForm();
 
-    // Convert mode field valueChanges to a signal
+    const callSignal = toSignal(this.qsoForm.get('call')!.valueChanges);
+    const freqSignal = toSignal(this.qsoForm.get('freq')!.valueChanges);
     const modeSignal = toSignal(this.qsoForm.get('mode')!.valueChanges);
+    const rstSentSignal = toSignal(this.qsoForm.get('rstSent')!.valueChanges);
+    const stateSignal = toSignal(this.qsoForm.get('state')!.valueChanges);
+    const nameSignal = toSignal(this.qsoForm.get('name_fmt')!.valueChanges);
+    const filterSignal = toSignal(this.qsoForm.get('radioFilter')!.valueChanges);
 
-    // Watch for mode changes and auto-adjust RST values
+    effect(() => {
+      const call = callSignal();
+      this.cwCallLabel.set(call ? call : '???');
+    });
+
     effect(() => {
       const mode = modeSignal();
-      if (mode) {
-        untracked(() => {
-          this.adjustRstForMode(mode);
-        });
-      }
+      if (mode)
+        this.adjustRstForMode(mode);
+    });
+
+    effect(() => {
+      this.setExchangeText(rstSentSignal(), stateSignal(), nameSignal());
     });
 
     effect(() => {
@@ -119,6 +162,38 @@ export class QsoEditComponent {
         }
       });
     });
+
+    effect(() => {
+      const ctrl = this.qsoForm.get('radioFilter')!;
+
+      if (freqSignal() && modeSignal()) {
+        ctrl.setValue('1', { emitEvent: false });
+        ctrl.enable();
+      }
+      else
+        ctrl.disable();
+    });
+
+    effect(() => {
+      if (!this.rigControl()) return;
+
+      let freq = this.qsoForm.get('freq')?.value;
+      let mode = this.qsoForm.get('mode')?.value;
+      const filter = parseInt(filterSignal());
+
+      if (!freq || !mode) return;
+
+      if (mode === "SSB") {
+        freq = parseInt(freq);
+        mode = freq <= 4000000 || (freq >= 7000000 && freq <= 7300000) ? "LSB" : "USB";
+      }
+
+      this._infraSvc.setRigStatus(freq, mode, filter).subscribe({
+        error: e => {
+          Utils.showErrorMessage(e, this._ntfSvc, this._log);
+        }
+      });
+    });
   }
 
   private initializeForm() {
@@ -140,7 +215,7 @@ export class QsoEditComponent {
       name_fmt: [defaults.name_fmt, Validators.maxLength(128)],
       cqZone: [defaults.cqZone, Validators.pattern(/^[0-9]{1,2}$/)],
       ituZone: [defaults.ituZone, Validators.pattern(/^[0-9]{1,2}$/)],
-      dxcc: [defaults.dxcc, Validators.pattern(/^[0-9]{3}$/)],
+      dxcc: [defaults.dxcc, Validators.pattern(/^[0-9]{1,3}$/)],
       myCity: [defaults.myCity, Validators.maxLength(32)],
       myCounty: [defaults.myCounty, Validators.maxLength(32)],
       myState: [defaults.myState, Validators.maxLength(2)],
@@ -156,14 +231,15 @@ export class QsoEditComponent {
       qslRcvdVia: [defaults.qslRcvdVia],
       comment: [defaults.comment, Validators.maxLength(4000)],
       siteComment: [defaults.siteComment, Validators.maxLength(64)],
+      radioFilter: [defaults.radioFilter],
     });
   }
 
   private adjustRstForMode(mode: string) {
     if (!mode) return;
 
-    const rstRcvdControl = this.qsoForm.get('rstRcvd');
     const rstSentControl = this.qsoForm.get('rstSent');
+    const rstRcvdControl = this.qsoForm.get('rstRcvd');
 
     const rstRcvdValue = rstRcvdControl?.value?.trim() || '';
     const rstSentValue = rstSentControl?.value?.trim() || '';
@@ -187,6 +263,15 @@ export class QsoEditComponent {
     }
   }
 
+  private setExchangeText(rstSent: string, state: string, name: string) {
+    let greet = Utils.getTimeOfDay(state) + Utils.extractNameOrNickname(name);
+    const rst = rstSent ? rstSent.replaceAll('9', 'n') : '5nn';
+
+    this.cwExchLabel.set(`R ${greet} UR ${rst} CO`);
+    this.cwExch2Label.set(`R TU ${rst} ${rst} CO CO`);
+    this.altCwExch = `R TU ${rst} CO`;
+  }
+
   private onQsoChange(id: number) {
     this._lbSvc.getQso(id).subscribe({
       next: (r: QsoDetailModel) => {
@@ -199,9 +284,7 @@ export class QsoEditComponent {
         });
         this.qsoForm.markAsPristine();
       },
-      error: e=> {
-        Utils.showErrorMessage(e, this._ntfSvc, this._log);
-      },
+      error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
     });
   }
 
@@ -216,7 +299,7 @@ export class QsoEditComponent {
     if (freq1 !== freq)
       this.qsoForm.get('freq')?.setValue(freq1, { emitEvent: false });
 
-    this.qsoForm.get('band')?.setValue(Utils.getBandFromFrequency(freq1), { emitEvent: false });
+    this.qsoForm.get('band')?.setValue(Utils.getBandFromFrequency(freq1), {emitEvent: false});
   }
 
   protected setCurrentDateTime() {
@@ -238,30 +321,58 @@ export class QsoEditComponent {
     this._potaSvc.getActivityByCall(callSign).subscribe({
       next: (r) => {
         if (!r.active)
-          return;
-
-        this.qsoForm.get('comment')?.setValue(`POTA ${r.parkNum}`);
-        this.qsoForm.get('freq')?.setValue(r.freqHz);
-        this.qsoForm.get('mode')?.setValue(r.mode);
-        this.qsoForm.get('band')?.setValue(Utils.getBandFromFrequency(r.freqHz), {emitEvent: false});
-
-        this.qsoForm.markAsDirty();
+          this.getRadioStatus();
+        else
+          this.populatePotaDetails(r);
       },
-      error: e => {
-        Utils.showErrorMessage(e, this._ntfSvc, this._log);
-      }
+      error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
     });
 
     this._qrzSvc.lookup(callSign).subscribe({
       next: (r) => {
         this.populateQrzDetails(r);
+        // @ts-ignore
+        setTimeout(() => this._rstSentInput().nativeElement.select(), 1);
       },
       error: e => {
-        console.log(e);
         if (e.status !== 404)
           Utils.showErrorMessage(e, this._ntfSvc, this._log);
+        else
+          // @ts-ignore
+          setTimeout(() => this._rstSentInput().nativeElement.select(), 1);
       }
     });
+
+    this._lbSvc.getGridTrackerLog(callSign).subscribe({
+      next: (r) => this.callHistory.set(r),
+      error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
+    });
+  }
+
+  protected onCallKeyDown(event: KeyboardEvent) {
+    // Handle Tab key - trigger lookup
+    if (event.key === 'Tab') {
+      this.onCallBlur();
+    }
+  }
+
+  private populatePotaDetails(r: PotaActivityModel) {
+    if (!r.active)
+      return;
+
+    this.qsoForm.get('comment')?.setValue(`POTA ${r.parkNum}`);
+    this.qsoForm.get('freq')?.setValue(r.freqHz);
+    this.qsoForm.get('mode')?.setValue(r.mode);
+    this.qsoForm.get('band')?.setValue(Utils.getBandFromFrequency(r.freqHz), {emitEvent: false});
+    this.qsoForm.get('grid')?.setValue(r.grid);
+
+    const locations = r.location?.split(',');
+    const location = locations?.[0];
+    if (location?.startsWith('US') || location?.startsWith('CA')) {
+      this.qsoForm.get('state')?.setValue(location.substring(3));
+    }
+
+    this.qsoForm.markAsDirty();
   }
 
   private populateQrzDetails(r: QrzDetailsModel) {
@@ -286,7 +397,7 @@ export class QsoEditComponent {
       this.qsoForm.get('grid')?.setValue(grid);
       this.qsoForm.markAsDirty();
     }
-    if (county && !this.qsoForm.get('county')?.value) {
+    if (!this.potaMode() && county && !this.qsoForm.get('county')?.value) {
       this.qsoForm.get('county')?.setValue(county);
       this.qsoForm.markAsDirty();
     }
@@ -303,6 +414,8 @@ export class QsoEditComponent {
       this.qsoForm.markAsDirty();
     }
     this.qsoForm.get('dxcc')?.setValue(dxcc);
+
+    this.imgUrl.set(r.image ? r.image : 'https://static.qrz.com/static/qrz/qrz_com.svgz');
   }
 
   private initializeNewQso() {
@@ -314,14 +427,100 @@ export class QsoEditComponent {
     this.qsoForm.markAsPristine();
   }
 
+  sendCw(text: string, k = false, updateUi = true) {
+    let timeToSend = 0;
+      this.cwSending.set(true);
+
+    text = `${text}${k ? ' K' : ''}`;
+
+    if (updateUi)
+      timeToSend = Utils.calculateMorseTime(text, this.cwSpeed());
+
+    this._infraSvc.sendCw(`/S${this.cwSpeed()}${text}/S22`, null).subscribe({
+      next: () => {
+        if (updateUi)
+          setTimeout(() => this.checkKeyerStatus(), timeToSend);
+      },
+      error: e => {
+        this.cwSending.set(false);
+        Utils.showErrorMessage(e, this._ntfSvc, this._log);
+      }
+    });
+  }
+
+  stopCw() {
+    this._infraSvc.cancelCw().subscribe({
+      next: () => {
+        this.cwSending.set(false);
+      },
+      error: e => {
+        this.cwSending.set(false);
+        Utils.showErrorMessage(e, this._ntfSvc, this._log);
+      }
+    })
+  }
+
+  protected getRadioStatus() {
+    if (!this.rigControl()) return;
+
+    this._infraSvc.getRigStatus().subscribe({
+      next: (r) => {
+        this.qsoForm.get('freq')?.setValue(r.frequencyHz, { emitEvent: false });
+        this.qsoForm.get('band')?.setValue(Utils.getBandFromFrequency(r.frequencyHz), {emitEvent: false});
+        this.qsoForm.get('mode')?.setValue(r.mode);
+      },
+      error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
+    });
+  }
+
+  checkKeyerStatus() {
+    this._infraSvc.getKeyerStatus().subscribe({
+      next: (r) => {
+        if (r.busy) {
+          setTimeout(() => this.checkKeyerStatus(), 1000);
+          return;
+        }
+        this.cwSending.set(false);
+      },
+      error: e => {
+        this.cwSending.set(false);
+        Utils.showErrorMessage(e, this._ntfSvc, this._log);
+      }
+    })
+  }
+
+  protected setNoiseReduction(event: CheckboxChangeEvent) {
+    this._infraSvc.setNoiseReduction(event.checked).subscribe({
+      error: e => {
+        Utils.showErrorMessage(e, this._ntfSvc, this._log);
+      }
+    })
+  }
+
+  protected setNoiseBlanket(event: CheckboxChangeEvent) {
+    this._infraSvc.setNoiseBlanket(event.checked).subscribe({
+      error: e => {
+        Utils.showErrorMessage(e, this._ntfSvc, this._log);
+      }
+    })
+  }
+
   onSave() {
     if (this.qsoForm.invalid) {
-      console.log(this.qsoForm);
+      const errors = Object.keys(this.qsoForm.controls).map(key => {
+         return {
+           name: key,
+           errors: this.qsoForm.get(key)?.errors,
+         }
+      }).filter(x => x.errors != null);
+
+      console.warn('Form is invalid:', errors);
+
       this._ntfSvc.addMessage(
         new NotificationMessageModel(
           NotificationMessageSeverity.Warn,
           'Validation Error',
-          'Please fix all validation errors before saving.'
+          'See console for details'
         )
       );
       this.markAllAsTouched();
@@ -336,10 +535,13 @@ export class QsoEditComponent {
       qslRcvdDate: Utils.dateToUtcString(this.qsoForm.value.qslRcvdDate),
     };
 
+    formValue.call = formValue.call.toUpperCase();
+    formValue.state = formValue.state.toUpperCase();
+
     if (this.isEditMode) {
       this._lbSvc.updateQso(formValue).subscribe({
         next: () => {
-          this.saved.emit(this.isEditMode);
+          this.saved.emit(formValue);
         },
         error: e => { Utils.showErrorMessage(e, this._ntfSvc, this._log); }
       });
@@ -349,7 +551,7 @@ export class QsoEditComponent {
 
     this._lbSvc.createQso(formValue).subscribe({
       next: () => {
-        this.saved.emit(this.isEditMode);
+        this.saved.emit(formValue);
       },
       error: e => { Utils.showErrorMessage(e, this._ntfSvc, this._log); }
     });
@@ -405,6 +607,7 @@ export class QsoEditComponent {
       qslRcvdVia: null,
       comment: '',
       siteComment: '',
+      radioFilter: {value: '1', disabled: true}
     };
   }
 
@@ -445,5 +648,95 @@ export class QsoEditComponent {
       return `Maximum length is ${limit} characters.`;
     }
     return 'Invalid value';
+  }
+
+  protected onKeyDown($event: KeyboardEvent) {
+    let handled = false;
+
+    switch ($event.key) {
+      case 'F4':
+        handled = true;
+        $event.preventDefault();
+        this.sendCw('AF0|E');
+        break;
+      case 'F3':
+        handled = true;
+        $event.preventDefault();
+        if ($event.altKey)
+          this.sendCw(this.altCwExch, true);
+        else if ($event.ctrlKey)
+          this.sendCw(this.cwExch2Label(), true)
+        else
+          this.sendCw(this.cwExchLabel(), true)
+        break;
+      case 'F5':
+        if (!this.callSign()) return;
+        handled = true;
+        $event.preventDefault();
+        // @ts-ignore
+        this.sendCw(this.callSign());
+        break;
+      case 'F8':
+        handled = true;
+        $event.preventDefault();
+        this.sendCw('?');
+        break;
+      case 'K':
+      case 'k':
+      case 'Л':
+      case 'л':
+        if ($event.ctrlKey) {
+          handled = true;
+          this.cwTextVisible.set(true);
+        }
+        break;
+      case 'E':
+      case 'e':
+      case 'У':
+      case 'у':
+        if ($event.ctrlKey) {
+          handled = true;
+          this.sendCw('E|E', false, false);
+        }
+        break;
+      case 'Escape':
+        if (!this.cwSending()) return;
+        handled = true;
+        this.stopCw();
+        break;
+      case 'Enter':
+        if ($event.ctrlKey) {
+          handled = true;
+          this.onSave();
+        }
+        break;
+      case 'F12':
+        handled = true;
+        this.onClear();
+        break;
+      case 'PageDown':
+        handled = true;
+        let speed = this.cwSpeed();
+        if (speed <= 10) return;
+        this.cwSpeed.set(speed - 2);
+        break;
+      case 'PageUp':
+        handled = true;
+        let speed1 = this.cwSpeed();
+        if (speed1 >= 32) return;
+        this.cwSpeed.set(speed1 + 2);
+        break;
+    }
+
+    if (handled) {
+      $event.preventDefault();
+      $event.stopPropagation();
+    }
+  }
+
+  protected onCwKeyDown($event: KeyboardEvent) {
+    const isValid = /^[a-zA-Z0-9\/]$/.test($event.key);
+    if (!isValid) return;
+    this.sendCw($event.key, false, false);
   }
 }

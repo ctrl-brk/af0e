@@ -1,0 +1,52 @@
+<main class="utils-grid-content">
+  <p-card header="Grid Square Calculator">
+    <div class="grid-form">
+      <p-floatlabel>
+        <input
+          pInputText
+          id="latitude"
+          [(ngModel)]="latitude"
+          (paste)="onPaste($event)"
+        />
+        <label for="latitude">Latitude</label>
+      </p-floatlabel>
+
+      <p-floatlabel>
+        <input
+          pInputText
+          id="longitude"
+          [(ngModel)]="longitude"
+          (paste)="onPaste($event)"
+        />
+        <label for="longitude">Longitude</label>
+      </p-floatlabel>
+
+      <p-button
+        label="Calculate"
+        icon="pi pi-calculator"
+        (onClick)="calculateGrid()"
+        [disabled]="!latitude || !longitude"
+      />
+
+      <div class="grid-result">
+        <div class="result-header">
+          <label class="result-label">Grid Square:</label>
+          @if (inputValid()) {
+            <p-button
+              icon="pi pi-copy"
+              [text]="true"
+              [rounded]="true"
+              size="small"
+              (onClick)="copyToClipboard()"
+              pTooltip="Copy to clipboard"
+              tooltipPosition="left"
+              severity="info"
+            />
+          }
+        </div>
+        <span class="result-value">{{ gridSquare() }}</span>
+      </div>
+    </div>
+  </p-card>
+</main>
+
