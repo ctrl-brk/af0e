@@ -57,6 +57,7 @@ describe('Pipes', () => {
     it('should return warn severity for digital modes', () => {
       expect(pipe.transform('FT8')).toBe('warn');
       expect(pipe.transform('FT4')).toBe('warn');
+      expect(pipe.transform('FT2')).toBe('warn');
       expect(pipe.transform('MFSK')).toBe('warn');
       expect(pipe.transform('PSK31')).toBe('warn');
       expect(pipe.transform('JT65')).toBe('warn');

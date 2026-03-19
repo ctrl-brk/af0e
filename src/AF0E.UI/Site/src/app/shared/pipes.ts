@@ -21,6 +21,7 @@ export class ModeSeverityPipe implements PipeTransform {
 
       case 'FT8':
       case 'FT4':
+      case 'FT2':
       case 'MFSK':
       case 'PSK31':
       case 'JT65':

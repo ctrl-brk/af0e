@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using AF0E.DB;
 using AF0E.Services.Pota;
+using AF0E.Services.Qrz;
 using Logbook.Api.Converters;
 using Logbook.Api.Endpoints;
 using Logbook.Api.Security;
@@ -15,7 +16,7 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi(options =>
 {
-    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    options.AddDocumentTransformer((document, _, _) =>
     {
         // Add security scheme to the OpenAPI document
         document.Components ??= new OpenApiComponents();
@@ -31,20 +32,20 @@ builder.Services.AddOpenApi(options =>
         return Task.CompletedTask;
     });
 
-    options.AddOperationTransformer((operation, context, cancellationToken) =>
+    options.AddOperationTransformer((operation, context, _) =>
     {
         // Add security requirement to operations that require authorization
         var metadata = context.Description.ActionDescriptor.EndpointMetadata;
         var requiresAuth = metadata.OfType<IAuthorizeData>().Any();
 
-        if (requiresAuth)
+        if (!requiresAuth)
+            return Task.CompletedTask;
+
+        operation.Security ??= [];
+        operation.Security.Add(new OpenApiSecurityRequirement
         {
-            operation.Security ??= [];
-            operation.Security.Add(new OpenApiSecurityRequirement
-            {
-                [new OpenApiSecuritySchemeReference("bearer", context.Document)] = []
-            });
-        }
+            [new OpenApiSecuritySchemeReference("bearer", context.Document)] = []
+        });
 
         return Task.CompletedTask;
     });
@@ -53,6 +54,8 @@ builder.Services.AddOpenApi(options =>
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IPotaApiService, PotaApiService>();
+builder.Services.Configure<QrzSettings>(builder.Configuration.GetSection("QrzSettings"));
+builder.Services.AddSingleton<IQrzService, QrzService>();
 //builder.Services.AddDbContext<HrdDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("HrdLog")));
 builder.Services.AddScoped<HrdDbContext>(_ => new HrdDbContext(builder.Configuration.GetConnectionString("HrdLog")!));
 builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =>
@@ -111,3 +114,7 @@ app.RegisterV1Endpoints();
 
 app.MapFallbackToFile("/index.html");
 app.Run();
+
+// Make Program class accessible for integration tests
+public partial class Program { }
+

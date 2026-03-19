@@ -146,9 +146,16 @@ export class HeaderComponent implements OnInit {
         ]
       },
       {
-        label: 'Info',
-        icon: 'pi pi-info-circle',
+        label: 'Tools',
+        icon: 'pi pi-box',
         items: [
+          {
+            label: 'Links',
+            icon: 'pi pi-bookmark',
+            command: () => {
+              this._router.navigate(['/tools']);
+            }
+          },
           {
             label: 'Stats',
             icon: 'pi pi-chart-bar',
@@ -182,8 +189,9 @@ export class HeaderComponent implements OnInit {
   private onAuthChanged(isAuthenticated: boolean) {
     const potaMenu = this.menuItems()!.find(item => item.label === 'POTA');
     const userMenu = this.menuItems()!.find(item => item.label === 'User');
+    const toolsMenu = this.menuItems()!.find(item => item.label === 'Tools');
 
-    if (potaMenu && isAuthenticated) { //TODO: remove menu when not authenticated?
+    if (potaMenu && isAuthenticated) { //TODO: remove menu whe not authenticated?
       const spotsItem = potaMenu.items!.find(item => item.label === 'Spots');
       if (!spotsItem) {
         potaMenu.items = [
@@ -195,6 +203,22 @@ export class HeaderComponent implements OnInit {
             }
           },
           ...potaMenu.items!
+        ];
+      }
+    }
+
+    if (toolsMenu && isAuthenticated) {
+      const winkeyerItem = toolsMenu.items!.find(item => item.label === 'Winkeyer');
+      if (!winkeyerItem) {
+        toolsMenu.items = [
+          {
+            label: 'Winkeyer',
+            icon: 'pi pi-ellipsis-h',
+            command: () => {
+              this._router.navigate(['/tools/winkeyer']);
+            }
+          },
+          ...toolsMenu.items!
         ];
       }
     }

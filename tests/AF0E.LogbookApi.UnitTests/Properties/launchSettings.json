@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "AF0E.LogbookApi.UnitTests": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:57598;http://localhost:57599"
+    }
+  }
+}

@@ -24,11 +24,5 @@ public record PotaSpot
     public int? Count { get; init; }
     public int? Expire { get; init; }
 
-    public bool Qrt
-    {
-        get
-        {
-            return ActivatorLastComments?.Contains("QRT") == true || Comments?.Contains("QRT") == true;
-        }
-    }
+    public bool Qrt => ActivatorLastComments?.Contains("QRT", StringComparison.OrdinalIgnoreCase) == true || Comments?.Contains("QRT", StringComparison.OrdinalIgnoreCase) == true;
 }

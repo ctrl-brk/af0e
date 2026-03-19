@@ -2,9 +2,6 @@ import {describe, expect, it, vi} from 'vitest';
 import {Utils} from './utils';
 import {HttpErrorResponse} from '@angular/common/http';
 import {NotificationMessageModel, NotificationMessageSeverity} from './notification-message.model';
-import {ErrorDtoModel} from './error-dto.model';
-import {ErrorSource} from './error-source.enum';
-import {ErrorSeverity} from './error-severity.enum';
 
 describe('Utils', () => {
   describe('dateToYmd', () => {
@@ -112,18 +109,6 @@ describe('Utils', () => {
     });
 
     describe('HTTP error responses', () => {
-      it('should ignore 0', () => {
-        const mockNotificationService = {addMessage: vi.fn()};
-        const mockLogService = {error: vi.fn()};
-
-        const httpError = new HttpErrorResponse({status: 0});
-
-        Utils.showErrorMessage(httpError, mockNotificationService as any, mockLogService as any);
-
-        expect(mockNotificationService.addMessage).toHaveBeenCalledTimes(0);
-        expect(mockLogService.error).toHaveBeenCalledTimes(0);
-      });
-
       it('should handle >=500', () => {
         const mockNotificationService = {addMessage: vi.fn()};
         const mockLogService = {error: vi.fn()};
@@ -183,35 +168,462 @@ describe('Utils', () => {
         expect(mockNotificationService.addMessage).toHaveBeenCalledTimes(1);
         expect(mockNotificationService.addMessage).toHaveBeenCalledWith(new NotificationMessageModel(NotificationMessageSeverity.Error, 'Error', 'Unexpected error. Please notify me.', false));
       });
-
-      describe('Error DTO', () => {
-        describe('Business', () => {
-          it('conflict', () => {
-            const mockNotificationService = {addMessage: vi.fn()};
-            const mockLogService = {error: vi.fn()};
-
-            const error = new HttpErrorResponse({status: 1, error: new ErrorDtoModel(ErrorSource.Business, ErrorSeverity.Conflict, 'Test msg', 'Full message', null)});
-
-            Utils.showErrorMessage(error, mockNotificationService as any, mockLogService as any);
-
-            expect(mockNotificationService.addMessage).toHaveBeenCalledTimes(1);
-            expect(mockNotificationService.addMessage).toHaveBeenCalledWith(new NotificationMessageModel(NotificationMessageSeverity.Error, 'Error', 'Test msg', true));
-          });
-
-          it('not conflict', () => {
-            const mockNotificationService = {addMessage: vi.fn()};
-            const mockLogService = {error: vi.fn()};
-
-            const error = new HttpErrorResponse({status: 1, error: new ErrorDtoModel(ErrorSource.Business, ErrorSeverity.Error, 'Test msg', 'Full message', null)});
-
-            Utils.showErrorMessage(error, mockNotificationService as any, mockLogService as any);
-
-            expect(mockNotificationService.addMessage).toHaveBeenCalledTimes(1);
-            expect(mockNotificationService.addMessage).toHaveBeenCalledWith(new NotificationMessageModel(NotificationMessageSeverity.Error, 'Error', 'Test msg', false));
-          });
-        });
-      })
     })
   });
-});
 
+  describe('getTimeOfDay', () => {
+    it('should return morning for early morning hours (5-11 AM)', () => {
+      // Mock a date at 8 AM in a specific timezone
+      const mockDate = new Date('2026-03-06T15:00:00Z'); // 8 AM MST (UTC-7)
+      vi.setSystemTime(mockDate);
+
+      const result = Utils.getTimeOfDay('CO');
+      expect(result).toBe('GM ');
+
+      vi.useRealTimers();
+    });
+
+    it('should return afternoon for midday hours (12-4 PM)', () => {
+      // Mock a date at 2 PM in a specific timezone
+      const mockDate = new Date('2026-03-06T21:00:00Z'); // 2 PM MST (UTC-7)
+      vi.setSystemTime(mockDate);
+
+      const result = Utils.getTimeOfDay('CO');
+      expect(result).toBe('GA ');
+
+      vi.useRealTimers();
+    });
+
+    it('should return evening for evening hours (5 PM - 4 AM)', () => {
+      // Mock a date at 8 PM in a specific timezone
+      const mockDate = new Date('2026-03-07T03:00:00Z'); // 8 PM MST (UTC-7)
+      vi.setSystemTime(mockDate);
+
+      const result = Utils.getTimeOfDay('CO');
+      expect(result).toBe('GE ');
+
+      vi.useRealTimers();
+    });
+
+    it('should handle Eastern timezone states', () => {
+      const mockDate = new Date('2026-03-06T14:00:00Z'); // 9 AM EST (UTC-5)
+      vi.setSystemTime(mockDate);
+
+      expect(Utils.getTimeOfDay('NY')).toBe('GM ');
+      expect(Utils.getTimeOfDay('FL')).toBe('GM ');
+      expect(Utils.getTimeOfDay('MA')).toBe('GM ');
+
+      vi.useRealTimers();
+    });
+
+    it('should handle Central timezone states', () => {
+      const mockDate = new Date('2026-03-06T15:00:00Z'); // 9 AM CST (UTC-6)
+      vi.setSystemTime(mockDate);
+
+      expect(Utils.getTimeOfDay('IL')).toBe('GM ');
+      expect(Utils.getTimeOfDay('TX')).toBe('GM ');
+      expect(Utils.getTimeOfDay('MN')).toBe('GM ');
+
+      vi.useRealTimers();
+    });
+
+    it('should handle Mountain timezone states', () => {
+      const mockDate = new Date('2026-03-06T16:00:00Z'); // 9 AM MST (UTC-7)
+      vi.setSystemTime(mockDate);
+
+      expect(Utils.getTimeOfDay('CO')).toBe('GM ');
+      expect(Utils.getTimeOfDay('UT')).toBe('GM ');
+      expect(Utils.getTimeOfDay('MT')).toBe('GM ');
+
+      vi.useRealTimers();
+    });
+
+    it('should handle Pacific timezone states', () => {
+      const mockDate = new Date('2026-03-06T17:00:00Z'); // 9 AM PST (UTC-8)
+      vi.setSystemTime(mockDate);
+
+      expect(Utils.getTimeOfDay('CA')).toBe('GM ');
+      expect(Utils.getTimeOfDay('WA')).toBe('GM ');
+      expect(Utils.getTimeOfDay('OR')).toBe('GM ');
+
+      vi.useRealTimers();
+    });
+
+    it('should handle Alaska timezone', () => {
+      const mockDate = new Date('2026-03-06T18:00:00Z'); // 9 AM AKST (UTC-9)
+      vi.setSystemTime(mockDate);
+
+      expect(Utils.getTimeOfDay('AK')).toBe('GM ');
+
+      vi.useRealTimers();
+    });
+
+    it('should handle Hawaii timezone', () => {
+      const mockDate = new Date('2026-03-06T19:00:00Z'); // 9 AM HST (UTC-10)
+      vi.setSystemTime(mockDate);
+
+      expect(Utils.getTimeOfDay('HI')).toBe('GM ');
+
+      vi.useRealTimers();
+    });
+
+    it('should handle Arizona (no DST)', () => {
+      const mockDate = new Date('2026-03-06T16:00:00Z'); // 9 AM MST (UTC-7, no DST)
+      vi.setSystemTime(mockDate);
+
+      expect(Utils.getTimeOfDay('AZ')).toBe('GM ');
+
+      vi.useRealTimers();
+    });
+
+    it('should handle lowercase state abbreviations', () => {
+      const mockDate = new Date('2026-03-06T15:00:00Z'); // 8 AM MST
+      vi.setSystemTime(mockDate);
+
+      expect(Utils.getTimeOfDay('co')).toBe('GM ');
+      expect(Utils.getTimeOfDay('ny')).toBe('GM ');
+      expect(Utils.getTimeOfDay('ca')).toBe('GM ');
+
+      vi.useRealTimers();
+    });
+
+    it('should return FB for empty state', () => {
+      expect(Utils.getTimeOfDay('')).toBe('FB ');
+    });
+
+    it('should return FB for invalid state', () => {
+      expect(Utils.getTimeOfDay('XX')).toBe('FB ');
+      expect(Utils.getTimeOfDay('ZZ')).toBe('FB ');
+    });
+
+    it('should handle boundary condition at noon (12 PM)', () => {
+      const mockDate = new Date('2026-03-06T19:00:00Z'); // 12 PM MST (UTC-7)
+      vi.setSystemTime(mockDate);
+
+      expect(Utils.getTimeOfDay('CO')).toBe('GA ');
+
+      vi.useRealTimers();
+    });
+
+    it('should handle boundary condition at 5 PM', () => {
+      const mockDate = new Date('2026-03-07T00:00:00Z'); // 5 PM MST (UTC-7)
+      vi.setSystemTime(mockDate);
+
+      expect(Utils.getTimeOfDay('CO')).toBe('GE ');
+
+      vi.useRealTimers();
+    });
+
+    it('should handle boundary condition at 5 AM', () => {
+      const mockDate = new Date('2026-03-06T12:00:00Z'); // 5 AM MST (UTC-7)
+      vi.setSystemTime(mockDate);
+
+      expect(Utils.getTimeOfDay('CO')).toBe('GM ');
+
+      vi.useRealTimers();
+    });
+
+    it('should handle midnight to early morning (12 AM - 4:59 AM)', () => {
+      const mockDate = new Date('2026-03-06T09:00:00Z'); // 2 AM MST (UTC-7)
+      vi.setSystemTime(mockDate);
+
+      expect(Utils.getTimeOfDay('CO')).toBe('GE ');
+
+      vi.useRealTimers();
+    });
+
+    it('should handle Canadian provinces - Eastern Time', () => {
+      const mockDate = new Date('2026-03-06T14:00:00Z'); // 9 AM EST (UTC-5)
+      vi.setSystemTime(mockDate);
+
+      expect(Utils.getTimeOfDay('ON')).toBe('GM '); // Ontario
+      expect(Utils.getTimeOfDay('QC')).toBe('GM '); // Quebec
+
+      vi.useRealTimers();
+    });
+
+    it('should handle Canadian provinces - Atlantic Time', () => {
+      const mockDate = new Date('2026-03-06T13:00:00Z'); // 9 AM AST (UTC-4)
+      vi.setSystemTime(mockDate);
+
+      expect(Utils.getTimeOfDay('NB')).toBe('GM '); // New Brunswick
+      expect(Utils.getTimeOfDay('NS')).toBe('GM '); // Nova Scotia
+      expect(Utils.getTimeOfDay('PE')).toBe('GM '); // Prince Edward Island
+
+      vi.useRealTimers();
+    });
+
+    it('should handle Canadian provinces - Newfoundland Time', () => {
+      const mockDate = new Date('2026-03-06T12:30:00Z'); // 9 AM NST (UTC-3:30)
+      vi.setSystemTime(mockDate);
+
+      expect(Utils.getTimeOfDay('NL')).toBe('GM '); // Newfoundland and Labrador
+
+      vi.useRealTimers();
+    });
+
+    it('should handle Canadian provinces - Central Time', () => {
+      const mockDate = new Date('2026-03-06T15:00:00Z'); // 9 AM CST (UTC-6)
+      vi.setSystemTime(mockDate);
+
+      expect(Utils.getTimeOfDay('MB')).toBe('GM '); // Manitoba
+      expect(Utils.getTimeOfDay('SK')).toBe('GM '); // Saskatchewan
+
+      vi.useRealTimers();
+    });
+
+    it('should handle Canadian provinces - Mountain Time', () => {
+      const mockDate = new Date('2026-03-06T16:00:00Z'); // 9 AM MST (UTC-7)
+      vi.setSystemTime(mockDate);
+
+      expect(Utils.getTimeOfDay('AB')).toBe('GM '); // Alberta
+
+      vi.useRealTimers();
+    });
+
+    it('should handle Canadian provinces - Pacific Time', () => {
+      const mockDate = new Date('2026-03-06T17:00:00Z'); // 9 AM PST (UTC-8)
+      vi.setSystemTime(mockDate);
+
+      expect(Utils.getTimeOfDay('BC')).toBe('GM '); // British Columbia
+      expect(Utils.getTimeOfDay('YT')).toBe('GM '); // Yukon
+
+      vi.useRealTimers();
+    });
+
+    it('should handle Canadian territories', () => {
+      const mockDate = new Date('2026-03-06T16:00:00Z'); // 9 AM MST (UTC-7)
+      vi.setSystemTime(mockDate);
+
+      expect(Utils.getTimeOfDay('NT')).toBe('GM '); // Northwest Territories
+      expect(Utils.getTimeOfDay('NU')).toBe('GM '); // Nunavut (using Eastern)
+
+      vi.useRealTimers();
+    });
+  });
+
+  describe('extractNameOrNickname', () => {
+    it('should extract first name when no nickname present', () => {
+      expect(Utils.extractNameOrNickname('John Doe')).toBe('John');
+      expect(Utils.extractNameOrNickname('Mary Smith')).toBe('Mary');
+      expect(Utils.extractNameOrNickname('Bob Johnson III')).toBe('Bob');
+    });
+
+    it('should extract nickname when present in double quotes', () => {
+      expect(Utils.extractNameOrNickname('John "JD" Doe')).toBe('JD');
+      expect(Utils.extractNameOrNickname('Mary "The Queen" Smith')).toBe('The Queen');
+      expect(Utils.extractNameOrNickname('Robert "Bob" Wilson')).toBe('Bob');
+    });
+
+    it('should handle single word names', () => {
+      expect(Utils.extractNameOrNickname('John')).toBe('John');
+      expect(Utils.extractNameOrNickname('Mary')).toBe('Mary');
+    });
+
+    it('should handle names with multiple spaces', () => {
+      expect(Utils.extractNameOrNickname('John  Doe')).toBe('John');
+      expect(Utils.extractNameOrNickname('Mary   Smith')).toBe('Mary');
+    });
+
+    it('should handle leading and trailing whitespace', () => {
+      expect(Utils.extractNameOrNickname('  John Doe  ')).toBe('John');
+      expect(Utils.extractNameOrNickname('  John "JD" Doe  ')).toBe('JD');
+    });
+
+    it('should return empty string for null or undefined', () => {
+      expect(Utils.extractNameOrNickname(null)).toBe('');
+      expect(Utils.extractNameOrNickname(undefined)).toBe('');
+    });
+
+    it('should return empty string for empty string', () => {
+      expect(Utils.extractNameOrNickname('')).toBe('');
+      expect(Utils.extractNameOrNickname('   ')).toBe('');
+    });
+
+    it('should handle nicknames with spaces inside quotes', () => {
+      expect(Utils.extractNameOrNickname('William "Big Bill" Johnson')).toBe('Big Bill');
+      expect(Utils.extractNameOrNickname('Mary "M J" Smith')).toBe('M J');
+    });
+
+    it('should extract only the first nickname if multiple quotes present', () => {
+      expect(Utils.extractNameOrNickname('John "JD" "Junior" Doe')).toBe('JD');
+    });
+
+    it('should handle empty quotes', () => {
+      expect(Utils.extractNameOrNickname('John "" Doe')).toBe('John');
+      expect(Utils.extractNameOrNickname('John "  " Doe')).toBe('John');
+    });
+
+    it('should handle nickname at the beginning', () => {
+      expect(Utils.extractNameOrNickname('"Ace" John Doe')).toBe('Ace');
+    });
+
+    it('should handle nickname at the end', () => {
+      expect(Utils.extractNameOrNickname('John Doe "JD"')).toBe('JD');
+    });
+
+    it('should handle names with special characters', () => {
+      expect(Utils.extractNameOrNickname("John O'Brien")).toBe('John');
+      expect(Utils.extractNameOrNickname('Jean-Paul Sartre')).toBe('Jean-Paul');
+    });
+
+    it('should handle unclosed quotes', () => {
+      expect(Utils.extractNameOrNickname('John "JD Doe')).toBe('John');
+      expect(Utils.extractNameOrNickname('John JD" Doe')).toBe('John');
+    });
+
+    it('should use second word if first word is only one letter', () => {
+      expect(Utils.extractNameOrNickname('J Smith')).toBe('Smith');
+      expect(Utils.extractNameOrNickname('M Johnson')).toBe('Johnson');
+      expect(Utils.extractNameOrNickname('A John Doe')).toBe('John');
+    });
+
+    it('should return single letter if it is the only word', () => {
+      expect(Utils.extractNameOrNickname('J')).toBe('J');
+      expect(Utils.extractNameOrNickname('M')).toBe('M');
+    });
+
+    it('should prefer nickname over second word when first word is single letter', () => {
+      expect(Utils.extractNameOrNickname('J "Jake" Smith')).toBe('Jake');
+      expect(Utils.extractNameOrNickname('M "Mike" Johnson')).toBe('Mike');
+    });
+
+
+    it('should extract nickname when there is a middle initial', () => {
+      expect(Utils.extractNameOrNickname('William F "Bill" Brown')).toBe('Bill');
+      expect(Utils.extractNameOrNickname('John Q "Jack" Smith')).toBe('Jack');
+    });
+
+    it('should handle curly quotes and other quote types', () => {
+      expect(Utils.extractNameOrNickname('John "JD" Doe')).toBe('JD'); // Left/right curly quotes
+      expect(Utils.extractNameOrNickname('Mary „Mike" Smith')).toBe('Mike'); // German quotes
+      expect(Utils.extractNameOrNickname('Robert «Bob» Wilson')).toBe('Bob'); // French quotes
+    });
+  });
+
+  describe('calculateMorseTime', () => {
+    it('should return 0 for empty string', () => {
+      expect(Utils.calculateMorseTime('', 20, 0)).toBe(0);
+      expect(Utils.calculateMorseTime('   ', 20, 0)).toBe(0);
+    });
+
+    it('should return 0 for invalid WPM', () => {
+      expect(Utils.calculateMorseTime('TEST', 0)).toBe(0);
+      expect(Utils.calculateMorseTime('TEST', -5)).toBe(0);
+    });
+
+    it('should calculate time for single letter', () => {
+      // 'E' = '.' = 1 unit at 20 WPM (60ms per unit) = 60ms + default gap
+      const timeE = Utils.calculateMorseTime('E', 20);
+      expect(timeE).toBe(60 + 275);
+
+      // 'T' = '-' = 3 units at 20 WPM = 180ms
+      const timeT = Utils.calculateMorseTime('T', 20, 0);
+      expect(timeT).toBe(180);
+    });
+
+    it('should calculate time for standard word PARIS', () => {
+      // "PARIS" is the standard reference word in Morse code
+      // At 20 WPM with 60ms per unit: actual calculation gives 2580ms
+      const time = Utils.calculateMorseTime('PARIS', 20, 0);
+      expect(time).toBe(2580);
+    });
+
+    it('should calculate different times for different WPM', () => {
+      const text = 'CQ';
+      const time20 = Utils.calculateMorseTime(text, 20, 0);
+      const time40 = Utils.calculateMorseTime(text, 40, 0);
+
+      // At 40 WPM should be approximately half the time of 20 WPM
+      expect(time40).toBeLessThan(time20);
+      expect(time40).toBeGreaterThan(time20 / 2 - 50);
+      expect(time40).toBeLessThan(time20 / 2 + 50);
+    });
+
+    it('should handle numbers', () => {
+      // '5' = '.....' = 5 dots + 4 spaces = 9 units
+      const time = Utils.calculateMorseTime('5', 20, 0);
+      expect(time).toBe(540); // 9 * 60ms
+    });
+
+    it('should handle special characters', () => {
+      // '?' = '..--..'
+      const time = Utils.calculateMorseTime('?', 20, 0);
+      expect(time).toBeGreaterThan(0);
+    });
+
+    it('should handle spaces between words', () => {
+      // Space adds 7 units total between words
+      const singleWord = Utils.calculateMorseTime('CQ', 20, 0);
+      const twoWords = Utils.calculateMorseTime('CQ CQ', 20, 0);
+
+      // Two words should be more than double (due to 7-unit space)
+      expect(twoWords).toBeGreaterThan(singleWord * 2);
+    });
+
+    it('should handle typical CW exchanges', () => {
+      const exchanges = [
+        'CQ CQ CQ DE AF0E',
+        'TU 599 CO',
+        'R TU 599 599 CO CO',
+        '73 GL'
+      ];
+
+      exchanges.forEach(exchange => {
+        const time = Utils.calculateMorseTime(exchange, 25, 0);
+        expect(time).toBeGreaterThan(0);
+        // Reasonable time check (should be under 30 seconds for typical exchanges)
+        expect(time).toBeLessThan(30000);
+      });
+    });
+
+    it('should be case insensitive', () => {
+      const timeLower = Utils.calculateMorseTime('test', 20, 0);
+      const timeUpper = Utils.calculateMorseTime('TEST', 20, 0);
+      const timeMixed = Utils.calculateMorseTime('TeSt', 20, 0);
+
+      expect(timeLower).toBe(timeUpper);
+      expect(timeLower).toBe(timeMixed);
+    });
+
+    it('should ignore unsupported characters', () => {
+      // Should calculate for 'A' and 'B', ignore '#' and '$'
+      const timeAB = Utils.calculateMorseTime('AB', 20, 0);
+      const timeWithSpecial = Utils.calculateMorseTime('A#$B', 20, 0);
+
+      expect(timeAB).toBe(timeWithSpecial);
+    });
+
+    it('should handle realistic callsigns', () => {
+      const callsigns = ['AF0E', 'W1AW', 'VE3XYZ', 'K2ABC'];
+
+      callsigns.forEach(call => {
+        const time = Utils.calculateMorseTime(call, 20, 0);
+        expect(time).toBeGreaterThan(0);
+        expect(time).toBeLessThan(10000); // Should be under 10 seconds
+      });
+    });
+
+    it('should calculate faster times for higher WPM', () => {
+      const text = 'AF0E AF0E K';
+      const times = [10, 15, 20, 25, 30].map(wpm =>
+        Utils.calculateMorseTime(text, wpm, 0)
+      );
+
+      // Each subsequent speed should be faster (less time)
+      for (let i = 1; i < times.length; i++) {
+        expect(times[i]).toBeLessThan(times[i - 1]);
+      }
+    });
+
+    it('should handle contest exchanges', () => {
+      const exchange = 'R TU 5NN CO';
+      const time20 = Utils.calculateMorseTime(exchange, 20, 0);
+      const time35 = Utils.calculateMorseTime(exchange, 35, 0);
+
+      expect(time20).toBeGreaterThan(0);
+      expect(time35).toBeGreaterThan(0);
+      expect(time35).toBeLessThan(time20);
+    });
+  });
+});

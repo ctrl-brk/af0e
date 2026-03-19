@@ -1,6 +1,8 @@
 ﻿using System.Net;
+using AF0E.Common.Qrz;
 using AF0E.DB;
 using AF0E.Services.Pota;
+using AF0E.Services.Qrz;
 using Logbook.Api.Handlers;
 using Logbook.Api.Models;
 using Logbook.Api.Security;
@@ -19,6 +21,8 @@ public static class V1Endpoints
         RegisterLogbookEndpoints(builder);
         RegisterPotaEndpoints(builder);
         RegisterGridTrackerEndpoints(builder);
+        RegisterQrzEndpoints(builder);
+        RegisterToolsEndpoints(builder);
     }
 
     private static void RegisterLogbookEndpoints(IEndpointRouteBuilder v1Builder)
@@ -122,8 +126,8 @@ public static class V1Endpoints
                 TypedResults.Ok(await PotaHandlers.CheckActivity(WebUtility.UrlDecode(call), potaApiService)))
             .WithName("PotaActivityCall");
 
-        builder.MapGet("activity", async (string? band, string? mode, IPotaApiService potaApiService, HrdDbContext dbContext) =>
-                TypedResults.Ok(await PotaHandlers.CheckActivity(band, mode, potaApiService, dbContext)))
+        builder.MapGet("activity", async (string? band, string? mode, string? dups, IPotaApiService potaApiService, HrdDbContext dbContext) =>
+                TypedResults.Ok(await PotaHandlers.CheckActivity(band, mode, !string.IsNullOrEmpty(dups), potaApiService, dbContext)))
             .WithName("PotaActivity");
 
 
@@ -164,5 +168,47 @@ public static class V1Endpoints
         builder.MapGet("pota/{parkNum}", async (string parkNum, HrdDbContext dbContext) =>
                 TypedResults.Ok(await GridTrackerHandlers.GetGridTrackerParkStats(parkNum, dbContext)))
             .WithName("GridtrackerParkStats");
+    }
+
+    private static void RegisterQrzEndpoints(IEndpointRouteBuilder v1Builder)
+    {
+        var builder = v1Builder.MapGroup("qrz").WithTags("qrz.com");
+
+        builder.MapGet("{call}", async Task<Results<NotFound, Ok<QrzCallsign>, ProblemHttpResult>> (string call, IQrzService qrzService, CancellationToken ct) =>
+        {
+            var (response, notFound) = await QrzHandlers.Lookup(call, qrzService, ct);
+
+            if (notFound)
+                return TypedResults.NotFound();
+
+            return response is null ? TypedResults.Problem("QRZ lookup failed") : TypedResults.Ok(response.Callsign);
+        })
+        .RequireAuthorization(Policies.AdminOnly)
+        .WithName("QrzCallLookup");
+    }
+
+    private static void RegisterToolsEndpoints(IEndpointRouteBuilder v1Builder)
+    {
+        var builder = v1Builder.MapGroup("tools").WithTags("tools");
+
+        builder.MapGet("grid", Results<BadRequest<string>, Ok<string>> (string? latitude, string? longitude) =>
+        {
+            if (string.IsNullOrWhiteSpace(latitude) || string.IsNullOrWhiteSpace(longitude))
+                return TypedResults.BadRequest("Both latitude and longitude parameters are required");
+
+            if (!double.TryParse(latitude, out var lat))
+                return TypedResults.BadRequest($"Invalid latitude value: {latitude}");
+
+            if (!double.TryParse(longitude, out var lon))
+                return TypedResults.BadRequest($"Invalid longitude value: {longitude}");
+
+            var square = UtilsHandlers.CoordinatesToGridSquare(lat, lon);
+
+            if (square.Length != 6)
+                return TypedResults.BadRequest(square);
+
+            return TypedResults.Ok(square);
+        })
+        .WithName("GridLookup");
     }
 }

@@ -18,26 +18,36 @@ public static class HrdLogExtensions
         log.ColBand = qso.Band;
         log.ColFreq = qso.Freq;
         log.ColMode = qso.Mode;
-        log.ColRstSent = qso.RstSent;
-        log.ColRstRcvd = qso.RstRcvd;
-        log.ColMyCity = qso.MyCity;
-        log.ColMyCnty = qso.MyCounty;
-        log.ColMyState = qso.MyState;
-        log.ColMyCountry = qso.MyCountry;
+        log.ColRstSent = N(qso.RstSent);
+        log.ColRstRcvd = N(qso.RstRcvd);
+        log.ColName = N(qso.Name);
+        log.ColCnty = N(qso.County);
+        log.ColState = N(qso.State)?.ToUpperInvariant();
+        log.ColCountry = N(qso.Country);
+        log.ColGridsquare = N(qso.Grid);
+        log.ColCqz = qso.CqZone;
+        log.ColItuz = qso.ItuZone;
+        log.ColMyCity = N(qso.MyCity);
+        log.ColDxcc = qso.Dxcc.ToString();
+        log.ColMyCnty = N(qso.MyCounty);
+        log.ColMyState = N(qso.MyState);
+        log.ColMyCountry = N(qso.MyCountry);
         log.ColMyCqZone = qso.MyCqZone;
         log.ColMyItuZone = qso.MyItuZone;
-        log.ColMyGridsquare = qso.MyGrid;
-        log.ColQslSent = qso.QslSent;
+        log.ColMyGridsquare = N(qso.MyGrid);
+        log.ColQslSent = N(qso.QslSent, "N");
         log.ColQslsdate = qso.QslSentDate;
-        log.ColQslSentVia = qso.QslSentVia;
-        log.ColQslRcvd = qso.QslRcvd;
+        log.ColQslSentVia = N(qso.QslSentVia);
+        log.ColQslRcvd = N(qso.QslRcvd, "N");
         log.ColQslrdate = qso.QslRcvdDate;
-        log.ColQslRcvdVia = qso.QslRcvdVia;
-        log.SiteComment = qso.SiteComment;
+        log.ColQslRcvdVia = N(qso.QslRcvdVia);
+        log.SiteComment = N(qso.SiteComment);
 
         if (includeAdminFields)
         {
             log.ColComment = qso.Comment;
         }
     }
+
+    private static string? N(string? value, string? def = null) => string.IsNullOrWhiteSpace(value) ? def : value;
 }

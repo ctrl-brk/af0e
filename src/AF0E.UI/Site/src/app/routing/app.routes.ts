@@ -5,6 +5,8 @@ import {StatsComponent} from '../components/stats/stats.component';
 import {Status401Component} from '../components/error/401.component';
 import {rolePermissionGuard} from './route-guards';
 import {Roles} from '../shared/roles';
+import {UtilsComponent} from '../components/utils/utils.component';
+import {UtilsGridComponent} from '../components/utils/utils-grid.component';
 
 export const routes: Routes = [
   {
@@ -74,6 +76,24 @@ export const routes: Routes = [
       {
         path: '',
         loadComponent: () => import('../components/map/map.component').then(m => m.MapComponent),
+      },
+    ]
+  },
+  {
+    path: 'tools',
+    children: [
+      {
+        path: '',
+        component: UtilsComponent,
+      },
+      {
+        path: 'grid',
+        component: UtilsGridComponent,
+      },
+      {
+        path: 'winkeyer',
+        loadComponent: () => import('../components/utils/winkeyer-host.component').then(m => m.WinkeyerHostComponent),
+        canActivate: [rolePermissionGuard([Roles.Admin])],
       },
     ]
   },

@@ -1,0 +1,32 @@
+main.utils-content {
+  display: flex;
+  justify-content: center;
+  margin-top: 4.75rem;
+
+  .p-card {
+    min-width: 30rem;
+  }
+
+  .utils-links {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .utils-link-button {
+    font-size: 1rem;
+  }
+
+  .blue-link {
+    color: #28a4e9;
+    &:hover {
+      color: #28a4e9;
+    }
+    .p-button-icon {
+      color: #28a4e9;
+    }
+    &:hover .p-button-icon {
+      color: #28a4e9;
+    }
+  }
+}

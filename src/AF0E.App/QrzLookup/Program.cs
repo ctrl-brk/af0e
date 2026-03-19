@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using AF0E.Services.Qrz;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -21,6 +22,8 @@ var host = new HostBuilder()
         svc.Configure<ConsoleLifetimeOptions>(opt => opt.SuppressStatusMessages = true)
             .Configure<HostOptions>(opt => opt.ShutdownTimeout = TimeSpan.FromSeconds(10))
             .Configure<AppSettings>(ctx.Configuration.GetSection("AppSettings"))
+            .Configure<QrzSettings>(ctx.Configuration.GetSection("QrzSettings"))
+            .AddSingleton<IQrzService, QrzService>()
             .AddSingleton<IHostedService, HostedService>();
     })
 

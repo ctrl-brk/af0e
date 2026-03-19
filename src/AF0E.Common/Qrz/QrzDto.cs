@@ -1,27 +1,22 @@
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 using System.Xml.Serialization;
 
-// ReSharper disable UnusedMember.Global
-// ReSharper disable InconsistentNaming
-// ReSharper disable CommentTypo
-
-namespace QrzLookup;
+namespace AF0E.Common.Qrz;
 
 [XmlRoot("QRZDatabase", Namespace = "http://xmldata.qrz.com")]
-#pragma warning disable CA1515
-public class QRZDatabase
+public class QrzDatabase
 {
     [XmlAttribute("version")]
     public string? Version { get; set; }
     [XmlElement("Callsign")]
-    public Callsign Callsign { get; set; } = null!;
+    public QrzCallsign Callsign { get; set; } = null!;
     [XmlElement("Session")]
-    public Session Session { get; set; } = null!;
+    public QrzSession Session { get; set; } = null!;
 }
 
 [SuppressMessage("Naming", "CA1707:Identifiers should not contain underscores")]
 [SuppressMessage("ReSharper", "IdentifierTypo")]
-public class Callsign
+public class QrzCallsign
 {
     public string call { get; set; } = null!;
     public string? aliases { get; set; }
@@ -87,8 +82,7 @@ public class Callsign
     public string? user { get; set; } //User who manages this callsign on QRZ
 }
 
-// ReSharper disable once ClassNeverInstantiated.Global
-public class Session
+public class QrzSession
 {
     public string? Key { get; set; }
     public uint Count { get; set; }

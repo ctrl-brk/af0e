@@ -1,0 +1,37 @@
+<main class="winkeyer-content">
+  <p-card header="Winkeyer">
+    <div class="winkeyer-rows">
+      @for (row of macros; track $index) {
+        <div class="winkeyer-row">
+          <p-floatlabel variant="on" class="shortcut-field">
+            <p-select
+              inputId="shortcut-{{$index}}"
+              [options]="fKeyOptions"
+              [(ngModel)]="row.shortcut"
+              optionLabel="label"
+              optionValue="value" />
+            <label for="shortcut-{{$index}}">Shortcut</label>
+          </p-floatlabel>
+
+          <p-floatlabel variant="on" class="text-field">
+            <input
+              pInputText
+              id="macro-{{$index}}"
+              [(ngModel)]="row.text"
+              maxlength="256" />
+            <label for="macro-{{$index}}">Text to Send</label>
+          </p-floatlabel>
+
+          <p-button
+            label="Send"
+            icon="pi pi-send"
+            severity="primary"
+            [disabled]="!row.text?.trim()"
+            [pTooltip]="row.shortcut ? ('Shortcut: ' + row.shortcut) : 'No shortcut selected'"
+            tooltipPosition="top"
+            (onClick)="sendCw($index)" />
+        </div>
+      }
+    </div>
+  </p-card>
+</main>

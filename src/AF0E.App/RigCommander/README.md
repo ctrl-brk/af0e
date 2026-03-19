@@ -1,15 +1,30 @@
 # Rig Commander
 
-Lightweight .NET console application that exposes a simple HTTP API to control a radio (IC-9100) over CI-V via the built-in USB port.
+Lightweight **.NET console application** that exposes a simple HTTP API to control amateur radio equipment.
 
-It allows:
+Currently supported devices:
 
-- Set frequency and mode
-- Read current frequency and mode
+- **Icom IC-9100** via CI‑V over USB
+- **Yaesu FT-8x7** via CI‑V over USB
+- **K1EL WinKeyer 3 (WK3)** for CW keying
 
-This tool is intended for automation, remote control, and integration with other systems.
+The server exposes an HTTP interface that allows automation, remote control, and integration with logging or contest software.
 
-------------------------------------------------------------------------
+---
+
+# Server
+
+The server listens on:
+
+```
+http://localhost:5000
+```
+
+---
+
+# Configuration
+
+Example CI‑V radio configuration:
 
 ```csharp
 var civ = new CivIcomSerial(
@@ -20,125 +35,119 @@ var civ = new CivIcomSerial(
 );
 ```
 
-The server listens on: http://localhost:5000
+Example WinKeyer configuration:
 
-### API summary
+```
+Port: COM5
+Baud: 1200
+Device: WinKeyer 3
+```
 
-| Method | Endpoint           | Purpose                             |
-| -----: | ------------------ | ------------------------------------|
-|    GET | `/health`          | Simple health check                 |
-|    GET | `/radio/frequency` | Read current frequency (Hz)         |
-|    GET | `/radio/mode`      | Read current mode and filter slot   |
-|    GET | `/radio/status`    | Read frequency + mode + filter slot |
-|   POST | `/radio/status`    | Set frequency and/or mode           |
+---
 
+# API Summary
 
-### Health check
+## General
+
+| Method | Endpoint | Purpose |
+|------:|----------|--------|
+| GET | `/health` | Health check |
+
+---
+
+## Radio Control (IC‑9100)
+
+| Method | Endpoint | Purpose |
+|------:|----------|--------|
+| GET | `/radio/frequency` | Read current frequency |
+| GET | `/radio/mode` | Read current mode |
+| GET | `/radio/status` | Read full radio state |
+| POST | `/radio/status` | Set frequency and/or mode |
+
+---
+
+## CW Keyer (WinKeyer 3)
+
+| Method | Endpoint | Purpose |
+|------:|----------|--------|
+| GET | `/winkeyer/status` | Keyer status |
+| POST | `/winkeyer/wpm` | Set persistent CW speed |
+| POST | `/winkeyer/send` | Send CW text/script |
+
+---
+
+# Health Check
+
 ```
 curl http://localhost:5000/health
 ```
-#### Response
-```
+
+Response
+
+```json
 { "ok": true }
 ```
 
-------------------------------------------------------------------------
+---
 
-### Read Frequency
-Reads current frequency in Hz (CI-V command 0x03).
-```
-curl http://localhost:5000/radio/frequency
-```
-#### Response
-```
-{
-  "ok": true,
-  "frequencyHz": 145500000
-}
-```
+# WinKeyer Send Examples
 
-### Read Mode
-Reads current mode and the active filter slot (CI-V command 0x04).
-#### Request
-```
-curl http://localhost:5000/radio/mode
-```
-#### Response
-```
-{
-  "ok": true,
-  "mode": "USB-D",
-  "filter": 1,
-  "data": true
-}
-```
-Note: filter is filter slot number (FIL1--FIL3), not bandwidth in Hz.
-
-### Read Status
-```
-curl http://localhost:5000/radio/status
-```
-#### Response
-```
-{
-  "ok": true,
-  "frequencyHz": 145500000,
-  "mode": "FM",
-  "filter": 1,
-  "data": false
-}
-```
-------------------------------------------------------------------------
-
-## Set Frequency and/or Mode
-
-POST /radio/status
-
-Content-Type: application/json
-
-### Set Frequency Only
+Basic send:
 
 ```
-curl -X POST http://localhost:5000/radio/status -H "Content-Type: application/json" -d "{\"FrequencyHz\":14074000}"
+curl -X POST http://localhost:5000/winkeyer/send -H "Content-Type: application/json" -d "{"Text":"CQ CQ DE AF0E K"}"
 ```
 
-### Set Mode Only
+Set speed and send:
 
-``` bash
-curl -X POST http://localhost:5000/radio/status -H "Content-Type: application/json" -d "{\"Mode\":\"USB\"}"
+```
+curl -X POST http://localhost:5000/winkeyer/send -H "Content-Type: application/json" -d "{"Text":"CQ CQ DE AF0E K","Wpm":20}"
 ```
 
-### Set Frequency and Mode
+Repeat message:
 
-``` bash
-curl -X POST http://localhost:5000/radio/status -H "Content-Type: application/json" -d "{\"FrequencyHz\":145500000,\"Mode\":\"FM\"}"
+```
+curl -X POST http://localhost:5000/winkeyer/send -H "Content-Type: application/json" -d "{"Text":"CQ CQ DE AF0E K","Repeat":3}"
 ```
 
-### Set USB Digital
+Repeat with delay:
 
-``` bash
-curl -X POST http://localhost:5000/radio/status -H "Content-Type: application/json" -d "{\"Mode\":\"USB-D\"}"
+```
+curl -X POST http://localhost:5000/winkeyer/send -H "Content-Type: application/json" -d "{"Text":"CQ CQ DE AF0E K","Repeat":3,"RepeatDelaySeconds":5}"
 ```
 
-------------------------------------------------------------------------
+---
 
-## Supported Modes
+# Embedded WinKeyer Commands
 
--   LSB
--   USB
--   AM
--   FM
--   WFM
--   CW
--   RTTY
--   RTTYR
--   USB-D
--   LSB-D
+| Command | Description |
+|-------|-------------|
+| `/Snn` | Temporary speed change |
+| `/Wnn` | Wait nn seconds |
+| `/Knn` | Key down nn seconds |
+| `/Rxy` | Send prosign |
+| `/X` | Cancel buffered speed |
 
-------------------------------------------------------------------------
+Examples
 
-## Notes
+```
+CQ CQ /S25 DE AF0E
+```
 
--   Frequency is in Hz
--   Filter is slot number (FIL1--FIL3)
--   Serial access is synchronized internally
+```
+TU /RAR
+```
+
+```
+CQ CQ /W05 DE AF0E
+```
+
+---
+
+# Notes
+
+- Frequency values are expressed in **Hz**
+- Radio filter values represent **filter slots**
+- WinKeyer uses **host mode**
+- `/Snn` affects only the current message
+- `"Wpm"` in `/winkeyer/send` sets persistent speed

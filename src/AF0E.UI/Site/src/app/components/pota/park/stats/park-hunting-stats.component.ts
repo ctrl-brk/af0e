@@ -11,7 +11,7 @@ import {PotaParkModel} from '../../../../models/pota-park.model';
 import {ScrollTop} from 'primeng/scrolltop';
 import {GridPipe, ModeSeverityPipe, QsoModePipe} from '../../../../shared/pipes';
 import {Tag} from 'primeng/tag';
-import {GridMapDirective} from '../../../../shared/directives';
+import {GridMapDirective} from '../../../../shared/directives/grid-map.directive';
 
 @Component({
   selector: 'app-park-hunting-stats',

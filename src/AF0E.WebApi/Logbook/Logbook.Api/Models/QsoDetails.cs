@@ -1,4 +1,5 @@
-﻿using AF0E.DB.Models;
+﻿using System.Text.Json.Serialization;
+using AF0E.DB.Models;
 
 namespace Logbook.Api.Models;
 
@@ -19,6 +20,14 @@ public sealed class QsoDetails
         Mode = log.ColMode!;
         RstSent = log.ColRstSent;
         RstRcvd = log.ColRstRcvd;
+        Name = log.ColName;
+        State = log.ColState;
+        County = log.ColCnty;
+        Country = log.ColCountry;
+        Grid = log.ColGridsquare;
+        CqZone = (int?)log.ColCqz;
+        ItuZone = (int?)log.ColItuz;
+        Dxcc = !string.IsNullOrEmpty(log.ColDxcc) ? int.Parse(log.ColDxcc) : null;
         MyCity = log.ColMyCity;
         MyCounty = log.ColMyCnty;
         MyState = log.ColMyState;
@@ -50,6 +59,15 @@ public sealed class QsoDetails
     public double? FreqRx { get; set; }
     public string Mode { get; set; } = string.Empty;
     public string? RstSent { get; set; }
+    [JsonPropertyName("name_fmt")]
+    public string? Name { get; set; }
+    public string? County { get; set; }
+    public string? State { get; set; }
+    public string? Country { get; set; }
+    public string? Grid { get; set; }
+    public int? CqZone { get; set; }
+    public int? ItuZone { get; set; }
+    public int? Dxcc { get; set; }
     public string? RstRcvd { get; set; }
     public string? MyCity { get; set; }
     public string? MyCounty { get; set; }
@@ -87,23 +105,42 @@ public sealed class QsoDetails
             ColBand = Band,
             ColFreq = Freq,
             ColMode = Mode,
-            ColRstSent = RstSent,
-            ColRstRcvd = RstRcvd,
-            ColMyCity = MyCity,
-            ColMyCnty = MyCounty,
-            ColMyState = MyState,
-            ColMyCountry = MyCountry,
+            ColRstSent = N(RstSent),
+            ColRstRcvd = N(RstRcvd),
+            ColName = N(Name),
+            ColCnty = N(County),
+            ColState = N(State)?.ToUpperInvariant(),
+            ColCountry = N(Country),
+            ColGridsquare = N(Grid),
+            ColCqz = N(CqZone, 0),
+            ColItuz = ItuZone,
+            ColDxcc = Dxcc?.ToString(),
+            ColEqslQslRcvd = "N",
+            ColEqslQslSent = "N",
+            ColForceInit = null,
+            ColLotwQslRcvd = "N",
+            ColLotwQslSent = "N",
+            ColMyCity = N(MyCity),
+            ColMyCnty = N(MyCounty),
+            ColMyState = N(MyState),
+            ColMyCountry = N(MyCountry),
             ColMyCqZone = MyCqZone,
             ColMyItuZone = MyItuZone,
-            ColMyGridsquare = MyGrid,
-            ColQslSent = QslSent,
+            ColMyGridsquare = N(MyGrid),
+            ColQslSent = N(QslSent, "N"),
             ColQslsdate = QslSentDate,
-            ColQslSentVia = QslSentVia,
-            ColQslRcvd = QslRcvd,
+            ColQslSentVia = N(QslSentVia, "D"),
+            ColQslRcvd = N(QslRcvd, "N"),
             ColQslrdate = QslRcvdDate,
-            ColQslRcvdVia = QslRcvdVia,
-            SiteComment = SiteComment,
-            ColComment = includeAdminFields ? Comment : null
+            ColQslRcvdVia = N(QslRcvdVia, "D"),
+            ColQsoRandom = null,
+            ColRxPwr = 0,
+            ColSwl = 1,
+            SiteComment = N(SiteComment),
+            ColComment = includeAdminFields ? N(Comment) : null
         };
     }
+
+    private static string? N(string? value, string? def = null) => string.IsNullOrWhiteSpace(value) ? def : value;
+    private static double? N(double? value, double? def = null) => value ?? def;
 }

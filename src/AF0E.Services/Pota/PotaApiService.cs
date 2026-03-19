@@ -26,7 +26,7 @@ public sealed class PotaApiService(IHttpClientFactory httpClientFactory) : IPota
             .WithActivator(callSign)
             .FirstOrDefault();
 
-        return new PotaActivityInfo(spot?.CallSign ?? callSign, spot is not null, spot?.ParkNum, spot?.FreqKhz, spot?.Band, spot?.Mode, spot?.LastSpotTime);
+        return new PotaActivityInfo(spot?.CallSign ?? callSign, spot is not null, spot?.ParkNum, spot?.Location, spot?.Grid, spot?.FreqKhz, spot?.Band, spot?.Mode, spot?.LastSpotTime);
     }
 
     public async Task<List<PotaActivityInfo>> CheckActivityAsync(string? band = null, string? mode = null, CancellationToken ct = default)
@@ -59,12 +59,14 @@ public sealed class PotaApiService(IHttpClientFactory httpClientFactory) : IPota
         return [.. query
             .OrderByDescending(s => s.SpotTime)
             .Select(s => new PotaActivityInfo(
-                s.Activator, 
-                true, 
-                s.Reference, 
-                s.Frequency, 
-                s.Frequency.Band, 
-                s.Mode, 
+                s.Activator,
+                true,
+                s.Reference,
+                s.LocationDesc,
+                s.Grid4,
+                s.Frequency,
+                s.Frequency.Band,
+                s.Mode,
                 new DateTimeOffset(DateTime.SpecifyKind(s.SpotTime, DateTimeKind.Utc))))];
     }
 }
