@@ -15,4 +15,5 @@ export interface QrzDetailsModel {
   county: string,
   cqzone: number,
   ituzone: number,
+  image: string,
 }

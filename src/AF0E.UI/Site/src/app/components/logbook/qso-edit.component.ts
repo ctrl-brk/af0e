@@ -27,6 +27,7 @@ import {InputNumber} from 'primeng/inputnumber';
 import {DatePicker} from 'primeng/datepicker';
 import {Select} from 'primeng/select';
 import {Button} from 'primeng/button';
+import {RadioButton} from 'primeng/radiobutton';
 import {Textarea} from 'primeng/textarea';
 import {Fieldset} from 'primeng/fieldset';
 import {Tooltip} from 'primeng/tooltip';
@@ -38,6 +39,8 @@ import {PotaActivityModel} from '../../models/pota-activity.model';
 import {GridTrackerLookupModel} from '../../models/gridtracker-lookup.model';
 import {TableModule} from 'primeng/table';
 import {DatePipe} from '@angular/common';
+import {Dialog} from 'primeng/dialog';
+import {Checkbox, CheckboxChangeEvent} from 'primeng/checkbox';
 
 @Component({
   selector: 'app-qso-edit',
@@ -59,6 +62,10 @@ import {DatePipe} from '@angular/common';
     FormsModule,
     TableModule,
     DatePipe,
+    Dialog,
+    RadioButton,
+    Checkbox,
+
   ],
 })
 export class QsoEditComponent {
@@ -74,14 +81,17 @@ export class QsoEditComponent {
 
   logId = input.required<number>();
   callSign = input<string>();
-  showCwButtons = input<boolean>(false);
+  keyerControl = input<boolean>(false);
   potaMode = input<boolean>(false);
+  rigControl = input(false);
+  filtersEnabled = input(false);
   editModeChange = output<boolean>();
   saved = output<any>();
 
   protected qso: QsoDetailModel = null!;
   protected qsoForm!: FormGroup;
   isEditMode = false;
+  protected imgUrl = signal('');
   protected cwCallLabel = signal('???');
   protected cwExchLabel = signal('');
   protected cwExch2Label = signal('');
@@ -89,6 +99,8 @@ export class QsoEditComponent {
   protected cwSending = signal(false);
   protected cwSpeed = signal(22);
   protected callHistory = signal<GridTrackerLookupModel[]>([]);
+  protected cwTextVisible = signal(false);
+
   // Dropdown options
   protected modeOptions = MODE_OPTIONS;
   protected bandOptions = BAND_OPTIONS;
@@ -99,9 +111,12 @@ export class QsoEditComponent {
     this.initializeForm();
 
     const callSignal = toSignal(this.qsoForm.get('call')!.valueChanges);
+    const freqSignal = toSignal(this.qsoForm.get('freq')!.valueChanges);
     const modeSignal = toSignal(this.qsoForm.get('mode')!.valueChanges);
     const rstSentSignal = toSignal(this.qsoForm.get('rstSent')!.valueChanges);
     const stateSignal = toSignal(this.qsoForm.get('state')!.valueChanges);
+    const nameSignal = toSignal(this.qsoForm.get('name_fmt')!.valueChanges);
+    const filterSignal = toSignal(this.qsoForm.get('radioFilter')!.valueChanges);
 
     effect(() => {
       const call = callSignal();
@@ -115,7 +130,7 @@ export class QsoEditComponent {
     });
 
     effect(() => {
-      this.setExchangeText(rstSentSignal(), stateSignal());
+      this.setExchangeText(rstSentSignal(), stateSignal(), nameSignal());
     });
 
     effect(() => {
@@ -144,6 +159,38 @@ export class QsoEditComponent {
             callInputEl.nativeElement.focus();
             callInputEl.nativeElement.select();
           }, 0);
+        }
+      });
+    });
+
+    effect(() => {
+      const ctrl = this.qsoForm.get('radioFilter')!;
+
+      if (freqSignal() && modeSignal()) {
+        ctrl.setValue('1', { emitEvent: false });
+        ctrl.enable();
+      }
+      else
+        ctrl.disable();
+    });
+
+    effect(() => {
+      if (!this.rigControl()) return;
+
+      let freq = this.qsoForm.get('freq')?.value;
+      let mode = this.qsoForm.get('mode')?.value;
+      const filter = parseInt(filterSignal());
+
+      if (!freq || !mode) return;
+
+      if (mode === "SSB") {
+        freq = parseInt(freq);
+        mode = freq <= 4000000 || (freq >= 7000000 && freq <= 7300000) ? "LSB" : "USB";
+      }
+
+      this._infraSvc.setRigStatus(freq, mode, filter).subscribe({
+        error: e => {
+          Utils.showErrorMessage(e, this._ntfSvc, this._log);
         }
       });
     });
@@ -184,6 +231,7 @@ export class QsoEditComponent {
       qslRcvdVia: [defaults.qslRcvdVia],
       comment: [defaults.comment, Validators.maxLength(4000)],
       siteComment: [defaults.siteComment, Validators.maxLength(64)],
+      radioFilter: [defaults.radioFilter],
     });
   }
 
@@ -215,14 +263,11 @@ export class QsoEditComponent {
     }
   }
 
-  private setExchangeText(rstSent: string, state: string) {
-    let greet = Utils.getTimeOfDay(state);
+  private setExchangeText(rstSent: string, state: string, name: string) {
+    let greet = Utils.getTimeOfDay(state) + Utils.extractNameOrNickname(name);
     const rst = rstSent ? rstSent.replaceAll('9', 'n') : '5nn';
-    const name = Utils.extractNameOrNickname(this.qsoForm.get('name_fmt')?.value);
-    if (name)
-      greet += `${name} `;
 
-    this.cwExchLabel.set(`R ${greet}UR ${rst} CO`);
+    this.cwExchLabel.set(`R ${greet} UR ${rst} CO`);
     this.cwExch2Label.set(`R TU ${rst} ${rst} CO CO`);
     this.altCwExch = `R TU ${rst} CO`;
   }
@@ -275,7 +320,10 @@ export class QsoEditComponent {
 
     this._potaSvc.getActivityByCall(callSign).subscribe({
       next: (r) => {
-        this.populatePotaDetails(r);
+        if (!r.active)
+          this.getRadioStatus();
+        else
+          this.populatePotaDetails(r);
       },
       error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
     });
@@ -366,6 +414,8 @@ export class QsoEditComponent {
       this.qsoForm.markAsDirty();
     }
     this.qsoForm.get('dxcc')?.setValue(dxcc);
+
+    this.imgUrl.set(r.image ? r.image : 'https://static.qrz.com/static/qrz/qrz_com.svgz');
   }
 
   private initializeNewQso() {
@@ -377,20 +427,25 @@ export class QsoEditComponent {
     this.qsoForm.markAsPristine();
   }
 
-  sendCw(text: string, k = false) {
-    this.cwSending.set(true);
+  sendCw(text: string, k = false, updateUi = true) {
+    let timeToSend = 0;
+      this.cwSending.set(true);
 
     text = `${text}${k ? ' K' : ''}`;
-    const timeToSend = Utils.calculateMorseTime(text, this.cwSpeed());
+
+    if (updateUi)
+      timeToSend = Utils.calculateMorseTime(text, this.cwSpeed());
+
     this._infraSvc.sendCw(`/S${this.cwSpeed()}${text}/S22`, null).subscribe({
       next: () => {
-        setTimeout(() => this.checkKeyerStatus(), timeToSend);
+        if (updateUi)
+          setTimeout(() => this.checkKeyerStatus(), timeToSend);
       },
       error: e => {
         this.cwSending.set(false);
         Utils.showErrorMessage(e, this._ntfSvc, this._log);
       }
-    })
+    });
   }
 
   stopCw() {
@@ -405,6 +460,19 @@ export class QsoEditComponent {
     })
   }
 
+  protected getRadioStatus() {
+    if (!this.rigControl()) return;
+
+    this._infraSvc.getRigStatus().subscribe({
+      next: (r) => {
+        this.qsoForm.get('freq')?.setValue(r.frequencyHz, { emitEvent: false });
+        this.qsoForm.get('band')?.setValue(Utils.getBandFromFrequency(r.frequencyHz), {emitEvent: false});
+        this.qsoForm.get('mode')?.setValue(r.mode);
+      },
+      error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
+    });
+  }
+
   checkKeyerStatus() {
     this._infraSvc.getKeyerStatus().subscribe({
       next: (r) => {
@@ -416,6 +484,22 @@ export class QsoEditComponent {
       },
       error: e => {
         this.cwSending.set(false);
+        Utils.showErrorMessage(e, this._ntfSvc, this._log);
+      }
+    })
+  }
+
+  protected setNoiseReduction(event: CheckboxChangeEvent) {
+    this._infraSvc.setNoiseReduction(event.checked).subscribe({
+      error: e => {
+        Utils.showErrorMessage(e, this._ntfSvc, this._log);
+      }
+    })
+  }
+
+  protected setNoiseBlanket(event: CheckboxChangeEvent) {
+    this._infraSvc.setNoiseBlanket(event.checked).subscribe({
+      error: e => {
         Utils.showErrorMessage(e, this._ntfSvc, this._log);
       }
     })
@@ -523,6 +607,7 @@ export class QsoEditComponent {
       qslRcvdVia: null,
       comment: '',
       siteComment: '',
+      radioFilter: {value: '1', disabled: true}
     };
   }
 
@@ -572,7 +657,7 @@ export class QsoEditComponent {
       case 'F4':
         handled = true;
         $event.preventDefault();
-        this.sendCw('AF0E');
+        this.sendCw('AF0|E');
         break;
       case 'F3':
         handled = true;
@@ -595,6 +680,24 @@ export class QsoEditComponent {
         handled = true;
         $event.preventDefault();
         this.sendCw('?');
+        break;
+      case 'K':
+      case 'k':
+      case 'Л':
+      case 'л':
+        if ($event.ctrlKey) {
+          handled = true;
+          this.cwTextVisible.set(true);
+        }
+        break;
+      case 'E':
+      case 'e':
+      case 'У':
+      case 'у':
+        if ($event.ctrlKey) {
+          handled = true;
+          this.sendCw('E|E', false, false);
+        }
         break;
       case 'Escape':
         if (!this.cwSending()) return;
@@ -631,5 +734,9 @@ export class QsoEditComponent {
     }
   }
 
-  protected readonly history = history;
+  protected onCwKeyDown($event: KeyboardEvent) {
+    const isValid = /^[a-zA-Z0-9\/]$/.test($event.key);
+    if (!isValid) return;
+    this.sendCw($event.key, false, false);
+  }
 }

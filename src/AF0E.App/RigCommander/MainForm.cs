@@ -46,7 +46,7 @@ public sealed class MainForm : Form
             AutoSize = true,
             Left = 20,
             Top = 60,
-            Text = $"Server: {serverUrl}"
+            Text = $"Server: {serverUrl}\nRadio: {settings.ActiveProfile}"
         };
 
         _runAtStartupCheckBox = new CheckBox

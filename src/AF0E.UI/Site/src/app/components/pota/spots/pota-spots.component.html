@@ -58,11 +58,27 @@
 
       &nbsp;|&nbsp;
       <p-checkbox
+        inputId="beam"
+        [ngModel]="beam()"
+        (ngModelChange)="beam.set($event)"
+        [binary]="true" />
+      &nbsp;<label for="beam">Beam</label>
+      &nbsp;
+      <p-checkbox
+        inputId="slopper"
+        [ngModel]="slopper()"
+        (ngModelChange)="slopper.set($event)"
+        [binary]="true" />
+      &nbsp;<label for="slopper">Slopper</label>
+
+      &nbsp;|&nbsp;
+      <p-checkbox
         inputId="showDups"
         [ngModel]="showDups()"
         (ngModelChange)="onDupsChange($event)"
         [binary]="true" />
       &nbsp;<label for="showDups">Dups</label>
+
       <div style="flex: 1;"></div>
       <div class="last-call">
         @if (lastQso()) {
@@ -76,42 +92,45 @@
   <ng-template pTemplate="header">
     <tr>
       <th pSortableColumn="activity.lastSpotTime">Time <p-sortIcon field="activity.lastSpotTime" /></th>
+      <th pSortableColumn="activity.band">Band <p-sortIcon field="activity.band" /></th>
+      <th pSortableColumn="activity.mode">Mode <p-sortIcon field="activity.mode" /></th>
       <th>Call</th>
       <th>Park</th>
+      <th>Freq</th>
       <th>Loc</th>
       <th>Grid</th>
-      <th pSortableColumn="activity.band">Band <p-sortIcon field="activity.band" /></th>
-      <th>Freq</th>
-      <th pSortableColumn="activity.mode">Mode <p-sortIcon field="activity.mode" /></th>
     </tr>
   </ng-template>
 
   <ng-template pTemplate="body" let-act>
     <tr [ngClass]="getRowClass(act)">
-      <td>
-        @if (act.activity.callSign == this.selectedCall()) {&#9654;} @else { &nbsp; } {{ act.activity.lastSpotTime | timeAgo }}
+      <td class="act-time">
+        @if (act.activity.callSign == this.selectedCall()) {&#9654;}
+        @else if (wasCallSignClicked(act.activity.callSign)) {?}
+        @else {&nbsp;}
+        {{ act.activity.lastSpotTime | timeAgo }}
       </td>
-      <td>
+      <td class="act-band">{{ act.activity.band }}</td>
+      <td class="act-mode">
+        @if (act.activity.mode !== '') {
+          <p-tag [value]="act.activity.mode|qsoMode" [severity]="act.activity.mode|modeSeverity" />
+        }
+      </td>
+      <td class="act-call">
         <a (click)="onCallSignClick(act.activity.callSign, act.activity.freqKhz, act.activity.mode)">{{ act.activity.callSign }}</a>
         @if (act.totalCallSignContacts > 0) {
           <p-badge [value]="act.totalCallSignContacts" severity="info" />
         }
       </td>
-      <td>
+      <td class="act-park">
         <a (click)="onParkClick(act.activity.parkNum)">{{ act.activity.parkNum }}</a>
         @if (act.totalParkContacts > 0) {
           <p-badge [value]="act.totalParkContacts" severity="info" />
         }
       </td>
+      <td class="act-freq">{{ act.activity.freqKhz }}</td>
       <td>{{ act.activity.location }}</td>
-      <td>{{ act.activity.grid }}</td>
-      <td>{{ act.activity.band }}</td>
-      <td>{{ act.activity.freqKhz }}</td>
-      <td>
-        @if (act.activity.mode !== '') {
-          <p-tag [value]="act.activity.mode|qsoMode" [severity]="act.activity.mode|modeSeverity" />
-        }
-      </td>
+      <td class="act-grid">{{ act.activity.grid }}</td>
     </tr>
   </ng-template>
   <ng-template pTemplate="emptymessage">
@@ -126,9 +145,9 @@
 
 <p-scrollTop />
 
-<p-dialog header="Add QSO" [modal]="true" [(visible)]="qsoEditVisible" [style]="{width:'54rem'}" [focusOnShow]="false" (onHide)="this.selectedCall.set('')">
+<p-dialog header="Add QSO" [modal]="true" [(visible)]="qsoEditVisible" [style]="{width:'64rem'}" [focusOnShow]="false">
   @if (qsoEditVisible()) {
-    <app-qso-edit [logId]="-1" [callSign]="selectedCall()" [showCwButtons]="keyerControl()" [potaMode]="true" (saved)="onQsoSaved($event)" />
+    <app-qso-edit [logId]="-1" [callSign]="selectedCall()" [keyerControl]="keyerControl() && rigCommanderConfig().winkeyer.enabled" [rigControl]="rigControl()" [filtersEnabled]="rigCommanderConfig().activeProfile === 'IC-9100'" [potaMode]="true" (saved)="onQsoSaved($event)" />
   }
 </p-dialog>
 

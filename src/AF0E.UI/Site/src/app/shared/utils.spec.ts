@@ -487,6 +487,18 @@ describe('Utils', () => {
       expect(Utils.extractNameOrNickname('J "Jake" Smith')).toBe('Jake');
       expect(Utils.extractNameOrNickname('M "Mike" Johnson')).toBe('Mike');
     });
+
+
+    it('should extract nickname when there is a middle initial', () => {
+      expect(Utils.extractNameOrNickname('William F "Bill" Brown')).toBe('Bill');
+      expect(Utils.extractNameOrNickname('John Q "Jack" Smith')).toBe('Jack');
+    });
+
+    it('should handle curly quotes and other quote types', () => {
+      expect(Utils.extractNameOrNickname('John "JD" Doe')).toBe('JD'); // Left/right curly quotes
+      expect(Utils.extractNameOrNickname('Mary „Mike" Smith')).toBe('Mike'); // German quotes
+      expect(Utils.extractNameOrNickname('Robert «Bob» Wilson')).toBe('Bob'); // French quotes
+    });
   });
 
   describe('calculateMorseTime', () => {
@@ -503,7 +515,7 @@ describe('Utils', () => {
     it('should calculate time for single letter', () => {
       // 'E' = '.' = 1 unit at 20 WPM (60ms per unit) = 60ms + default gap
       const timeE = Utils.calculateMorseTime('E', 20);
-      expect(timeE).toBe(60 + 250);
+      expect(timeE).toBe(60 + 275);
 
       // 'T' = '-' = 3 units at 20 WPM = 180ms
       const timeT = Utils.calculateMorseTime('T', 20, 0);

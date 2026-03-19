@@ -7,26 +7,30 @@
       &.wrk-no {
         background-color: rgba(255, 0, 0, 0.08)
       }
-
       &.wrk-bm {
         background-color: rgba(0, 255, 0, 0.08)
       }
-
       &.wrk-other {
         background-color: rgba(255, 165, 0, 0.08)
       }
+      td {
+        &.act-time {width: 3rem;}
+        &.act-band {width: 2rem;}
+        &.act-mode {width: 3rem;}
+        &.act-call {width: 12rem;}
+        &.act-park {width: 10rem;}
+        &.act-freq {width: 8rem;}
+        &.act-grid {width: 5rem;}
+      }
     }
-
     a {
       color: var(--p-tag-info-color);
       text-decoration: none;
       cursor: pointer;
-
       &:hover {
         text-decoration: underline;
       }
     }
-
     p-badge {
       margin-left: 0.5rem;
       vertical-align: middle;

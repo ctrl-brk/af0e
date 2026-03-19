@@ -31,15 +31,24 @@ public sealed class CivIcomSerial(string portName, int baudRate, byte radioAddre
                     if (_port.IsOpen)
                         _port.Close();
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    Console.WriteLine($"[IC-9100] Error closing port: {ex}");
+                    //Console.WriteLine($"[IC-9100] Error closing port: {ex}");
                 }
             }
         }
     }
 
-    public void SetFrequency_NoScope(long frequencyHz)
+    public long GetFrequency()
+    {
+        var payload = QueryFrameExpecting(
+            requestPayload: [0x03],
+            predicate: p => p.Length >= 6 && p[0] == 0x03);
+
+        return DecodeFrequencyBcd5(payload.Span.Slice(1, 5));
+    }
+
+    public void SetFrequency(long frequencyHz)
     {
         var freqBcd = EncodeFrequencyBcd5(frequencyHz);
 
@@ -47,47 +56,78 @@ public sealed class CivIcomSerial(string portName, int baudRate, byte radioAddre
         payload[0] = 0x05;
         freqBcd.CopyTo(payload.Slice(1, 5));
 
-        SendFrame_NoScope(payload);
+        SendFrame(payload);
     }
 
-    public void SetMode_NoScope(IcomMode mode, byte filter = 0x01) =>
-        SendFrame_NoScope([0x06, (byte)mode, filter]);
-
-    public void SetDataMode_NoScope(bool enabled, byte filter = 0x01) =>
-        SendFrame_NoScope([0x1A, 0x06, (byte)(enabled ? 0x01 : 0x00), filter]);
-
-    public long GetFrequency_NoScope()
+    public (IcomMode mode, byte filter) GetMode()
     {
-        var payload = QueryFrameExpecting_NoScope(
-            requestPayload: [0x03],
-            predicate: p => p.Length >= 6 && p[0] == 0x03);
-
-        return DecodeFrequencyBcd5(payload.Span.Slice(1, 5));
-    }
-
-    public IcomRadioStatus GetStatus_NoScope()
-    {
-        var freqPayload = QueryFrameExpecting_NoScope(
-            requestPayload: [0x03],
-            predicate: p => p.Length >= 6 && p[0] == 0x03);
-
-        var modePayload = QueryFrameExpecting_NoScope(
+        var modePayload = QueryFrameExpecting(
             requestPayload: [0x04],
             predicate: p => p.Length >= 3 && p[0] == 0x04);
 
-        var dataPayload = QueryFrameExpecting_NoScope(
+        return ((IcomMode)modePayload.Span[1], modePayload.Span[2]);
+    }
+
+    public void SetMode(IcomMode mode, byte filter = 0x01) =>
+        SendFrame([0x06, (byte)mode, filter]);
+
+    public bool GetDataMode()
+    {
+        var payload = QueryFrameExpecting(
             requestPayload: [0x1A, 0x06],
             predicate: p => p.Length >= 4 && p[0] == 0x1A && p[1] == 0x06);
 
-        var hz = DecodeFrequencyBcd5(freqPayload.Span.Slice(1, 5));
-        var mode = (IcomMode)modePayload.Span[1];
-        var filter = modePayload.Span[2];
-        var dataOn = dataPayload.Span[2] != 0x00;
-
-        return new IcomRadioStatus(hz, mode, filter, dataOn);
+        return payload.Span[2] != 0x00;
     }
 
-    private void SendFrame_NoScope(ReadOnlySpan<byte> payload)
+    public void SetDataMode(bool enabled) =>
+        SendFrame([0x1A, 0x06, (byte)(enabled ? 0x01 : 0x00), 0x01]);
+
+    public bool GetNoiseReduction()
+    {
+        var payload = QueryFrameExpecting(
+            requestPayload: [0x16, 0x40],
+            predicate: p => p.Length >= 3 &&
+                            p[0] == 0x16 &&
+                            p[1] == 0x40
+        );
+
+        return payload.Span[2] != 0x00;
+    }
+
+    public void SetNoiseReduction(bool enabled)
+    {
+        // 16 40 00 = NR OFF
+        // 16 40 01 = NR ON
+        SendFrame([0x16, 0x40, (byte)(enabled ? 0x01 : 0x00)]);
+    }
+
+    public bool GetNoiseBlanker()
+    {
+        var payload = QueryFrameExpecting(
+            requestPayload: [0x16, 0x22],
+            predicate: p => p.Length >= 3 &&
+                            p[0] == 0x16 &&
+                            p[1] == 0x22
+        );
+
+        return payload.Span[2] != 0x00;
+    }
+
+    public void SetNoiseBlanker(bool enabled)
+    {
+        // 16 22 00 = NB OFF
+        // 16 22 01 = NB ON
+        SendFrame([0x16, 0x22, (byte)(enabled ? 0x01 : 0x00)]);
+    }
+
+    public IcomRadioStatus GetStatus()
+    {
+        (IcomMode mode, var filter) = GetMode();
+        return new IcomRadioStatus(GetFrequency(), mode, filter, GetDataMode(), GetNoiseReduction(), GetNoiseBlanker());
+    }
+
+    private void SendFrame(ReadOnlySpan<byte> payload)
     {
         Span<byte> frame = stackalloc byte[2 + 2 + payload.Length + 1];
         frame[0] = 0xFE;
@@ -95,18 +135,15 @@ public sealed class CivIcomSerial(string portName, int baudRate, byte radioAddre
         frame[2] = radioAddress;
         frame[3] = controllerAddress;
 
-        payload.CopyTo(frame.Slice(4));
+        payload.CopyTo(frame[4..]);
         frame[^1] = 0xFD;
 
         _port.Write(frame.ToArray(), 0, frame.Length);
     }
 
-    private ReadOnlyMemory<byte> QueryFrameExpecting_NoScope(
-        ReadOnlySpan<byte> requestPayload,
-        Func<ReadOnlySpan<byte>, bool> predicate,
-        int overallTimeoutMs = 900)
+    private ReadOnlyMemory<byte> QueryFrameExpecting(ReadOnlySpan<byte> requestPayload, Func<ReadOnlySpan<byte>, bool> predicate, int overallTimeoutMs = 900)
     {
-        SendFrame_NoScope(requestPayload);
+        SendFrame(requestPayload);
 
         var start = Environment.TickCount;
 
@@ -115,7 +152,7 @@ public sealed class CivIcomSerial(string portName, int baudRate, byte radioAddre
             ReadOnlyMemory<byte> frame;
             try
             {
-                frame = ReadFrame_NoScope(timeoutMs: 300);
+                frame = ReadFrame(timeoutMs: 300);
             }
             catch (Exception ex)
             {
@@ -153,7 +190,7 @@ public sealed class CivIcomSerial(string portName, int baudRate, byte radioAddre
         return true;
     }
 
-    private ReadOnlyMemory<byte> ReadFrame_NoScope(int timeoutMs)
+    private ReadOnlyMemory<byte> ReadFrame(int timeoutMs)
     {
         var start = Environment.TickCount;
         var buf = new List<byte>(64);

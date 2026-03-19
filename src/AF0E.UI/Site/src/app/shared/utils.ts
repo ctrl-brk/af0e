@@ -262,6 +262,7 @@ export class Utils {
    * Utils.extractNameOrNickname('John "JD" Doe') // Returns 'JD'
    * Utils.extractNameOrNickname('Mary "The Queen" Smith') // Returns 'The Queen'
    * Utils.extractNameOrNickname('Bob') // Returns 'Bob'
+   * Utils.extractNameOrNickname('William F "Bill" Brown') // Returns 'Bill'
    */
   public static extractNameOrNickname(nameFmt: string | null | undefined): string {
     if (!nameFmt) {
@@ -273,8 +274,9 @@ export class Utils {
       return '';
     }
 
-    // Check for nickname in double quotes
-    const nicknameMatch = trimmed.match(/"([^"]+)"/);
+    // Check for nickname in quotes (supports straight quotes, curly quotes, and other quote types)
+    // Matches: "text", "text", „text", «text», etc.
+    const nicknameMatch = trimmed.match(/["„"«]([^"""»«„]+)["»"]/);
     if (nicknameMatch && nicknameMatch[1]) {
       const nickname = nicknameMatch[1].trim();
       // Only return the nickname if it's not empty after trimming
@@ -315,7 +317,7 @@ export class Utils {
    * - Space between words: 7 units
    * At 20 WPM, each unit is 60ms (1200ms / 20 words = 60ms per unit)
    */
-  public static calculateMorseTime(text: string, wpm: number, addedTime: number = 250): number {
+  public static calculateMorseTime(text: string, wpm: number, addedTime: number = 275): number {
     if (!text.trim() || wpm <= 0) {
       return 0;
     }

@@ -3,14 +3,57 @@
 }
 
 .p-dialog-content {
- padding: 0 0.5rem 0.5rem 0.5rem;
+  padding: 0 0.5rem 0.5rem 0.5rem;
 }
 
 .qso-edit-container {
   width: 100%;
+  :focus {
+    outline: none;
+  }
+
+  .qso-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 19.75rem;
+    gap: 0.75rem;
+    align-items: start;
+  }
+
+  .qso-main {
+    min-width: 0;
+  }
+
+  .form-actions-wide {
+    grid-column: 1 / -1;
+  }
+
+  .qso-image-panel {
+    position: sticky;
+    top: 0.25rem;
+  }
+
+  .qso-image-placeholder {
+    min-height: 16rem;
+    img {
+      width: 100%;
+      height: 100%;
+      min-height: 15.5rem;
+      max-height: 27rem;
+      object-fit: contain;
+      display: block;
+    }
+  }
 
   .p-fieldset {
     padding: 0 0 0.25rem 0;
+  }
+
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 1rem 0 0 1rem;
+    label {color: #999}
   }
 
   form {
@@ -57,7 +100,7 @@
       &.w-ddl { min-width: 5.5rem; }
       &.w-grid { width: 6rem; }
       &.w-zone { width: 4rem; }
-      &.w-comment { min-width: 20rem; }
+      &.w-comment { min-width: 18rem; }
       &.w-auto { width: auto; }
 
       label {
@@ -132,7 +175,7 @@
       .p-inputtext { width: 4rem }
     }
     > p-floatlabel.w-comment {
-      textarea { min-width: 20rem }
+      textarea { min-width: 18rem }
     }
   }
 
@@ -180,9 +223,12 @@
       white-space: nowrap;
       td {
         &.qso-edit-hist-date {width: 8rem;}
-        &.qso-edit-hist-comment {font-size: 0.5rem;}
         &.qso-edit-hist-bm {width: 2rem;}
         &.qso-edit-hist-grid {width: 3rem;}
+        &.qso-edit-hist-comment {
+          font-size: 0.5rem;
+          span.parks { color: var(--p-tag-info-color); }
+        }
       }
     }
   }
@@ -190,6 +236,21 @@
 
 @media (max-width: 768px) {
   .qso-edit-container {
+    .qso-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .qso-image-panel {
+      position: static;
+    }
+
+    .qso-image-placeholder {
+      min-height: 8rem;
+
+      img {
+        min-height: 7.5rem;
+      }
+    }
 
     .form-actions {
       flex-direction: column;

@@ -10,21 +10,31 @@ public sealed class IC_9100(string portName, int baudRate, byte radioAddress, by
 
     public T WithConnection<T>(Func<T> action) => _civ.WithConnection(action);
 
-    public void SetFrequency(long frequencyHz) => _civ.SetFrequency_NoScope(frequencyHz);
+    public long GetFrequency() => _civ.GetFrequency();
 
-    public void SetMode(string modeText)
+    public void SetFrequency(long frequencyHz) => _civ.SetFrequency(frequencyHz);
+
+    public void SetMode(string modeText, byte filter = 0x01)
     {
         (IcomMode baseMode, var dataOn) = ParseIcomMode(modeText);
-        _civ.SetMode_NoScope(baseMode);
-        _civ.SetDataMode_NoScope(dataOn);
+        _civ.SetMode(baseMode, filter);
+        _civ.SetDataMode(dataOn);
     }
 
-    public long GetFrequency() => _civ.GetFrequency_NoScope();
+    public void SetNoiseReduction(bool enabled)
+    {
+        _civ.SetNoiseReduction(enabled);
+    }
+
+    public void SetNoiseBlanker(bool enabled)
+    {
+        _civ.SetNoiseBlanker(enabled);
+    }
 
     public RadioStatus GetStatus()
     {
-        var st = _civ.GetStatus_NoScope();
-        return new RadioStatus(st.FrequencyHz, st.DisplayMode, st.Filter, st.DataModeOn);
+        var st = _civ.GetStatus();
+        return new RadioStatus(st.FrequencyHz, st.DisplayMode, st.Filter, st.DataModeOn, NoiseReductionOn: st.NoiseReductionOn, NoiseBlankerOn: st.NoiseBlankerOn);
     }
 
     private static (IcomMode baseMode, bool dataOn) ParseIcomMode(string modeText)
@@ -53,7 +63,7 @@ public sealed class IC_9100(string portName, int baudRate, byte radioAddress, by
     public void Dispose() => _civ.Dispose();
 }
 
-public sealed record IcomRadioStatus(long FrequencyHz, IcomMode Mode, byte Filter, bool DataModeOn)
+public sealed record IcomRadioStatus(long FrequencyHz, IcomMode Mode, byte Filter, bool DataModeOn, bool NoiseReductionOn, bool NoiseBlankerOn)
 {
     public string DisplayMode => DataModeOn && Mode is IcomMode.USB or IcomMode.LSB ? $"{Mode}-D" : Mode.ToString();
 }

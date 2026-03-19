@@ -70,6 +70,8 @@ public sealed class FT_897 : IRadio
         }
     }
 
+    public long GetFrequency() => GetStatus().FrequencyHz;
+
     public void SetFrequency(long frequencyHz)
     {
         var v = frequencyHz / 10;
@@ -79,13 +81,26 @@ public sealed class FT_897 : IRadio
         Send5_NoScope(p[0], p[1], p[2], p[3], 0x01);
     }
 
-    public void SetMode(string modeText)
+    /// <summary>
+    /// Sets FT-8x7 mode
+    /// </summary>
+    /// <param name="modeText">Mode</param>
+    /// <param name="filter">Not supported by FT-8x7</param>
+    public void SetMode(string modeText, byte filter)
     {
         var (modeCode, _) = ParseMode(modeText);
         Send5_NoScope(modeCode, 0x00, 0x00, 0x00, 0x07);
     }
 
-    public long GetFrequency() => GetStatus().FrequencyHz;
+    /// <summary>
+    /// Noop. Not supported by FT-8x7
+    /// </summary>
+    public void SetNoiseReduction(bool enabled) {}
+
+    /// <summary>
+    /// Noop. Not supported by FT-8x7
+    /// </summary>
+    public void SetNoiseBlanker(bool enabled) {}
 
     public RadioStatus GetStatus()
     {
@@ -100,7 +115,7 @@ public sealed class FT_897 : IRadio
         var mode = ModeCodeToText(modeCode);
         var dataOn = mode is "DIG" or "PKT";
 
-        return new RadioStatus(hz, mode, Filter: null, DataModeOn: dataOn);
+        return new RadioStatus(hz, mode, Filter: null, DataModeOn: dataOn, NoiseReductionOn: false, NoiseBlankerOn: false);
     }
 
     // ReSharper disable once UnusedTupleComponentInReturnValue

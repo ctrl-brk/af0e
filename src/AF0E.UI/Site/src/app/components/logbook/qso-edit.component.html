@@ -1,325 +1,368 @@
 <div class="qso-edit-container" (keydown)="onKeyDown($event)">
-  <form id="qsoForm" [formGroup]="qsoForm" (ngSubmit)="onSave()">
-    <div class="qso-form-fields" style="margin-left: -1rem">
-      <p-floatlabel class="w-datetime" variant="on">
-        <p-datePicker
-          formControlName="date"
-          inputId="date"
-          dateFormat="yy-mm-dd"
-          [showTime]="true"
-          hourFormat="24"
-          [required]="true"
-          [invalid]="isFieldInvalid('date')"
-          appendTo="body"
-          [pTooltip]="isFieldInvalid('date') ? getErrorMessage('date') : ''"
-          tooltipPosition="top"
-        />
-        <label for="date">UTC Date/Time *</label>
-      </p-floatlabel>
-      <p-button
-        icon="pi pi-angle-double-left"
-        [text]="true"
-        [rounded]="true"
-        size="small"
-        severity="info"
-        (onClick)="setCurrentDateTime()"
-        class="date-now-btn"
-      />
+  <div class="qso-layout">
+    <div class="qso-main">
+      <form id="qsoForm" [formGroup]="qsoForm" (ngSubmit)="onSave()">
+        <div class="qso-form-fields" style="margin-left: -1rem">
+          <p-floatlabel class="w-datetime" variant="on">
+            <p-datePicker
+              formControlName="date"
+              inputId="date"
+              dateFormat="yy-mm-dd"
+              [showTime]="true"
+              hourFormat="24"
+              [required]="true"
+              [invalid]="isFieldInvalid('date')"
+              appendTo="body"
+              [pTooltip]="isFieldInvalid('date') ? getErrorMessage('date') : ''"
+              tooltipPosition="top"
+            />
+            <label for="date">UTC Date/Time *</label>
+          </p-floatlabel>
+          &nbsp;
+          <p-button
+            icon="pi pi-angle-double-left"
+            [text]="true"
+            [rounded]="true"
+            size="small"
+            severity="info"
+            (onClick)="setCurrentDateTime()"
+            class="date-now-btn"
+          />
 
-      <p-floatlabel class="w-freq" variant="on">
-        <p-inputNumber
-          mode="decimal"
-          formControlName="freq"
-          inputId="freq"
-          [minFractionDigits]="0"
-          [maxFractionDigits]="3"
-          [invalid]="isFieldInvalid('freq')"
-          [pTooltip]="isFieldInvalid('freq') ? getErrorMessage('freq') : ''"
-          tooltipPosition="top"
-          (onBlur)="onFreqBlur()"
-        />
-        <label for="freq">Frequency (Hz) *</label>
-      </p-floatlabel>
-      <p-floatlabel class="w-ddl" variant="on">
-        <p-select
-          formControlName="band"
-          inputId="band"
-          [options]="bandOptions"
-          optionLabel="label"
-          optionValue="value"
-          [invalid]="isFieldInvalid('band')"
-          [pTooltip]="isFieldInvalid('band') ? getErrorMessage('band') : ''"
-          tooltipPosition="top"
-        />
-        <label for="band">Band *</label>
-      </p-floatlabel>
-      <p-floatlabel class="w-ddl" variant="on">
-        <p-select
-          formControlName="mode"
-          inputId="mode"
-          [options]="modeOptions"
-          optionLabel="label"
-          optionValue="value"
-          [invalid]="isFieldInvalid('mode')"
-          [pTooltip]="isFieldInvalid('mode') ? getErrorMessage('mode') : ''"
-          tooltipPosition="top"
-        />
-        <label for="mode">Mode *</label>
-      </p-floatlabel>
+          <p-floatlabel class="w-freq" variant="on">
+            <p-inputNumber
+              mode="decimal"
+              formControlName="freq"
+              inputId="freq"
+              [minFractionDigits]="0"
+              [maxFractionDigits]="3"
+              [invalid]="isFieldInvalid('freq')"
+              [pTooltip]="isFieldInvalid('freq') ? getErrorMessage('freq') : ''"
+              tooltipPosition="top"
+              (onBlur)="onFreqBlur()"
+            />
+            <label for="freq">Frequency (Hz) *</label>
+          </p-floatlabel>
+          <p-floatlabel class="w-ddl" variant="on">
+            <p-select
+              formControlName="band"
+              inputId="band"
+              [options]="bandOptions"
+              optionLabel="label"
+              optionValue="value"
+              [invalid]="isFieldInvalid('band')"
+              [pTooltip]="isFieldInvalid('band') ? getErrorMessage('band') : ''"
+              tooltipPosition="top"
+            />
+            <label for="band">Band *</label>
+          </p-floatlabel>
+          <p-floatlabel class="w-ddl" variant="on">
+            <p-select
+              formControlName="mode"
+              inputId="mode"
+              [options]="modeOptions"
+              optionLabel="label"
+              optionValue="value"
+              [invalid]="isFieldInvalid('mode')"
+              [pTooltip]="isFieldInvalid('mode') ? getErrorMessage('mode') : ''"
+              tooltipPosition="top"
+            />
+            <label for="mode">Mode *</label>
+          </p-floatlabel>
+          @if (rigControl()) {
+          &nbsp;
+          <p-button
+            icon="pi pi-angle-double-left"
+            [text]="true"
+            [rounded]="true"
+            size="small"
+            severity="info"
+            (onClick)="getRadioStatus()"
+            class="date-now-btn"
+          />
+          }
 
-      <div class="line-break"></div>
+          <div class="line-break"></div>
 
-      <p-floatlabel variant="on">
-        <input
-          #callInput
-          pInputText
-          formControlName="call"
-          id="call"
-          spaceAsTab
-          [spaceAsTabCallback]="onCallBlur.bind(this)"
-          (keydown)="onCallKeyDown($event)"
-          [class.ng-invalid]="isFieldInvalid('call')"
-          [class.ng-dirty]="isFieldInvalid('call')"
-          style="text-transform: uppercase"
-          [pTooltip]="isFieldInvalid('call') ? getErrorMessage('call') : ''"
-          tooltipPosition="top"
-        />
-        <label for="call">Call Sign *</label>
-      </p-floatlabel>
+          <p-floatlabel variant="on">
+            <input
+              #callInput
+              pInputText
+              formControlName="call"
+              id="call"
+              spaceAsTab
+              [spaceAsTabCallback]="onCallBlur.bind(this)"
+              (keydown)="onCallKeyDown($event)"
+              [class.ng-invalid]="isFieldInvalid('call')"
+              [class.ng-dirty]="isFieldInvalid('call')"
+              style="text-transform: uppercase"
+              [pTooltip]="isFieldInvalid('call') ? getErrorMessage('call') : ''"
+              tooltipPosition="top"
+            />
+            <label for="call">Call Sign *</label>
+          </p-floatlabel>
 
-      <p-floatlabel class="w-rst" variant="on">
-        <input
-          #rstSentInput
-          pInputText
-          formControlName="rstSent"
-          id="rstSent"
-          spaceAsTab
-          [class.ng-invalid]="isFieldInvalid('rstSent')"
-          [class.ng-dirty]="isFieldInvalid('rstSent')"
-          [pTooltip]="isFieldInvalid('rstSent') ? getErrorMessage('rstSent') : ''"
-          tooltipPosition="top"
-        />
-        <label for="rstSent">RST Sent</label>
-      </p-floatlabel>
+          <p-floatlabel class="w-rst" variant="on">
+            <input
+              #rstSentInput
+              pInputText
+              formControlName="rstSent"
+              id="rstSent"
+              spaceAsTab
+              [class.ng-invalid]="isFieldInvalid('rstSent')"
+              [class.ng-dirty]="isFieldInvalid('rstSent')"
+              [pTooltip]="isFieldInvalid('rstSent') ? getErrorMessage('rstSent') : ''"
+              tooltipPosition="top"
+            />
+            <label for="rstSent">RST Sent</label>
+          </p-floatlabel>
 
-      <p-floatlabel class="w-rst" variant="on">
-        <input
-          pInputText
-          formControlName="rstRcvd"
-          id="rstRcvd"
-          spaceAsTab
-          [class.ng-invalid]="isFieldInvalid('rstRcvd')"
-          [class.ng-dirty]="isFieldInvalid('rstRcvd')"
-          [pTooltip]="isFieldInvalid('rstRcvd') ? getErrorMessage('rstRcvd') : ''"
-          tooltipPosition="top"
-        />
-        <label for="rstRcvd">RST Rcvd</label>
-      </p-floatlabel>
+          <p-floatlabel class="w-rst" variant="on">
+            <input
+              pInputText
+              formControlName="rstRcvd"
+              id="rstRcvd"
+              spaceAsTab
+              [class.ng-invalid]="isFieldInvalid('rstRcvd')"
+              [class.ng-dirty]="isFieldInvalid('rstRcvd')"
+              [pTooltip]="isFieldInvalid('rstRcvd') ? getErrorMessage('rstRcvd') : ''"
+              tooltipPosition="top"
+            />
+            <label for="rstRcvd">RST Rcvd</label>
+          </p-floatlabel>
+
+          @if (rigControl() && filtersEnabled()) {
+            <div class="filters">
+              <label for="filters">Filters:</label>
+              <p-radiobutton name="fitlers" value="1" formControlName="radioFilter" inputId="fil1" />
+              <p-radiobutton name="fitlers" value="2" formControlName="radioFilter" inputId="fil2" />
+              <p-radiobutton name="fitlers" value="3" formControlName="radioFilter" inputId="fil3" />
+            </div>
+            <div class="filters">
+              <p-checkbox inputId="noiseReduction" [binary]="true" (onChange)="setNoiseReduction($event)" />
+              <label for="noiseReduction">NR</label>
+              <p-checkbox inputId="noiseBlanket" [binary]="true" (onChange)="setNoiseBlanket($event)" />
+              <label for="noiseBlanket">NB</label>
+            </div>
+          }
+        </div>
+
+        <p-fieldset legend="Info" [toggleable]="true">
+          <div class="qso-form-fields inner">
+            <p-floatlabel variant="on">
+              <input pInputText formControlName="name_fmt" id="name_fmt" />
+              <label for="name_fmt">Name</label>
+            </p-floatlabel>
+            <p-floatlabel class="w-zone" variant="on">
+              <input pInputText formControlName="state" id="state" style="text-transform: uppercase"/>
+              <label for="state">State</label>
+            </p-floatlabel>
+            <p-floatlabel class="w-grid" variant="on">
+              <input
+                pInputText
+                formControlName="grid"
+                id="grid"
+                [class.ng-invalid]="isFieldInvalid('grid')"
+                [class.ng-dirty]="isFieldInvalid('grid')"
+                style="text-transform: uppercase"
+                [pTooltip]="isFieldInvalid('grid') ? getErrorMessage('grid') : ''"
+                tooltipPosition="top"
+              />
+              <label for="grid">Grid</label>
+            </p-floatlabel>
+
+            <div class="line-break"></div>
+
+            <p-floatlabel variant="on">
+              <input pInputText formControlName="country" id="country" />
+              <label for="country">Country</label>
+            </p-floatlabel>
+
+            <p-floatlabel variant="on">
+              <input pInputText formControlName="county" id="county" />
+              <label for="county">County</label>
+            </p-floatlabel>
+
+            <p-floatlabel class="w-zone" variant="on">
+              <input pInputText formControlName="cqZone" id="cqZone" />
+              <label for="cqZone">CQ Zone</label>
+            </p-floatlabel>
+            <p-floatlabel class="w-zone" variant="on">
+              <input pInputText formControlName="ituZone" id="ituZone" />
+              <label for="ituZone">ITU Zone</label>
+            </p-floatlabel>
+
+            <div class="line-break"></div>
+
+            <p-floatlabel class="w-comment" variant="on">
+              <textarea
+                pTextarea
+                formControlName="comment"
+                id="comment"
+                rows="2"
+              ></textarea>
+              <label for="comment">Comment</label>
+            </p-floatlabel>
+            <p-floatlabel class="w-comment" variant="on">
+              <textarea
+                pTextarea
+                formControlName="siteComment"
+                id="siteComment"
+                rows="2"
+              ></textarea>
+              <label for="siteComment">Site Comment</label>
+            </p-floatlabel>
+          </div>
+        </p-fieldset>
+
+        <p-fieldset legend="QSL" [toggleable]="true" collapsed="true">
+          <div class="qso-form-fields inner">
+            <p-floatlabel variant="on">
+              <p-select
+                formControlName="qslSent"
+                inputId="qslSent"
+                [options]="qslOptions"
+                optionLabel="label"
+                optionValue="value"
+              />
+              <label for="qslSent">Sent</label>
+            </p-floatlabel>
+
+            <p-floatlabel class="w-date" variant="on">
+              <p-datePicker
+                formControlName="qslSentDate"
+                inputId="qslSentDate"
+                dateFormat="yy-mm-dd"
+              />
+              <label for="qslSentDate">Sent Date</label>
+            </p-floatlabel>
+
+            <p-floatlabel class="w-ddl" variant="on">
+              <p-select
+                formControlName="qslSentVia"
+                inputId="qslSentVia"
+                [options]="qslViaOptions"
+                optionLabel="label"
+                optionValue="value"
+              />
+              <label for="qslSentVia">Sent Via</label>
+            </p-floatlabel>
+
+            <p-floatlabel variant="on">
+              <p-select
+                formControlName="qslRcvd"
+                inputId="qslRcvd"
+                [options]="qslOptions"
+                optionLabel="label"
+                optionValue="value"
+              />
+              <label for="qslRcvd">Rcvd</label>
+            </p-floatlabel>
+
+            <p-floatlabel class="w-date" variant="on">
+              <p-datePicker
+                formControlName="qslRcvdDate"
+                inputId="qslRcvdDate"
+                dateFormat="yy-mm-dd"
+              />
+              <label for="qslRcvdDate">Rcvd Date</label>
+            </p-floatlabel>
+
+            <p-floatlabel class="w-ddl" variant="on">
+              <p-select
+                formControlName="qslRcvdVia"
+                inputId="qslRcvdVia"
+                [options]="qslViaOptions"
+                optionLabel="label"
+                optionValue="value"
+              />
+              <label for="qslRcvdVia">Rcvd Via</label>
+            </p-floatlabel>
+          </div>
+        </p-fieldset>
+
+        <p-fieldset legend="My Station" [toggleable]="true" collapsed="true">
+          <div class="qso-form-fields inner">
+            <p-floatlabel class="w-grid" variant="on">
+              <input
+                pInputText
+                formControlName="myGrid"
+                id="myGrid"
+                [class.ng-invalid]="isFieldInvalid('myGrid')"
+                [class.ng-dirty]="isFieldInvalid('myGrid')"
+                style="text-transform: uppercase"
+                [pTooltip]="isFieldInvalid('myGrid') ? getErrorMessage('myGrid') : ''"
+                tooltipPosition="top"
+              />
+              <label for="myGrid">Grid</label>
+            </p-floatlabel>
+
+            <p-floatlabel variant="on">
+              <input pInputText formControlName="myCity" id="myCity" />
+              <label for="myCity">City</label>
+            </p-floatlabel>
+
+            <p-floatlabel variant="on">
+              <input pInputText formControlName="myCounty" id="myCounty" />
+              <label for="myCounty">County</label>
+            </p-floatlabel>
+
+            <p-floatlabel class="w-zone" variant="on">
+              <input pInputText formControlName="myState" id="myState" />
+              <label for="myState">State</label>
+            </p-floatlabel>
+
+            <p-floatlabel variant="on">
+              <input pInputText formControlName="myCountry" id="myCountry" />
+              <label for="myCountry">Country</label>
+            </p-floatlabel>
+
+            <p-floatlabel class="w-zone" variant="on">
+              <input pInputText formControlName="myCqZone" id="myCqZone" />
+              <label for="myCqZone">CQ Zone</label>
+            </p-floatlabel>
+
+            <p-floatlabel class="w-zone" variant="on">
+              <input pInputText formControlName="myItuZone" id="myItuZone" />
+              <label for="myItuZone">ITU Zone</label>
+            </p-floatlabel>
+          </div>
+        </p-fieldset>
+      </form>
+      <p-table
+        [value]="callHistory()"
+        dataKey="id"
+        sortField="date"
+        [sortOrder]="-1"
+        [scrollable]="true"
+        [size]="'small'"
+        [scrollHeight]="'10rem'"
+        class="tbl-qso-history" >
+        <ng-template pTemplate="body" let-qso>
+          <tr>
+            <td class="qso-edit-hist-date">{{ qso.date | date:'yy-MM-dd HH:mm' }}</td>
+            <td class="qso-edit-hist-bm">{{ qso.band }}</td>
+            <td class="qso-edit-hist-bm">{{ qso.mode }}</td>
+            <td class="qso-edit-hist-grid">{{ qso.grid }}</td>
+            <td class="qso-edit-hist-comment">{{ qso.comment }} <span class="parks">{{ qso.parks.join(',') }}</span></td>
+          </tr>
+        </ng-template>
+      </p-table>
+
     </div>
 
-    <p-fieldset legend="Info" [toggleable]="true">
-      <div class="qso-form-fields inner">
-        <p-floatlabel variant="on">
-          <input pInputText formControlName="name_fmt" id="name_fmt" />
-          <label for="name_fmt">Name</label>
-        </p-floatlabel>
-        <p-floatlabel variant="on">
-          <input pInputText formControlName="country" id="country" />
-          <label for="country">Country</label>
-        </p-floatlabel>
-        <p-floatlabel class="w-grid" variant="on">
-          <input
-            pInputText
-            formControlName="grid"
-            id="grid"
-            [class.ng-invalid]="isFieldInvalid('grid')"
-            [class.ng-dirty]="isFieldInvalid('grid')"
-            style="text-transform: uppercase"
-            [pTooltip]="isFieldInvalid('grid') ? getErrorMessage('grid') : ''"
-            tooltipPosition="top"
-          />
-          <label for="grid">Grid</label>
-        </p-floatlabel>
-        <p-floatlabel variant="on">
-          <input pInputText formControlName="county" id="county" />
-          <label for="county">County</label>
-        </p-floatlabel>
-        <p-floatlabel class="w-zone" variant="on">
-          <input pInputText formControlName="state" id="state" style="text-transform: uppercase"/>
-          <label for="state">State</label>
-        </p-floatlabel>
-
-        <div class="line-break"></div>
-
-        <p-floatlabel class="w-zone" variant="on">
-          <input pInputText formControlName="cqZone" id="cqZone" />
-          <label for="cqZone">CQ Zone</label>
-        </p-floatlabel>
-        <p-floatlabel class="w-zone" variant="on">
-          <input pInputText formControlName="ituZone" id="ituZone" />
-          <label for="ituZone">ITU Zone</label>
-        </p-floatlabel>
-
-        <div class="line-break"></div>
-
-        <p-floatlabel class="w-comment" variant="on">
-          <textarea
-            pTextarea
-            formControlName="comment"
-            id="comment"
-            rows="2"
-          ></textarea>
-          <label for="comment">Comment</label>
-        </p-floatlabel>
-        <p-floatlabel class="w-comment" variant="on">
-          <textarea
-            pTextarea
-            formControlName="siteComment"
-            id="siteComment"
-            rows="2"
-          ></textarea>
-          <label for="siteComment">Site Comment</label>
-        </p-floatlabel>
+    <aside class="qso-image-panel" aria-label="QSO image">
+      <div class="qso-image-placeholder">
+        @if (imgUrl()) {
+          <a [href]="'https://www.qrz.com/db/' + qsoForm.get('call')?.value" target="_blank" rel="noopener noreferrer">
+            <img [src]="imgUrl()" alt="QRZ photo" loading="lazy" />
+          </a>
+        }
       </div>
-    </p-fieldset>
+    </aside>
 
-    <p-fieldset legend="QSL" [toggleable]="true" collapsed="true">
-      <div class="qso-form-fields inner">
-        <p-floatlabel variant="on">
-          <p-select
-            formControlName="qslSent"
-            inputId="qslSent"
-            [options]="qslOptions"
-            optionLabel="label"
-            optionValue="value"
-          />
-          <label for="qslSent">Sent</label>
-        </p-floatlabel>
-
-        <p-floatlabel class="w-date" variant="on">
-          <p-datePicker
-            formControlName="qslSentDate"
-            inputId="qslSentDate"
-            dateFormat="yy-mm-dd"
-          />
-          <label for="qslSentDate">Sent Date</label>
-        </p-floatlabel>
-
-        <p-floatlabel class="w-ddl" variant="on">
-          <p-select
-            formControlName="qslSentVia"
-            inputId="qslSentVia"
-            [options]="qslViaOptions"
-            optionLabel="label"
-            optionValue="value"
-          />
-          <label for="qslSentVia">Sent Via</label>
-        </p-floatlabel>
-
-        <p-floatlabel variant="on">
-          <p-select
-            formControlName="qslRcvd"
-            inputId="qslRcvd"
-            [options]="qslOptions"
-            optionLabel="label"
-            optionValue="value"
-          />
-          <label for="qslRcvd">Rcvd</label>
-        </p-floatlabel>
-
-        <p-floatlabel class="w-date" variant="on">
-          <p-datePicker
-            formControlName="qslRcvdDate"
-            inputId="qslRcvdDate"
-            dateFormat="yy-mm-dd"
-          />
-          <label for="qslRcvdDate">Rcvd Date</label>
-        </p-floatlabel>
-
-        <p-floatlabel class="w-ddl" variant="on">
-          <p-select
-            formControlName="qslRcvdVia"
-            inputId="qslRcvdVia"
-            [options]="qslViaOptions"
-            optionLabel="label"
-            optionValue="value"
-          />
-          <label for="qslRcvdVia">Rcvd Via</label>
-        </p-floatlabel>
-      </div>
-    </p-fieldset>
-
-    <p-fieldset legend="My Station" [toggleable]="true" collapsed="true">
-      <div class="qso-form-fields inner">
-        <p-floatlabel class="w-grid" variant="on">
-          <input
-            pInputText
-            formControlName="myGrid"
-            id="myGrid"
-            [class.ng-invalid]="isFieldInvalid('myGrid')"
-            [class.ng-dirty]="isFieldInvalid('myGrid')"
-            style="text-transform: uppercase"
-            [pTooltip]="isFieldInvalid('myGrid') ? getErrorMessage('myGrid') : ''"
-            tooltipPosition="top"
-          />
-          <label for="myGrid">Grid</label>
-        </p-floatlabel>
-
-        <p-floatlabel variant="on">
-          <input pInputText formControlName="myCity" id="myCity" />
-          <label for="myCity">City</label>
-        </p-floatlabel>
-
-        <p-floatlabel variant="on">
-          <input pInputText formControlName="myCounty" id="myCounty" />
-          <label for="myCounty">County</label>
-        </p-floatlabel>
-
-        <p-floatlabel class="w-zone" variant="on">
-          <input pInputText formControlName="myState" id="myState" />
-          <label for="myState">State</label>
-        </p-floatlabel>
-
-        <p-floatlabel variant="on">
-          <input pInputText formControlName="myCountry" id="myCountry" />
-          <label for="myCountry">Country</label>
-        </p-floatlabel>
-
-        <p-floatlabel class="w-zone" variant="on">
-          <input pInputText formControlName="myCqZone" id="myCqZone" />
-          <label for="myCqZone">CQ Zone</label>
-        </p-floatlabel>
-
-        <p-floatlabel class="w-zone" variant="on">
-          <input pInputText formControlName="myItuZone" id="myItuZone" />
-          <label for="myItuZone">ITU Zone</label>
-        </p-floatlabel>
-      </div>
-    </p-fieldset>
-  </form>
-  <p-table
-    [value]="callHistory()"
-    dataKey="id"
-    sortField="date"
-    [sortOrder]="-1"
-    [scrollable]="true"
-    [size]="'small'"
-    [scrollHeight]="'10rem'"
-    class="tbl-qso-history"
-    >
-    <ng-template pTemplate="body" let-qso>
-      <tr>
-        <td class="qso-edit-hist-date">{{ qso.date | date:'yy-MM-dd hh:mm':'UTC' }}</td>
-        <td class="qso-edit-hist-bm">{{ qso.band }}</td>
-        <td class="qso-edit-hist-bm">{{ qso.mode }}</td>
-        <td class="qso-edit-hist-grid">{{ qso.grid }}</td>
-        <td class="qso-edit-hist-comment">{{ qso.comment }}</td>
-      </tr>
-    </ng-template>
-  </p-table>
-
-  <div class="form-actions">
-      @if (showCwButtons() || qsoForm.get('mode')?.value === 'CW') {
+    <div class="form-actions form-actions-wide">
+      @if (keyerControl() || qsoForm.get('mode')?.value === 'CW') {
         <div class="form-actions-left">
           <p-button label="F4&middot;AFØE" severity="contrast" (onClick)="sendCw('AF0E')" />
           <p-button label="F3&middot;Exch" severity="info" (onClick)="sendCw(cwExchLabel(), true)" [pTooltip]="cwExchLabel()" tooltipPosition="top"  />
@@ -335,5 +378,10 @@
         <p-button [label]="isEditMode ? 'Save' : 'Add'" [icon]="isEditMode ? 'pi pi-check' : 'pi pi-plus'" type="submit" [disabled]="qsoForm.pristine" (onClick)="onSave()" title="Ctrl-Enter" />
       </div>
     </div>
+  </div>
+
+  <p-dialog [modal]="true" [showHeader]="false" [(visible)]="cwTextVisible" [focusOnShow]="true" [style]="{ width: '20rem' }">
+    <input pInputText id="cwText" style="width:100%; margin-top: 0.5rem;" (keydown)="onCwKeyDown($event)" />
+  </p-dialog>
 
 </div>

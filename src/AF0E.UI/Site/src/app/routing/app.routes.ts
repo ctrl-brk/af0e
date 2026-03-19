@@ -80,7 +80,7 @@ export const routes: Routes = [
     ]
   },
   {
-    path: 'utils',
+    path: 'tools',
     children: [
       {
         path: '',
@@ -89,6 +89,11 @@ export const routes: Routes = [
       {
         path: 'grid',
         component: UtilsGridComponent,
+      },
+      {
+        path: 'winkeyer',
+        loadComponent: () => import('../components/utils/winkeyer-host.component').then(m => m.WinkeyerHostComponent),
+        canActivate: [rolePermissionGuard([Roles.Admin])],
       },
     ]
   },

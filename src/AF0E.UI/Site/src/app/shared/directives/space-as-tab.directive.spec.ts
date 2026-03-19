@@ -90,7 +90,3 @@ describe('SpaceAsTabDirective', () => {
     expect(preventDefaultSpy).toHaveBeenCalled();
   });
 });
-
-
-
-
