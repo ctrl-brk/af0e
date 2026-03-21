@@ -1,15 +1,18 @@
 ﻿using System.Net.Mime;
+using RigCommander.Abstractions;
 using RigCommander.Contracts;
 
 namespace RigCommander.Endpoints;
 
 public static class WinkeyerEndpoints
 {
-    public static void RegisterWinkeyerEndpoints(this WebApplication app, WinkeyerSerial? winkey, RigCommanderSettings settings, ILogger logger)
+    private static bool _splitOk;
+
+    public static void RegisterWinkeyerEndpoints(this WebApplication app, WinkeyerSerial? winkeyer, IRadio radio, RigCommanderSettings settings, ILogger logger)
     {
         app.MapPost("/winkeyer/send", (WinkeyerSendRequest req) =>
             {
-                if (winkey is null)
+                if (winkeyer is null)
                     return Results.Json(new { ok = false, error = "Winkeyer is disabled." }, statusCode: StatusCodes.Status503ServiceUnavailable);
 
                 if (string.IsNullOrWhiteSpace(req.Text))
@@ -25,12 +28,29 @@ public static class WinkeyerEndpoints
 
                 try
                 {
-                    if (req.Wpm is not null)
-                        winkey.SetWpm(req.Wpm.Value);
+                    var split = false;
+                    var sent = false;
 
-                    winkey.SendScript(req.Text, repeat, repeatDelaySeconds);
+                    if (req.RigControl is true)
+                    {
+                        split = radio.WithConnection(radio.GetStatus).SplitOn;
+                        if (!split)
+                            _splitOk = false;
+                    }
 
-                    var status = winkey.GetStatus();
+                    if (!split || (split && _splitOk))
+                    {
+                        if (req.Wpm is not null)
+                            winkeyer.SetWpm(req.Wpm.Value);
+
+                        winkeyer.SendScript(req.Text, repeat, repeatDelaySeconds);
+                        sent = true;
+                    }
+
+                    if (split)
+                        _splitOk = true;
+
+                    var status = winkeyer.GetStatus();
 
                     return Results.Ok(new
                     {
@@ -44,7 +64,9 @@ public static class WinkeyerEndpoints
                         effectiveWpm = status.EffectiveWpm,
                         busy = status.Busy,
                         wait = status.Wait,
-                        xoff = status.Xoff
+                        xoff = status.Xoff,
+                        split,
+                        sent,
                     });
                 }
                 catch (ArgumentOutOfRangeException ex)
@@ -80,13 +102,13 @@ public static class WinkeyerEndpoints
         // effectiveWpm is the one to show in UI
         app.MapPost("/winkeyer/wpm", (WinkeyerSetWpmRequest req) =>
             {
-                if (winkey is null)
+                if (winkeyer is null)
                     return Results.Json(new { ok = false, error = "Winkeyer is disabled." }, statusCode: StatusCodes.Status503ServiceUnavailable);
 
                 try
                 {
-                    winkey.SetWpm(req.Wpm);
-                    var status = winkey.GetStatus();
+                    winkeyer.SetWpm(req.Wpm);
+                    var status = winkeyer.GetStatus();
 
                     return Results.Ok(new
                     {
@@ -118,12 +140,12 @@ public static class WinkeyerEndpoints
 
         app.MapGet("/winkeyer/abort", () =>
             {
-                if (winkey is null)
+                if (winkeyer is null)
                     return Results.Json(new { ok = false, error = "Winkeyer is disabled." }, statusCode: StatusCodes.Status503ServiceUnavailable);
 
                 try
                 {
-                    winkey.Abort();
+                    winkeyer.Abort();
                     return Results.Ok(new { ok = true });
                 }
                 catch (Exception ex)
@@ -137,14 +159,14 @@ public static class WinkeyerEndpoints
 
         app.MapGet("/winkeyer/health", () =>
             {
-                if (winkey is null)
+                if (winkeyer is null)
                     return Results.Json(new { ok = false, error = "Winkeyer is disabled." }, statusCode: StatusCodes.Status503ServiceUnavailable);
 
                 try
                 {
-                    winkey.EnsureReady();
+                    winkeyer.EnsureReady();
 
-                    var status = winkey.GetStatus();
+                    var status = winkeyer.GetStatus();
 
                     return Results.Ok(new
                     {
@@ -177,12 +199,12 @@ public static class WinkeyerEndpoints
 
         app.MapGet("/winkeyer/status", () =>
             {
-                if (winkey is null)
+                if (winkeyer is null)
                     return Results.Json(new { ok = false, error = "Winkeyer is disabled." }, statusCode: StatusCodes.Status503ServiceUnavailable);
 
                 try
                 {
-                    var status = winkey.GetStatus();
+                    var status = winkeyer.GetStatus();
 
                     return Results.Ok(new
                     {

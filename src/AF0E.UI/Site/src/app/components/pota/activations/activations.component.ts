@@ -1,4 +1,4 @@
-import {Component, inject, OnInit, signal, ViewEncapsulation} from '@angular/core';
+import {Component, inject, model, OnInit, signal, ViewEncapsulation} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {AutoCompleteModule} from 'primeng/autocomplete';
 import {FloatLabelModule} from 'primeng/floatlabel';
@@ -14,6 +14,8 @@ import {Utils} from '../../../shared/utils';
 import {NotificationService} from '../../../shared/notification.service';
 import {LogService} from '../../../shared/log.service';
 import {Router} from '@angular/router';
+import {AppAuthService} from '../../../services/auth.service';
+import {Dialog} from 'primeng/dialog';
 
 @Component({
   templateUrl: './activations.component.html',
@@ -29,6 +31,8 @@ import {Router} from '@angular/router';
     MenubarModule,
     ScrollTop,
     TableModule,
+    Dialog,
+
   ],
 })
 export class PotaActivationsComponent implements OnInit {
@@ -37,7 +41,9 @@ export class PotaActivationsComponent implements OnInit {
   private _ntfSvc= inject(NotificationService);
   private _log = inject(LogService);
 
+  protected _authSvc = inject(AppAuthService);
   protected activations = signal<PotaActivationModel[]>([]);
+  protected addActivationVisible = model(false);
 
   ngOnInit(): void {
     this._potaSvc.getActivations().subscribe({
@@ -50,5 +56,9 @@ export class PotaActivationsComponent implements OnInit {
 
   onActivationSelect(act: PotaActivationModel) {
     this._router.navigate(['/pota/activations', act.id]);
+  }
+
+  protected onAddActivation() {
+    this.addActivationVisible.set(true);
   }
 }

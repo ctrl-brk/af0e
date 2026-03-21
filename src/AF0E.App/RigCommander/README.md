@@ -151,3 +151,4 @@ CQ CQ /W05 DE AF0E
 - WinKeyer uses **host mode**
 - `/Snn` affects only the current message
 - `"Wpm"` in `/winkeyer/send` sets persistent speed
+- If radio is in split mode, the first WK send command will be ignored, returning the split flag

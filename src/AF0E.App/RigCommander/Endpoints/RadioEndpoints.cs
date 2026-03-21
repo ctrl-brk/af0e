@@ -228,7 +228,7 @@ public static class RadioEndpoints
                 try
                 {
                     var status = radio.WithConnection(radio.GetStatus);
-                    return Results.Ok(new { ok = true, frequencyHz = status.FrequencyHz, mode = status.Mode, filter = status.Filter, data = status.DataModeOn, noiseReduction = status.NoiseReductionOn, noiseBlanker = status.NoiseBlankerOn });
+                    return Results.Ok(new { ok = true, frequencyHz = status.FrequencyHz, mode = status.Mode, filter = status.Filter, data = status.DataModeOn, noiseReduction = status.NoiseReductionOn, noiseBlanker = status.NoiseBlankerOn, split = status.SplitOn });
                 }
                 catch (Exception ex)
                 {

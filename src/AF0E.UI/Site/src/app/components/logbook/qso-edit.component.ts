@@ -328,6 +328,7 @@ export class QsoEditComponent {
       error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
     });
 
+    this.imgUrl.set('progress.gif');
     this._qrzSvc.lookup(callSign).subscribe({
       next: (r) => {
         this.populateQrzDetails(r);
@@ -337,9 +338,11 @@ export class QsoEditComponent {
       error: e => {
         if (e.status !== 404)
           Utils.showErrorMessage(e, this._ntfSvc, this._log);
-        else
+        else {
+          this.imgUrl.set('');
           // @ts-ignore
           setTimeout(() => this._rstSentInput().nativeElement.select(), 1);
+        }
       }
     });
 
@@ -436,8 +439,12 @@ export class QsoEditComponent {
     if (updateUi)
       timeToSend = Utils.calculateMorseTime(text, this.cwSpeed());
 
-    this._infraSvc.sendCw(`/S${this.cwSpeed()}${text}/S22`, null).subscribe({
-      next: () => {
+    this._infraSvc.sendCw(`/S${this.cwSpeed()}${text}/S22`, this.rigControl(), null).subscribe({
+      next: (r) => {
+        if (r.split && !r.sent) {
+          this._ntfSvc.addMessage(new NotificationMessageModel(NotificationMessageSeverity.Warn, "SPLIT ON!", "Split is on. Send again.", false));
+          return;
+        }
         if (updateUi)
           setTimeout(() => this.checkKeyerStatus(), timeToSend);
       },

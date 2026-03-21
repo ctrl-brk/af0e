@@ -34,7 +34,7 @@ public sealed class IC_9100(string portName, int baudRate, byte radioAddress, by
     public RadioStatus GetStatus()
     {
         var st = _civ.GetStatus();
-        return new RadioStatus(st.FrequencyHz, st.DisplayMode, st.Filter, st.DataModeOn, NoiseReductionOn: st.NoiseReductionOn, NoiseBlankerOn: st.NoiseBlankerOn);
+        return new RadioStatus(st.FrequencyHz, st.DisplayMode, st.Filter, st.DataModeOn, NoiseReductionOn: st.NoiseReductionOn, NoiseBlankerOn: st.NoiseBlankerOn, st.SplitOn);
     }
 
     private static (IcomMode baseMode, bool dataOn) ParseIcomMode(string modeText)
@@ -63,7 +63,7 @@ public sealed class IC_9100(string portName, int baudRate, byte radioAddress, by
     public void Dispose() => _civ.Dispose();
 }
 
-public sealed record IcomRadioStatus(long FrequencyHz, IcomMode Mode, byte Filter, bool DataModeOn, bool NoiseReductionOn, bool NoiseBlankerOn)
+public sealed record IcomRadioStatus(long FrequencyHz, IcomMode Mode, byte Filter, bool DataModeOn, bool NoiseReductionOn, bool NoiseBlankerOn, bool SplitOn)
 {
     public string DisplayMode => DataModeOn && Mode is IcomMode.USB or IcomMode.LSB ? $"{Mode}-D" : Mode.ToString();
 }
