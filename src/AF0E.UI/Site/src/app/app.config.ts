@@ -37,6 +37,11 @@ export const appConfig: ApplicationConfig = {
             httpMethod: 'PUT',
           },
           {
+            // Create activation - require authentication
+            uri: '/api/v1/pota/activations',
+            httpMethod: 'POST',
+          },
+          {
             // QSZ services - require authentication
             uri: '/api/v1/qrz/*',
             httpMethod: 'GET',

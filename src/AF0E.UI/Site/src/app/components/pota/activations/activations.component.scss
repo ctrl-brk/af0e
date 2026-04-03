@@ -14,3 +14,36 @@
     }
   }
 }
+
+.activation-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem 1.5rem;
+  padding-top: 1.5rem;
+
+  .field {
+    width: 100%;
+    p-floatlabel {
+      display: block;
+      width: 100%;
+    }
+    input, p-inputnumber {
+      width: 100%;
+    }
+    &.grid-field, &.lon-field {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      p-floatlabel {
+        flex: 1;
+        width: auto;
+      }
+    }
+  }
+
+  .form-actions {
+    grid-column: 2;
+    text-align: right;
+  }
+}
+

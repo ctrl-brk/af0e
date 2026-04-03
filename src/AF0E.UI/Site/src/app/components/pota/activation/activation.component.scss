@@ -12,9 +12,26 @@
       font-size: 0.75rem;
     }
   }
+  .card-layout {
+    display: flex;
+    gap: 1rem;
+    .card-main { }
+    .card-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex: 1;
+      gap: 0.4rem;
+      p-button { margin-left: 0.6rem; }
+    }
+  }
 }
 
 .p-tabs {
   margin: 2px 1.25rem 0 1.25rem;
   .p-tabpanels {padding: 0}
+  .log-container {
+    display: grid;
+    grid-template-columns: 1fr auto;
+  }
 }

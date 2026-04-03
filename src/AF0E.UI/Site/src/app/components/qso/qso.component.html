@@ -1,7 +1,7 @@
 @if (qsoDetails()) {
 <div class='qsl'>
   <div>To radio:</div><div><strong>{{qsoDetails()!.call}}</strong></div>
-  <div>UTC (ymd):</div><div>{{qsoDetails()!.date | date:'yyyy-MM-dd hh:mm' }}</div>
+  <div>UTC (ymd):</div><div>{{qsoDetails()!.date | date:'yyyy-MM-dd HH:mm' }}</div>
   <div>Band:</div><div>{{qsoDetails()!.band}}</div>
   <div>2-way:</div><div>{{qsoDetails()!.mode}}</div>
   <div>RS(t):</div><div>{{qsoDetails()!.rstSent}}</div>

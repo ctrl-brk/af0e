@@ -5,6 +5,7 @@ using AF0E.Services.Pota;
 using AF0E.Services.Qrz;
 using Logbook.Api.Handlers;
 using Logbook.Api.Models;
+using Logbook.Api.Requests;
 using Logbook.Api.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -67,11 +68,15 @@ public static class V1Endpoints
             .RequireAuthorization(Policies.AdminOnly)
             .WithName("QsoUpdate");
 
-        builder.MapPost("qso", async Task<Results<BadRequest<string>, Created<QsoDetails>>> (QsoDetails qso, HrdDbContext dbContext, IAuthorizationService authSvc, IHttpContextAccessor httpContext) =>
+        builder.MapPost("qso", async Task<Results<BadRequest<string>, Created<QsoDetails>>> (QsoRequest req, IQrzService qrzSvc, HrdDbContext dbContext, IAuthorizationService authSvc, IHttpContextAccessor httpContext, CancellationToken ct) =>
             {
                 try
                 {
-                    var result = await LogbookHandlers.CreateQso(qso, dbContext, authSvc, httpContext);
+                    var result = await LogbookHandlers.CreateQso(req.Qso, dbContext, authSvc, httpContext);
+
+                    if (req.PotaActivationId is not null)
+                        await PotaHandlers.AddActivationQso(req.PotaActivationId.Value, result.Id, qrzSvc, dbContext, ct);
+
                     return TypedResults.Created($"/api/v1/logbook/qso/{result.Id}", result);
                 }
                 catch (ArgumentException ex)
@@ -105,6 +110,22 @@ public static class V1Endpoints
         builder.MapGet("activations/{id:int}/log", async (int id, HrdDbContext dbContext) =>
                 TypedResults.Ok(await PotaHandlers.GetActivationLog(id, dbContext)))
             .WithName("PotaActivationLog");
+
+        builder.MapPost("activations", async Task<Results<BadRequest<string>, Created<int>>> (NewActivationRequest req, HrdDbContext dbContext) =>
+            {
+                try
+                {
+                    var result = await PotaHandlers.CreateActivation(req, dbContext);
+                    return TypedResults.Created($"/api/v1/pota/activations/{result}", result);
+                }
+                catch (ArgumentException e)
+                {
+                    return TypedResults.BadRequest(e.Message);
+                }
+
+            })
+            .WithName("CreateActivation")
+            .RequireAuthorization(Policies.AdminOnly);
 
         builder.MapGet("parks/search/{parkNum}", async (string parkNum, [FromQuery(Name = "max-results")] int? maxResults, HrdDbContext dbContext) =>
                 TypedResults.Ok(await PotaHandlers.GetParks(parkNum, maxResults ?? 25, dbContext)))

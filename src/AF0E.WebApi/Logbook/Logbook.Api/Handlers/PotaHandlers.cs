@@ -1,8 +1,12 @@
 ﻿using System.Text.RegularExpressions;
 using AF0E.DB;
+using AF0E.DB.Models;
 using AF0E.Services.Pota;
 using AF0E.Services.Pota.Models;
+using AF0E.Services.Qrz;
 using Logbook.Api.Models;
+using Logbook.Api.Requests;
+using Logbook.Api.Validators;
 using Microsoft.EntityFrameworkCore;
 
 namespace Logbook.Api.Handlers;
@@ -35,6 +39,40 @@ public static partial class PotaHandlers
             .Include(x => x.Log)
             .Select(x => new PotaActivationQsoSummary(x))
             .ToListAsync();
+
+    public static async Task<int> CreateActivation(NewActivationRequest req, HrdDbContext dbContext)
+    {
+        NewActivationValidator.ValidateAndThrow(req);
+
+        if (req.PrevDayActivationId is > 0)
+        {
+            var prevActivation = await dbContext.PotaActivations.AsTracking().FirstOrDefaultAsync(x => x.ActivationId == req.PrevDayActivationId) ?? throw new ArgumentException("Invalid previous day activation ID");
+            if (prevActivation.StartDate < DateTime.UtcNow.AddDays(-2))
+                throw new ArgumentException("Previous day activation must be within the last 2 days");
+
+            prevActivation.EndDate ??= DateTime.UtcNow;
+            prevActivation.Status = 'C';
+        }
+
+        var park = await dbContext.PotaParks.FirstOrDefaultAsync(x => x.ParkNum == req.ParkNumber) ?? throw new ArgumentException("Invalid park number");
+
+        var activation = new PotaActivation
+        {
+            ParkId = park.ParkId,
+            Grid = req.Grid,
+            County = req.County,
+            State = req.State,
+            Lat = req.Lat,
+            Long = req.Lon,
+            StartDate = req.StartDate ?? DateTime.UtcNow,
+            Status = 'P'
+        };
+
+        dbContext.PotaActivations.Add(activation);
+        await dbContext.SaveChangesAsync();
+
+        return activation.ActivationId;
+     }
 
     public static async Task<List<PotaParkDetails>> GetParks(string parkNum, int maxResults, HrdDbContext dbContext)
     {
@@ -181,6 +219,31 @@ public static partial class PotaHandlers
         }).ToList();
     }
 
+    public static async Task AddActivationQso(int activationId, int qsoId, IQrzService qrzSvc, HrdDbContext dbContext, CancellationToken ct)
+    {
+        var qso = await dbContext.Log.AsTracking().FirstOrDefaultAsync(l => l.ColPrimaryKey == qsoId, ct) ?? throw new ArgumentException("Invalid QSO ID");
+
+        var qrz = await QrzHandlers.Lookup(qso.ColCall, qrzSvc, ct);
+
+        var contact = new PotaContact
+        {
+            ActivationId = activationId,
+            LogId = qsoId
+        };
+
+        if (qrz is { notFound: false, qrzResult.Callsign: not null })
+        {
+            contact.Lat = qrz.qrzResult.Callsign.lat;
+            contact.Long = qrz.qrzResult.Callsign.lon;
+            contact.QrzLookupDate = DateTime.UtcNow;
+            contact.QrzGeoLoc = qrz.qrzResult.Callsign.geoloc;
+        }
+
+        dbContext.PotaContacts.Add(contact);
+
+        await dbContext.SaveChangesAsync(ct);
+    }
+
     private static async Task<List<PotaActivityInfo>> FilterAlreadyLoggedSpots(List<PotaActivityInfo> spots, HrdDbContext dbContext)
     {
         if (spots.Count == 0)
@@ -217,7 +280,7 @@ public static partial class PotaHandlers
             if (!spot.Active || spot.LastSpotTime == null)
                 return true;
 
-            var spotDate = DateOnly.FromDateTime(spot.LastSpotTime.Value.UtcDateTime);
+            //var spotDate = DateOnly.FromDateTime(spot.LastSpotTime.Value.UtcDateTime);
 
             return !todaysContacts.Any(contact =>
             {

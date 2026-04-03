@@ -4,6 +4,7 @@ import {
   ElementRef,
   inject,
   input,
+  OnInit,
   output,
   signal,
   untracked,
@@ -15,6 +16,7 @@ import {toSignal} from '@angular/core/rxjs-interop';
 import {NotificationService} from '../../shared/notification.service';
 import {LogService} from '../../shared/log.service';
 import {LogbookService} from '../../services/logbook.service';
+import {IdbService} from '../../services/idb.service';
 import {InfraService} from '../../services/infra.service';
 import {PotaService} from '../../services/pota.service';
 import {QrzService} from '../../services/qrz.service';
@@ -41,6 +43,8 @@ import {TableModule} from 'primeng/table';
 import {DatePipe} from '@angular/common';
 import {Dialog} from 'primeng/dialog';
 import {Checkbox, CheckboxChangeEvent} from 'primeng/checkbox';
+import {PotaActivationModel} from '../../models/pota-activation.model';
+import {NewActivationFormData} from '../pota/activations/new-activation-form-data';
 
 @Component({
   selector: 'app-qso-edit',
@@ -68,9 +72,10 @@ import {Checkbox, CheckboxChangeEvent} from 'primeng/checkbox';
 
   ],
 })
-export class QsoEditComponent {
+export class QsoEditComponent implements OnInit {
   private _fb = inject(FormBuilder);
   private _lbSvc = inject(LogbookService);
+  private _idbSvc = inject(IdbService);
   private _ntfSvc= inject(NotificationService);
   private _log = inject(LogService);
   private _potaSvc = inject(PotaService);
@@ -85,8 +90,11 @@ export class QsoEditComponent {
   potaMode = input<boolean>(false);
   rigControl = input(false);
   filtersEnabled = input(false);
+  potaActivation = input<PotaActivationModel|null>(null);
+
   editModeChange = output<boolean>();
   saved = output<any>();
+  activationCreated = output<number>();
 
   protected qso: QsoDetailModel = null!;
   protected qsoForm!: FormGroup;
@@ -136,7 +144,6 @@ export class QsoEditComponent {
     effect(() => {
       const id = this.logId();
       const call = this.callSign();
-      const callInputEl = this._callInput();
 
       // Use untracked to prevent form operations from triggering this effect again
       untracked(() => {
@@ -153,13 +160,7 @@ export class QsoEditComponent {
             this.qsoForm.patchValue({ call });
         }
 
-        // Focus the call input field after a short delay to ensure DOM is ready
-        if (callInputEl?.nativeElement) {
-          setTimeout(() => {
-            callInputEl.nativeElement.focus();
-            callInputEl.nativeElement.select();
-          }, 0);
-        }
+        this.setCallFocus(true);
       });
     });
 
@@ -194,6 +195,12 @@ export class QsoEditComponent {
         }
       });
     });
+  }
+
+  ngOnInit(): void {
+    if (this.potaActivation() && this.rigControl()) {
+      this.getRadioStatus();
+    }
   }
 
   private initializeForm() {
@@ -339,7 +346,7 @@ export class QsoEditComponent {
         if (e.status !== 404)
           Utils.showErrorMessage(e, this._ntfSvc, this._log);
         else {
-          this.imgUrl.set('');
+          this.imgUrl.set('question.jpg');
           // @ts-ignore
           setTimeout(() => this._rstSentInput().nativeElement.select(), 1);
         }
@@ -545,7 +552,15 @@ export class QsoEditComponent {
     formValue.call = formValue.call.toUpperCase();
     formValue.state = formValue.state.toUpperCase();
 
+    let activationId = this.potaActivation() ? this.potaActivation()!.id : 0; //stupid typescript
+
     if (this.isEditMode) {
+      if (activationId > 0) {
+        this._idbSvc.saveQso(activationId, formValue).subscribe({
+          error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
+        });
+      }
+
       this._lbSvc.updateQso(formValue).subscribe({
         next: () => {
           this.saved.emit(formValue);
@@ -556,9 +571,58 @@ export class QsoEditComponent {
       return;
     }
 
-    this._lbSvc.createQso(formValue).subscribe({
+    let qsoCreated = false;
+
+    if (activationId > 0) {
+      this._idbSvc.saveQso(activationId, formValue).subscribe({
+        error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
+      });
+
+      qsoCreated = this.isNewActivationDay(formValue);
+    }
+
+    if (!qsoCreated)
+      this.createQso(formValue, activationId, true);
+  }
+
+  private isNewActivationDay(formValue: any): boolean {
+    const actDay = this.potaActivation()!.startDate.getDate(); //treats date as local, but the value is in UTC
+    const qsoDate = Utils.utcStringToDate(formValue.date);
+
+    if (actDay === qsoDate!.getDate()) return false; //same day, same activation
+
+    const newAct:NewActivationFormData = {
+      prevDayActivationId: this.potaActivation()!.id,
+      parkNumber: this.potaActivation()!.parkNum,
+      grid: this.potaActivation()!.grid,
+      county: this.potaActivation()!.county,
+      state: this.potaActivation()!.state,
+      lat: this.potaActivation()!.lat ? this.potaActivation()!.lat!.toString() : '',
+      lon: this.potaActivation()!.long ? this.potaActivation()!.long!.toString() : '',
+      startDate: formValue.date
+    };
+
+    this._potaSvc.createActivation(newAct).subscribe({
+      next: (id: number) => {
+        this.activationCreated.emit(id);
+        this.createQso(formValue, id, false);
+        this._ntfSvc.addMessage(new NotificationMessageModel(NotificationMessageSeverity.Info, 'Activation Created', 'New activation day'));
+      },
+      error: (e) => Utils.showErrorMessage(e, this._ntfSvc, this._log)
+    });
+
+    return true;
+  }
+
+  private createQso(formValue: any, activationId: number, emitSaved: boolean) {
+    this._lbSvc.createQso(activationId > 0 ? activationId : null, formValue).subscribe({
       next: () => {
-        this.saved.emit(formValue);
+        if (this.potaActivation()) {
+          this.initializeNewQso();
+          this.setCallFocus(false);
+        }
+        if (emitSaved)
+          this.saved.emit(formValue);
       },
       error: e => { Utils.showErrorMessage(e, this._ntfSvc, this._log); }
     });
@@ -599,13 +663,13 @@ export class QsoEditComponent {
       cqZone: '',
       ituZone: '',
       dxcc: '',
-      myCity: 'Broomfield',
-      myCounty: 'Broomfield',
-      myState: 'CO',
+      myCity: this.potaActivation() ? this.potaActivation()!.city : 'Broomfield',
+      myCounty: this.potaActivation() ? this.potaActivation()!.county : 'Broomfield',
+      myState: this.potaActivation() ? this.potaActivation()!.state : 'CO',
       myCountry: 'United States',
       myCqZone: '4',
       myItuZone: '7',
-      myGrid: 'DM79lw',
+      myGrid:  this.potaActivation() ? this.potaActivation()!.grid : 'DM79lw',
       qslSent: 'N',
       qslSentDate: null,
       qslSentVia: null,
@@ -622,6 +686,18 @@ export class QsoEditComponent {
     Object.keys(this.qsoForm.controls).forEach(key => {
       this.qsoForm.get(key)?.markAsTouched();
     });
+  }
+
+  private setCallFocus(select: boolean) {
+    const callInputEl = this._callInput();
+
+    if (callInputEl?.nativeElement) {
+      setTimeout(() => {
+        callInputEl.nativeElement.focus();
+        if (select)
+          callInputEl.nativeElement.select();
+      }, 0);
+    }
   }
 
   isFieldInvalid(fieldName: string): boolean {
@@ -664,7 +740,10 @@ export class QsoEditComponent {
       case 'F4':
         handled = true;
         $event.preventDefault();
-        this.sendCw('AF0|E');
+        if ($event.altKey)
+          this.sendCw('DE AF0|E');
+        else
+          this.sendCw('AF0|E');
         break;
       case 'F3':
         handled = true;
@@ -704,6 +783,15 @@ export class QsoEditComponent {
         if ($event.ctrlKey) {
           handled = true;
           this.sendCw('E|E', false, false);
+        }
+        break;
+      case 'R':
+      case 'r':
+      case 'К':
+      case 'к':
+        if ($event.ctrlKey) {
+          handled = true;
+          this.sendCw('R R R', false, false);
         }
         break;
       case 'Escape':

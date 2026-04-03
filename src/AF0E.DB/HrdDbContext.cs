@@ -39,10 +39,11 @@ public class HrdDbContext(string connectionString, QueryTrackingBehavior trackin
     {
         modelBuilder.Entity<PotaContact>(entity =>
         {
-            entity.HasKey(e => e.ContactId);
+            entity.HasKey(e => e.ContactId).HasName("PK_PotaContacts");
             entity.HasIndex(e => e.ActivationId, "IX_PotaContacts_ActivationId");
             entity.HasIndex(e => e.LogId, "IX_PotaContacts_LogId");
 
+            entity.Property(e => e.ContactId).ValueGeneratedOnAdd();
             entity.Property(e => e.P2P).HasMaxLength(100).IsUnicode(false);
             entity.Property(e => e.Lat).HasColumnType("decimal(10, 6)");
             entity.Property(e => e.Long).HasColumnType("decimal(10, 6)");
@@ -90,6 +91,7 @@ public class HrdDbContext(string connectionString, QueryTrackingBehavior trackin
             entity.HasIndex(e => e.ParkId, "IX_PotaActivations_ParkId");
             entity.HasIndex(e => e.StartDate, "IX_PotaActivations_StartDate");
 
+            entity.Property(e => e.ActivationId).ValueGeneratedOnAdd();
             entity.Property(e => e.Grid).HasMaxLength(10).IsUnicode(false);
             entity.Property(e => e.County).HasMaxLength(100);
             entity.Property(e => e.County).HasMaxLength(200);
@@ -116,6 +118,7 @@ public class HrdDbContext(string connectionString, QueryTrackingBehavior trackin
             entity.HasIndex(e => e.ParkNum, "IX_PotaParks_ParkNum").IsUnique();
             entity.HasIndex(e => e.Active, "IX_PotaParks_Active");
 
+            entity.Property(e => e.ParkId).ValueGeneratedOnAdd();
             entity.Property(e => e.ParkNum).HasMaxLength(20).IsUnicode(false);
             entity.Property(e => e.ParkName).HasMaxLength(500);
             entity.Property(e => e.Grid).HasMaxLength(10).IsUnicode(false);
@@ -142,7 +145,7 @@ public class HrdDbContext(string connectionString, QueryTrackingBehavior trackin
             entity.HasIndex(e => e.ColPfx, "HRD_IDX_COL_PFX");
             entity.HasIndex(e => e.ColTimeOn, "HRD_IDX_COL_TIME_ON");
 
-            entity.Property(e => e.ColPrimaryKey).HasColumnName("COL_PRIMARY_KEY");
+            entity.Property(e => e.ColPrimaryKey).HasColumnName("COL_PRIMARY_KEY").ValueGeneratedOnAdd();
             entity.Property(e => e.ColAIndex).HasColumnName("COL_A_INDEX");
             entity.Property(e => e.ColAddress)
                 .HasMaxLength(255)

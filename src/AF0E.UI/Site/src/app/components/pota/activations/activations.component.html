@@ -32,8 +32,8 @@
 
   <ng-template pTemplate="body" let-act>
     <tr (click)="onActivationSelect(act)">
-      <td>{{ act.startDate | date:'yy-MM-dd hh:mm' }}</td>
-      <td>{{ act.endDate | date:'yy-MM-dd hh:mm' }}</td>
+      <td>{{ act.startDate | date:'yy-MM-dd HH:mm' }}</td>
+      <td>{{ act.endDate | date:'yy-MM-dd HH:mm' }}</td>
       <td>{{act.parkNum}}</td>
       <td>{{act.parkName}}</td>
       <td>{{ act.cwCount > 0 ? act.cwCount : '-' }}</td>
@@ -45,5 +45,48 @@
 
 <p-scrollTop />
 
-<p-dialog header="New activation" [modal]="true" [(visible)]="addActivationVisible" [style]="{ width: '60rem' }" [focusOnShow]="true">
+@if (_authSvc.hasRole('Admin')) {
+<p-dialog header="New activation" [modal]="true" [(visible)]="addActivationVisible" [style]="{ width: '40rem' }" [focusOnShow]="true">
+  <form id="newActivationForm" class="activation-form">
+    <p-floatlabel class="field">
+      <input id="parkNumber" pInputText [formField]="newActivationForm.parkNumber"/>
+      <label for="parkNumber">Park Number</label>
+    </p-floatlabel>
+
+    <div class="field grid-field">
+      <p-floatlabel>
+        <input id="grid" pInputText [formField]="newActivationForm.grid" />
+        <label for="grid">Grid</label>
+      </p-floatlabel>
+      <p-button icon="pi pi-map-marker" severity="secondary" [rounded]="true" (onClick)="onCalculateLocation()" pTooltip="Calculate from current location" />
+    </div>
+
+    <p-floatlabel class="field">
+      <input id="lat" pInputText [formField]="newActivationForm.lat" />
+      <label for="lat">Latitude</label>
+    </p-floatlabel>
+
+    <div class="field lon-field">
+      <p-floatlabel>
+        <input id="lon" pInputText [formField]="newActivationForm.lon" />
+        <label for="lon">Longitude</label>
+      </p-floatlabel>
+      <p-button icon="pi pi-globe" severity="secondary" [rounded]="true" (onClick)="onOpenGoogleMaps()" pTooltip="Open in Google Maps" />
+    </div>
+
+    <p-floatlabel class="field">
+      <input id="county" pInputText [formField]="newActivationForm.county" />
+      <label for="county">County</label>
+    </p-floatlabel>
+
+    <p-floatlabel class="field">
+      <input id="state" pInputText [formField]="newActivationForm.state" />
+      <label for="state">State</label>
+    </p-floatlabel>
+
+    <div class="form-actions">
+      <p-button label="Add" icon="pi pi-plus" (onClick)="onSaveNewActivation()" [disabled]="newActivationForm().invalid()" />
+    </div>
+  </form>
 </p-dialog>
+}

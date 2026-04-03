@@ -76,10 +76,10 @@ public static partial class QsoDetailsValidator
             errors.Add("Date cannot be in the future");
 
         // Optional field validations
-        if (qso.Freq.HasValue && qso.Freq.Value < 0)
+        if (qso.Freq is < 0)
             errors.Add("Frequency cannot be negative");
 
-        if (qso.FreqRx.HasValue && qso.FreqRx.Value < 0)
+        if (qso.FreqRx is < 0)
             errors.Add("Receive frequency cannot be negative");
 
         if (!string.IsNullOrWhiteSpace(qso.RstSent))
@@ -91,10 +91,10 @@ public static partial class QsoDetailsValidator
         if (!string.IsNullOrWhiteSpace(qso.MyGrid))
             ValidateGridSquare(qso.MyGrid, errors);
 
-        if (qso.MyCqZone.HasValue && (qso.MyCqZone.Value < 1 || qso.MyCqZone.Value > 40))
+        if (qso.MyCqZone is < 1 or > 40)
             errors.Add("CQ Zone must be between 1 and 40");
 
-        if (qso.MyItuZone.HasValue && (qso.MyItuZone.Value < 1 || qso.MyItuZone.Value > 90))
+        if (qso.MyItuZone is < 1 or > 90)
             errors.Add("ITU Zone must be between 1 and 90");
 
         if (!string.IsNullOrWhiteSpace(qso.QslSent) && !_validQslStatus.Contains(qso.QslSent))

@@ -49,8 +49,8 @@ export class LogbookService {
     );
   }
 
-  public createQso(qso: QsoDetailModel): Observable<QsoDetailModel> {
-    return this._http.post(`${this._svcUrl}/qso`, qso);
+  public createQso(potaActivationId: number|null, qso: QsoDetailModel): Observable<QsoDetailModel> {
+    return this._http.post(`${this._svcUrl}/qso`, {potaActivationId, qso});
   }
 
   public updateQso(qso: QsoDetailModel): Observable<QsoDetailModel> {
