@@ -446,7 +446,7 @@ export class QsoEditComponent implements OnInit {
     if (updateUi)
       timeToSend = Utils.calculateMorseTime(text, this.cwSpeed());
 
-    this._infraSvc.sendCw(`/S${this.cwSpeed()}${text}/S22`, this.rigControl(), null).subscribe({
+    this._infraSvc.sendCw(text, this.rigControl(), this.cwSpeed()).subscribe({
       next: (r) => {
         if (r.split && !r.sent) {
           this._ntfSvc.addMessage(new NotificationMessageModel(NotificationMessageSeverity.Warn, "SPLIT ON!", "Split is on. Send again.", false));
