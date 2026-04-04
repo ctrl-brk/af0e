@@ -124,7 +124,24 @@ public sealed class CivIcomSerial(string portName, int baudRate, byte radioAddre
     public IcomRadioStatus GetStatus()
     {
         (IcomMode mode, var filter) = GetMode();
-        return new IcomRadioStatus(GetFrequency(), mode, filter, GetDataMode(), GetNoiseReduction(), GetNoiseBlanker());
+        return new IcomRadioStatus(GetFrequency(), mode, filter, GetDataMode(), GetNoiseReduction(), GetNoiseBlanker(), GetSplit());
+    }
+
+    private bool GetSplit()
+    {
+        var payload = QueryFrameExpecting(
+            requestPayload: [0x0F],
+            predicate: p => p.Length >= 2 && p[0] == 0x0F
+        );
+
+        return payload.Span[1] switch
+        {
+            0x00 => false,
+            0x01 => true,
+            0x11 => true, // DUP-
+            0x12 => true, // DUP+
+            _ => throw new InvalidOperationException($"Unknown split status value 0x{payload.Span[1]:X2}.")
+        };
     }
 
     private void SendFrame(ReadOnlySpan<byte> payload)

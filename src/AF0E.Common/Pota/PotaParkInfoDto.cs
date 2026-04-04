@@ -12,7 +12,7 @@ public class PotaParkInfo
     public int ParktypeId { get; set; }
     public int Active { get; set; }
     public string ParkComments { get; set; }
-    public List<string> ParkURLs { get; set; }
+    public string ParkURLs { get; set; }
     public string Website { get; set; }
     public string ParktypeDesc { get; set; }
     public string LocationDesc { get; set; }

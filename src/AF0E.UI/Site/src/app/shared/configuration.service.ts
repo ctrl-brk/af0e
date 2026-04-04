@@ -9,6 +9,7 @@ export class Configuration {
   private static _utilsUrl = `${Configuration._apiUrl}/tools`;
   private static _notificationUrl = `${Configuration._apiUrl}/notification`;
   public static infraUrl = environment.infraUrl;
+  public static potaAppUrl = environment.potaAppUrl;
 
   public static get LoadingDelay(): number {
     return 200;
