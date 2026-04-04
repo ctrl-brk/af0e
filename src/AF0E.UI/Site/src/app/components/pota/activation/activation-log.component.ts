@@ -1,4 +1,4 @@
-import {Component, input, model, signal, ViewEncapsulation} from '@angular/core';
+import {Component, inject, input, model, output, signal, ViewEncapsulation} from '@angular/core';
 import {ButtonModule} from 'primeng/button';
 import {DatePipe} from '@angular/common';
 import {Dialog} from 'primeng/dialog';
@@ -7,6 +7,7 @@ import {TableModule} from 'primeng/table';
 import {Tag} from 'primeng/tag';
 import {ActivationQsoModel} from '../../../models/activation-qso.model';
 import {ModeSeverityPipe, QsoModePipe} from '../../../shared/pipes';
+import {AppAuthService} from '../../../services/auth.service';
 
 @Component({
   selector: 'app-activation-log',
@@ -25,13 +26,20 @@ import {ModeSeverityPipe, QsoModePipe} from '../../../shared/pipes';
   ],
 })
 export class PotaActivationLogComponent {
+  protected _authSvc = inject(AppAuthService);
   protected myCallsign = signal('');
   protected selectedId = signal(0);
   protected qsoDetailsVisible = model(false);
 
   logEntries = input.required<ActivationQsoModel[]>();
+  qsoSelected = output<any>();
 
   onQsoSelect(qso: ActivationQsoModel) {
+    if (this._authSvc.hasRole('Admin')) {
+      this.qsoSelected.emit(qso.logId);
+      return;
+    }
+
     if (qso.date > new Date(Date.UTC(2011, 0, 6)))
       this.myCallsign.set('AFØE');
     else if (qso.date > new Date(2010, 10, 21))

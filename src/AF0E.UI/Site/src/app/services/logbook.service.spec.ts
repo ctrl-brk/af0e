@@ -148,13 +148,13 @@ describe('LogbookService', () => {
         date: new Date()
       };
 
-      service.createQso(newQso).subscribe(response => {
+      service.createQso(null, newQso).subscribe(response => {
         expect(response).toBeTruthy();
       });
 
       const req = httpMock.expectOne('/api/v1/logbook/qso');
       expect(req.request.method).toBe('POST');
-      expect(req.request.body).toEqual(newQso);
+      expect(req.request.body).toEqual({potaActivationId: null, qso: newQso});
       req.flush({ id: 999, ...newQso });
     });
   });

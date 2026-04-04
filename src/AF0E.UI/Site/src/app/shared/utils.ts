@@ -383,4 +383,16 @@ export class Utils {
 
     return time;
   }
+
+  public static latLonToGrid(lat: number, lon: number): string {
+    const adjLon = lon + 180;
+    const adjLat = lat + 90;
+    const field = String.fromCharCode(65 + Math.floor(adjLon / 20)) +
+      String.fromCharCode(65 + Math.floor(adjLat / 10));
+    const square = String.fromCharCode(48 + Math.floor((adjLon % 20) / 2)) +
+      String.fromCharCode(48 + Math.floor(adjLat % 10));
+    const sub    = String.fromCharCode(97 + Math.floor((adjLon % 2) * 12)) +
+      String.fromCharCode(97 + Math.floor((adjLat % 1) * 24));
+    return field + square + sub;
+  }
 }

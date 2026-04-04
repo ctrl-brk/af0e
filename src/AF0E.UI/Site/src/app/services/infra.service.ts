@@ -27,8 +27,8 @@ export class InfraService {
   }
 
   //speed = 0 resets to pot speed
-  public sendCw(text: string, wpm: number|null): Observable<any> {
-    return this._http.post(`${this._infraUrl}/winkeyer/send`, {text, wpm});
+  public sendCw(text: string, rigControl: boolean, wpm: number|null): Observable<any> {
+    return this._http.post(`${this._infraUrl}/winkeyer/send`, {text, rigControl, wpm});
   }
 
   public cancelCw(): Observable<any> {

@@ -26,7 +26,7 @@
             label="Send"
             icon="pi pi-send"
             severity="primary"
-            [disabled]="!row.text?.trim()"
+            [disabled]="!row.text.trim()"
             [pTooltip]="row.shortcut ? ('Shortcut: ' + row.shortcut) : 'No shortcut selected'"
             tooltipPosition="top"
             (onClick)="sendCw($index)" />

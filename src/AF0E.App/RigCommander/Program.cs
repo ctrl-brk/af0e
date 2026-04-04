@@ -85,14 +85,14 @@ app.RegisterRadioEndpoints(radio, settings, logger);
 
 if (settings.Winkeyer?.Enabled is true)
 {
-    var winkey = new WinkeyerSerial(settings.Winkeyer.PortName, settings.Winkeyer.BaudRate, settings.Winkeyer.MinWpm, settings.Winkeyer.MaxWpm, TimeSpan.FromSeconds(settings.Winkeyer.IdleCloseSeconds), logger);
+    var winkeyer = new WinkeyerSerial(settings.Winkeyer.PortName, settings.Winkeyer.BaudRate, settings.Winkeyer.MinWpm, settings.Winkeyer.MaxWpm, TimeSpan.FromSeconds(settings.Winkeyer.IdleCloseSeconds), logger);
 
-    app.RegisterWinkeyerEndpoints(winkey, settings, logger);
+    app.RegisterWinkeyerEndpoints(winkeyer, radio, settings, logger);
 
     if (settings.Winkeyer.KeepHostOpen)
-        winkey.EnsureReady();
+        winkeyer.EnsureReady();
 
-    app.Lifetime.ApplicationStopping.Register(() => winkey.Dispose());
+    app.Lifetime.ApplicationStopping.Register(() => winkeyer.Dispose());
 }
 
 // -----------------------------------------------------------------------------

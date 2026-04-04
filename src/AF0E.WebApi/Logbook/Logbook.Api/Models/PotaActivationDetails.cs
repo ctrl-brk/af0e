@@ -14,6 +14,7 @@ public sealed class PotaActivationDetails(PotaActivation activation)
     public string? City { get; set; } = activation.City;
     public string County { get; set; } = activation.County;
     public string State { get; set; } = activation.State;
+    public string Grid { get; set; } = activation.Grid;
     public decimal Lat { get; set; } = activation.Lat;
     public decimal Long { get; set; } = activation.Long;
     public int Count { get; set; } = activation.PotaContacts.Count;

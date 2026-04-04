@@ -9,12 +9,13 @@ public sealed class PotaActivation
     public string County { get; init; } = null!;
     public string State { get; init; } = null!;
     public DateTime StartDate { get; init; }
-    public DateTime? EndDate { get; init; }
+    public DateTime? EndDate { get; set; }
     public DateTime? LogSubmittedDate { get; init; }
     // ReSharper disable once EntityFramework.ModelValidation.UnlimitedStringLength
     public string? SiteComments { get; init; }
     public decimal Lat { get; init; }
     public decimal Long { get; init; }
+    public char Status { get; set; }
 
     public PotaPark Park { get; init; } = null!;
     // ReSharper disable once CollectionNeverUpdated.Global

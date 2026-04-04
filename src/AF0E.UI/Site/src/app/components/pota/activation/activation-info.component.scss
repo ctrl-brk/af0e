@@ -1,0 +1,77 @@
+.spot-history {
+  padding: 0.8rem 0 0 0.5rem;
+  h4 {
+    margin: 0;
+  }
+
+  .spot-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+
+    .psk-icon {
+    width: 1.1rem;
+    height: 1.1rem;
+    cursor: pointer;
+    opacity: 0.8;
+    &:hover { opacity: 1; }
+  }
+
+  .spot-header-rbn {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.85rem;
+    }
+  }
+
+  .no-spots {
+    color: var(--p-text-muted-color, #888);
+    font-style: italic;
+  }
+
+  .spot-card {
+    background: var(--p-content-background, #fff);
+    border-top: 1px solid var(--p-content-border-color, #ddd);
+    padding: 0.2rem;
+    margin-bottom: 0.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .spot-row {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+  }
+
+  .spot-spotter {
+    font-weight: 500;
+    font-size: 0.85rem;
+  }
+
+  .spot-meta {
+    font-size: 0.8rem;
+    color: var(--p-text-muted-color, #555);
+
+    span {
+      &:not(:last-child)::after {
+        content: '·';
+        margin-left: 0.2rem;
+      }
+    }
+
+    .spot-source {
+      font-style: italic;
+    }
+  }
+
+  .spot-comments {
+    font-size: 0.85rem;
+    color: var(--p-text-color, #333);
+    font-style: italic;
+  }
+}

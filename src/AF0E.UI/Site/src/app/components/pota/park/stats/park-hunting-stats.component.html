@@ -40,7 +40,7 @@
 
   <ng-template pTemplate="body" let-qso>
     <tr>
-      <td>{{ qso.date | date:'yy-MM-dd hh:mm' }}</td>
+      <td>{{ qso.date | date:'yy-MM-dd HH:mm' }}</td>
       <td>{{ qso.call }}</td>
       <td>{{ qso.band }}</td>
       <td><p-tag [value]="qso.mode|qsoMode" [severity]="qso.mode|modeSeverity" /></td>

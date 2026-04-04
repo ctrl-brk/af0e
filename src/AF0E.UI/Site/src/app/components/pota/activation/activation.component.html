@@ -1,20 +1,37 @@
 <p-card>
   @if (activation()) {
-    <h3><a href="https://pota.app/#/park/{{activation()!.parkNum}}">{{activation()!.parkNum}} - {{activation()!.parkName}}</a></h3>
-    <p>
-      <b>{{activation()!.count}}</b> QSOs&nbsp;&nbsp;
-      @if (activation()!.p2pCount > 0) {
-        <b>{{activation()!.p2pCount}}</b> P2P &nbsp;
-      }
-      <p-tag [value]="'CW: ' + activation()!.cwCount.toString()" severity="success" />&nbsp;
-      <p-tag [value]="'Digi: ' + activation()!.digiCount.toString()" severity="warn" />&nbsp;
-      <p-tag [value]="'Phone: ' + activation()!.phoneCount.toString()" severity="info" />
-    </p>
-    <p>
-      From: {{activation()!.startDate | date:'yy-MM-dd hh:mm'}}&nbsp;&nbsp;&nbsp;To: {{activation()!.endDate | date:'yy-MM-dd hh:mm'}}&nbsp;&nbsp;&nbsp;
-      Log submitted: {{activation()!.logSubmittedDate | date:'yy-MM-dd hh:mm'}}
-    </p>
-    <p class="comment">{{activation()!.siteComments}}</p>
+  <div class="card-layout">
+    <div class="card-main">
+      <h3><a href="https://pota.app/#/park/{{activation()!.parkNum}}">{{activation()!.parkNum}} - {{activation()!.parkName}}</a></h3>
+      <p>
+        <b>{{activation()!.count}}</b> QSOs&nbsp;&nbsp;
+        @if (activation()!.p2pCount > 0) {
+          <b>{{activation()!.p2pCount}}</b> P2P &nbsp;
+        }
+        <p-tag [value]="'CW: ' + activation()!.cwCount.toString()" severity="success" />&nbsp;
+        <p-tag [value]="'Digi: ' + activation()!.digiCount.toString()" severity="warn" />&nbsp;
+        <p-tag [value]="'Phone: ' + activation()!.phoneCount.toString()" severity="info" />
+        @if (qsoRate()) {
+          &nbsp;&nbsp;<b>{{qsoRate()}}</b> QSO/hr for last 10
+        }
+      </p>
+      <p>
+        From: {{activation()!.startDate | date:'yy-MM-dd HH:mm'}}@if (activation()!.endDate) {&nbsp;&nbsp;&nbsp;To: {{activation()!.endDate | date:'yy-MM-dd HH:mm'}}}
+        @if (activation()!.logSubmittedDate) {&nbsp;&nbsp;Log submitted: {{activation()!.logSubmittedDate | date:'yy-MM-dd HH:mm'}}}
+      </p>
+      <p class="comment">{{activation()!.siteComments}}</p>
+    </div>
+    @if (_authSvc.hasRole('Admin')) {
+    <div class="card-actions">
+      <p-checkbox inputId="rigControl" [ngModel]="rigControl()" (ngModelChange)="rigControl.set($event)" [binary]="true" />
+      <label for="rigControl">Rig</label>&nbsp;
+      <p-checkbox inputId="keyerControl" [ngModel]="keyerControl()" (ngModelChange)="keyerControl.set($event)" [binary]="true" />
+      <label for="keyerControl">Keyer</label>
+      <p-button severity="help" label="Spot" icon="pi pi-megaphone" [disabled]="activation().endDate" (onClick)="onSpotShow()" />
+      <p-button severity="success" label="Add QSO" icon="pi pi-plus" (onClick)="onAddQso()" />
+    </div>
+    }
+  </div>
   }
 </p-card>
 
@@ -25,10 +42,41 @@
   </p-tablist>
   <p-tabpanels>
     <p-tabpanel value="log">
-      <app-activation-log [logEntries]="logEntries()"></app-activation-log>
+      <div class="log-container">
+        <div>
+          <app-activation-log [logEntries]="logEntries()" (qsoSelected)="onQsoSelected($event)"></app-activation-log>
+        </div>
+        <div>
+          <app-activation-info [activation]="activation()"></app-activation-info>
+        </div>
+      </div>
     </p-tabpanel>
     <p-tabpanel value="map">
       <app-activation-map #map [activation]="activation()" [logEntries]="logEntries()"></app-activation-map>
     </p-tabpanel>
   </p-tabpanels>
 </p-tabs>
+
+<p-dialog header="Add QSO" [modal]="true" [(visible)]="qsoEditVisible" [style]="{width:'64rem'}" [focusOnShow]="false">
+  @if (qsoEditVisible()) {
+    <app-qso-edit [logId]="logId()" [potaActivation]="activation()" [keyerControl]="keyerControl() && rigCommanderConfig().winkeyer.enabled" [rigControl]="rigControl()" [filtersEnabled]="rigCommanderConfig().activeProfile === 'IC-9100'" [potaMode]="true" (activationCreated)="onNewActivationCreated($event)" (saved)="onQsoSaved($event)" />
+  }
+</p-dialog>
+
+<p-dialog header="Add spot" [modal]="true" [(visible)]="spotDlgVisible" [style]="{width:'16rem'}" [focusOnShow]="true">
+  @if (spotDlgVisible()) {
+    <div style="margin-top: 1rem;">
+      <p-floatlabel variant="on">
+        <input type="text" id="freq" pInputText [(ngModel)]="spotFreq"/>
+        <label for="freq">Frequency</label>
+      </p-floatlabel>
+      <br>
+      <p-floatlabel variant="on">
+        <input id="cmt" pInputText [(ngModel)]="spotComment"/>
+        <label for="cmt">Comment</label>
+      </p-floatlabel>
+      <br>
+      <p-button severity="success" label="Spot" icon="pi pi-megaphone" (onClick)="onSpot()" />
+    </div>
+  }
+</p-dialog>

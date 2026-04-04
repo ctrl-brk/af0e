@@ -115,7 +115,23 @@ public sealed class FT_897 : IRadio
         var mode = ModeCodeToText(modeCode);
         var dataOn = mode is "DIG" or "PKT";
 
-        return new RadioStatus(hz, mode, Filter: null, DataModeOn: dataOn, NoiseReductionOn: false, NoiseBlankerOn: false);
+        return new RadioStatus(hz, mode, Filter: null, DataModeOn: dataOn, NoiseReductionOn: false, NoiseBlankerOn: false, SplitOn: GetSplit());
+    }
+
+    private bool GetSplit()
+    {
+        // Read RX Status
+        Send5_NoScope(0x00, 0x00, 0x00, 0x00, 0xE7);
+        Thread.Sleep(_replyDelayMs);
+
+        var reply = ReadExact_NoScope(1, timeoutMs: _readTimeoutMs);
+
+        // Bit 5 = split status
+        // 0 => split ON
+        // 1 => split OFF
+        var splitBit = (reply[0] >> 5) & 0x01;
+
+        return splitBit == 0;
     }
 
     // ReSharper disable once UnusedTupleComponentInReturnValue

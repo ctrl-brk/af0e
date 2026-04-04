@@ -10,4 +10,5 @@ export const commonEnvironment = {
   auth0clientId: 'sNpxyLre7xkR55bd6kHXURvJSGLkzaRX',
   auth0audience: 'https://af0e.logbook.api',
   infraUrl: 'http://localhost:5050',
+  potaAppUrl: 'https://api.pota.app',
 };

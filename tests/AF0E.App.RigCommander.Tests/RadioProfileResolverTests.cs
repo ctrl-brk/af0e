@@ -33,7 +33,7 @@ public sealed class RadioProfileResolverTests
     public void Resolve_DefaultsToFirstProfile_WhenActiveProfileNotFound()
     {
         var settings = BuildSettings();
-        settings.ActiveProfile = "unknown";
+        settings.ActiveProfile = "";
 
         var profile = RadioProfileResolver.Resolve(settings);
 

@@ -1,0 +1,36 @@
+@if (!activation()?.endDate) {
+<div class="spot-history">
+  <div class="spot-header">
+    <h4>Spot History</h4>
+    <a href="https://pskreporter.info/pskmap?callsign=AF0E" target="_blank" rel="noopener">
+      <img src="pskreporter.ico" class="psk-icon" alt="PSK Reporter" title="PSK Reporter" />
+    </a>
+    <a href="https://www.reversebeacon.net/main.php?rows=10&max_age=10,hours&spotted_call=AF0E&hide=distance_km" target="_blank" rel="noopener">
+      <img src="rbn.ico" class="psk-icon" alt="RBN" title="RBN" />
+    </a>
+    <div class="spot-header-rbn">
+      <label for="showRbn">RBN</label>
+      <p-checkbox inputId="showRbn" [ngModel]="showRbn()" (ngModelChange)="showRbn.set($event)" [binary]="true" />
+    </div>
+  </div>
+  @if (filteredSpots().length === 0) {
+    <p class="no-spots">No spots yet.</p>
+  } @else {
+    @for (spot of filteredSpots(); track spot.spotId) {
+      <div class="spot-card">
+        <div class="spot-row spot-spotter">{{ spot.spotter }}</div>
+        <div class="spot-row spot-meta">
+          <span>{{ spot.spotTime | date:'HH:mm' }}</span>
+          <span>{{ spot.band }}</span>
+          <span>{{ spot.frequency }}</span>
+          <span>{{ spot.mode }}</span>
+          <span class="spot-source">{{ spot.source }}</span>
+        </div>
+        @if (spot.comments) {
+          <div class="spot-row spot-comments">{{ spot.comments }}</div>
+        }
+      </div>
+    }
+  }
+</div>
+}

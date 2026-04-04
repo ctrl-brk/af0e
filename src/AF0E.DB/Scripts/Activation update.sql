@@ -64,11 +64,15 @@ declare @lat decimal(10,6), @long decimal(10,6)
 --select @parkId = 11266, @parkNum = 'US-9666',  @grid = 'DM78mr', @city = 'null',       @county = 'Teller',     @state = 'CO', @lat = 38.730591, @long = -104.950327 -- US-9666 (Rosemont SWA)
 --select @parkId = 2997,  @parkNum = 'US-1214',  @grid = 'DM78or', @city = 'null',       @county = 'El Paso',    @state = 'CO', @lat = 38.738533, @long = -104.823813 -- US-1214 (Cheyenne Mountain SP)
 --select @parkId = 1428,  @parkNum = 'US-10540', @grid = 'DN70jp', @city = 'Bellvue',    @county = 'Larimer',    @state = 'CO', @lat = 40.632469, @long = -105.170188 -- US-10540 (Bellvue-Watson State Fish Hatchery)
+--select @parkId = 132,   @parkNum = 'US-0188',  @grid = 'DM88gx', @city = null,         @county = 'Lincoln',    @state = 'CO', @lat = 38.972692, @long = -103.461413 -- US-0188 (Kinney Lake SWA)
+--select @parkId = 130,   @parkNum = 'US-0185',  @grid = 'DM88hv', @city = null,         @county = 'Lincoln',    @state = 'CO', @lat = 38.935507, @long = -103.434010 -- US-0185 (Hugo SWA)
+--select @parkId = 761,   @parkNum = 'US-0861',  @grid = 'DM88rn', @city = null,         @county = 'Kiowa',      @state = 'CO', @lat = 38.541505, @long = -102.505032 -- US-0861 (Sand Creek Massacre National Historic Site)
+--select @parkId = 9934,  @parkNum = 'US-8296',  @grid = 'DM88fr', @city = 'Karval',     @county = 'Lincoln',    @state = 'CO', @lat = 38.714938, @long = -103.506025 -- US-8296 (Karval Reservoir SWA)
 
---select * from PotaParks where ParkNum = 'US-10540'
+--select * from PotaParks where ParkNum = 'US-8296'
 
 -- MAKE SURE ALL THREE ARE CORRECT and include minutes!
-select @startDate = '2026-03-09 00:00', @endDate = '2026-03-09 00:55', @submitDate = '2026-03-09 03:07'
+select @startDate = '2026-03-29 00:22', @endDate = '2026-03-29 01:15', @submitDate = '2026-03-29 17:04'
 -- MAKE SURE IT'S ONE UTC DAY!
 
 insert into #tmp select COL_PRIMARY_KEY, COL_CALL from [HamLog].[dbo].[TABLE_HRD_CONTACTS_V01] where COL_TIME_ON between @startDate and @endDate

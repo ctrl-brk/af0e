@@ -8,6 +8,7 @@ import {PotaParkModel} from '../models/pota-park.model';
 import {QsoSummaryModel} from '../models/qso-summary.model';
 import {PotaActivityModel} from '../models/pota-activity.model';
 import {PotaActivityStatsModel} from '../models/pota-activity-stats.model';
+import {NewActivationFormData} from '../components/pota/activations/new-activation-form-data';
 
 @Injectable({providedIn: 'root'})
 export class PotaService {
@@ -40,7 +41,7 @@ export class PotaService {
       map((x: PotaActivationModel[]) => {
         return x.map((m) => {
           m.startDate = new Date(m.startDate);
-          m.endDate = new Date(m.endDate);
+          if (m.endDate) m.endDate = new Date(m.endDate);
           return m;
         });
       })
@@ -51,8 +52,8 @@ export class PotaService {
     return this._http.get(Configuration.potaUrl(`activations/${id}`)).pipe(
       map((m: PotaActivationModel) => {
         m.startDate = new Date(m.startDate);
-        m.endDate = new Date(m.endDate);
-        m.logSubmittedDate = new Date(m.logSubmittedDate);
+        if (m.endDate) m.endDate = new Date(m.endDate);
+        if (m.logSubmittedDate) m.logSubmittedDate = new Date(m.logSubmittedDate);
         return m;
       })
     );
@@ -67,6 +68,10 @@ export class PotaService {
         });
       })
     );
+  }
+
+  public createActivation(form: NewActivationFormData): Observable<number> {
+    return this._http.post(Configuration.potaUrl(`activations`), form);
   }
 
   public getActivationsGeoJson(): Observable<any> {
