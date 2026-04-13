@@ -4,6 +4,7 @@ import {
   ElementRef,
   inject,
   input,
+  model,
   OnInit,
   output,
   signal,
@@ -83,12 +84,14 @@ export class QsoEditComponent implements OnInit {
   private _infraSvc = inject(InfraService);
   private _callInput = viewChild<ElementRef>('callInput');
   private _rstSentInput = viewChild<ElementRef>('rstSentInput');
+  private _rstRcvdInput = viewChild<ElementRef>('rstRcvdInput');
+  private _lastCallsign = '';
 
   logId = input.required<number>();
   callSign = input<string>();
   keyerControl = input<boolean>(false);
-  potaMode = input<boolean>(false);
-  rigControl = input(false);
+  potaHunting = input<boolean>(false);
+  rigControl = model(false);
   filtersEnabled = input(false);
   potaActivation = input<PotaActivationModel|null>(null);
 
@@ -154,7 +157,7 @@ export class QsoEditComponent implements OnInit {
         } else {
           this.isEditMode = false;
           this.editModeChange.emit(false);
-          this.initializeNewQso();
+          this.initializeNewQso(false);
 
           if (call)
             this.qsoForm.patchValue({ call });
@@ -191,6 +194,7 @@ export class QsoEditComponent implements OnInit {
 
       this._infraSvc.setRigStatus(freq, mode, filter).subscribe({
         error: e => {
+          this.rigControl.set(false);
           Utils.showErrorMessage(e, this._ntfSvc, this._log);
         }
       });
@@ -274,8 +278,8 @@ export class QsoEditComponent implements OnInit {
     let greet = Utils.getTimeOfDay(state) + Utils.extractNameOrNickname(name);
     const rst = rstSent ? rstSent.replaceAll('9', 'n') : '5nn';
 
-    this.cwExchLabel.set(`R ${greet} UR ${rst} CO`);
-    this.cwExch2Label.set(`R TU ${rst} ${rst} CO CO`);
+    this.cwExchLabel.set(`R ${greet} UR ${rst} C|O`);
+    this.cwExch2Label.set(`R TU ${rst} ${rst} C|O C|O`);
     this.altCwExch = `R TU ${rst} CO`;
   }
 
@@ -325,6 +329,11 @@ export class QsoEditComponent implements OnInit {
       return;
     }
 
+    if (this._lastCallsign == callSign.toLowerCase())
+      return;
+
+    this._lastCallsign = callSign.toLowerCase();
+
     this._potaSvc.getActivityByCall(callSign).subscribe({
       next: (r) => {
         if (!r.active)
@@ -366,6 +375,16 @@ export class QsoEditComponent implements OnInit {
     }
   }
 
+  protected onRstSentInput() {
+    const mode = this.qsoForm.get('mode')?.value as string;
+    const rst: string = this.qsoForm.get('rstSent')?.value || '';
+    const targetLength = mode === 'CW' ? 3 : 2;
+    if (rst.length === targetLength) {
+      const el = this._rstRcvdInput()?.nativeElement;
+      if (el) { el.focus(); el.select(); }
+    }
+  }
+
   private populatePotaDetails(r: PotaActivityModel) {
     if (!r.active)
       return;
@@ -395,45 +414,47 @@ export class QsoEditComponent implements OnInit {
     const ituzone = r.ituzone || '';
     const dxcc = r.dxcc || '';
 
-    if (name_fmt && !this.qsoForm.get('name_fmt')?.value) {
-      this.qsoForm.get('name_fmt')?.setValue(name_fmt);
-      this.qsoForm.markAsDirty();
-    }
-    if (country && !this.qsoForm.get('country')?.value) {
-      this.qsoForm.get('country')?.setValue(country);
-      this.qsoForm.markAsDirty();
-    }
-    if (grid && !this.qsoForm.get('grid')?.value) {
-      this.qsoForm.get('grid')?.setValue(grid);
-      this.qsoForm.markAsDirty();
-    }
-    if (!this.potaMode() && county && !this.qsoForm.get('county')?.value) {
+    this.qsoForm.get('name_fmt')?.setValue(name_fmt);
+    this.qsoForm.get('country')?.setValue(country);
+
+    if (!this.potaHunting()) {
       this.qsoForm.get('county')?.setValue(county);
-      this.qsoForm.markAsDirty();
-    }
-    if (state && !this.qsoForm.get('state')?.value) {
+      this.qsoForm.get('grid')?.setValue(grid);
       this.qsoForm.get('state')?.setValue(state);
-      this.qsoForm.markAsDirty();
     }
-    if (cqzone && !this.qsoForm.get('cqZone')?.value) {
-      this.qsoForm.get('cqZone')?.setValue(cqzone);
-      this.qsoForm.markAsDirty();
-    }
-    if (ituzone && !this.qsoForm.get('ituZone')?.value) {
-      this.qsoForm.get('ituZone')?.setValue(ituzone);
-      this.qsoForm.markAsDirty();
-    }
+
+    this.qsoForm.get('cqZone')?.setValue(cqzone);
+    this.qsoForm.get('ituZone')?.setValue(ituzone);
     this.qsoForm.get('dxcc')?.setValue(dxcc);
+
+    this.qsoForm.markAsDirty();
 
     this.imgUrl.set(r.image ? r.image : 'https://static.qrz.com/static/qrz/qrz_com.svgz');
   }
 
-  private initializeNewQso() {
+  private initializeNewQso(keepFreq: boolean) {
+    const freq = this.qsoForm.get('freq')?.value;
+    const band = this.qsoForm.get('band')?.value;
+    const mode = this.qsoForm.get('mode')?.value;
+    // const rstSent = this.qsoForm.get('rstSent')?.value;
+    // const rstRcvd = this.qsoForm.get('rstRcvd')?.value;
+
     // Reset form to default values for new QSO
     // First reset without values to clear the form state
     this.qsoForm.reset();
     // Then patch with default values to ensure dropdowns work properly
     this.qsoForm.patchValue(this.getDefaultFormValues());
+
+    if (keepFreq) {
+      this.qsoForm.get('freq')?.setValue(freq);
+      this.qsoForm.get('band')?.setValue(band);
+      this.qsoForm.get('mode')?.setValue(mode);
+      // this.qsoForm.get('rstSent')?.setValue(rstSent);
+      // this.qsoForm.get('rstRcvd')?.setValue(rstRcvd);
+    }
+
+    this.callHistory.set([]);
+
     this.qsoForm.markAsPristine();
   }
 
@@ -478,12 +499,15 @@ export class QsoEditComponent implements OnInit {
     if (!this.rigControl()) return;
 
     this._infraSvc.getRigStatus().subscribe({
-      next: (r) => {
+      next: r => {
         this.qsoForm.get('freq')?.setValue(r.frequencyHz, { emitEvent: false });
         this.qsoForm.get('band')?.setValue(Utils.getBandFromFrequency(r.frequencyHz), {emitEvent: false});
         this.qsoForm.get('mode')?.setValue(r.mode);
       },
-      error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
+      error: e => {
+        this.rigControl.set(false);
+        Utils.showErrorMessage(e, this._ntfSvc, this._log)
+      }
     });
   }
 
@@ -618,7 +642,7 @@ export class QsoEditComponent implements OnInit {
     this._lbSvc.createQso(activationId > 0 ? activationId : null, formValue).subscribe({
       next: () => {
         if (this.potaActivation()) {
-          this.initializeNewQso();
+          this.initializeNewQso(true);
           this.setCallFocus(false);
         }
         if (emitSaved)
@@ -628,7 +652,7 @@ export class QsoEditComponent implements OnInit {
     });
   }
 
-  onClear() {
+  onClear(keepFreq: boolean) {
     if (this.isEditMode && this.qso) {
       // In edit mode, reset to original values
       this.qsoForm.patchValue({
@@ -641,8 +665,13 @@ export class QsoEditComponent implements OnInit {
       this.qsoForm.markAsPristine();
     } else {
       // In creation mode, reset to an empty form
-      this.initializeNewQso();
+      this.initializeNewQso(keepFreq);
     }
+
+    this.callHistory.set([]);
+    this._lastCallsign = '';
+    this.imgUrl.set('');
+    this.setCallFocus(false);
   }
 
   private getDefaultFormValues() {
@@ -676,7 +705,7 @@ export class QsoEditComponent implements OnInit {
       qslRcvd: 'N',
       qslRcvdDate: null,
       qslRcvdVia: null,
-      comment: '',
+      comment: this.potaActivation()?.parkNum ? `POTA activation ${this.potaActivation()!.parkNum} (${Utils.abbreviateParkName(this.potaActivation()!.parkName)})` : '',
       siteComment: '',
       radioFilter: {value: '1', disabled: true}
     };
@@ -696,7 +725,7 @@ export class QsoEditComponent implements OnInit {
         callInputEl.nativeElement.focus();
         if (select)
           callInputEl.nativeElement.select();
-      }, 0);
+      }, 100);
     }
   }
 
@@ -807,7 +836,7 @@ export class QsoEditComponent implements OnInit {
         break;
       case 'F12':
         handled = true;
-        this.onClear();
+        this.onClear(true);
         break;
       case 'PageDown':
         handled = true;

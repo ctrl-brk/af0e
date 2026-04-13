@@ -15,7 +15,7 @@
   </p-fieldset>
   <p-fieldset legend="Options"  styleClass="options">
     <p-checkbox inputId="activations" [(ngModel)]="showActivations" [binary]="true" (onChange)="onActivationsChecked()" />
-    <label for="activations"> my activations</label>
+    <label for="activations"> AFØE activations</label>
   </p-fieldset>
   <p-fieldset legend="Park search"  styleClass="search">
     <p-autoComplete [(ngModel)]="searchName" [suggestions]="parksFound" (completeMethod)="parkSearch($event.query)" (onSelect)="onParkSearchSelect($event.value)" delay="500" optionLabel="parkDesc" />

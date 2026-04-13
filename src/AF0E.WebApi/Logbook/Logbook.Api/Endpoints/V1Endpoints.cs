@@ -127,6 +127,22 @@ public static class V1Endpoints
             .WithName("CreateActivation")
             .RequireAuthorization(Policies.AdminOnly);
 
+        builder.MapPut("activations", async Task<Results<BadRequest<string>, NoContent>> (UpdateActivationRequest req, HrdDbContext dbContext) =>
+            {
+                try
+                {
+                    await PotaHandlers.UpdateActivation(req, dbContext);
+                    return TypedResults.NoContent();
+                }
+                catch (ArgumentException e)
+                {
+                    return TypedResults.BadRequest(e.Message);
+                }
+
+            })
+            .WithName("UpdateActivation")
+            .RequireAuthorization(Policies.AdminOnly);
+
         builder.MapGet("parks/search/{parkNum}", async (string parkNum, [FromQuery(Name = "max-results")] int? maxResults, HrdDbContext dbContext) =>
                 TypedResults.Ok(await PotaHandlers.GetParks(parkNum, maxResults ?? 25, dbContext)))
             .WithName("ParkList");

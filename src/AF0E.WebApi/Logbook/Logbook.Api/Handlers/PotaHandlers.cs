@@ -50,7 +50,7 @@ public static partial class PotaHandlers
             if (prevActivation.StartDate < DateTime.UtcNow.AddDays(-2))
                 throw new ArgumentException("Previous day activation must be within the last 2 days");
 
-            prevActivation.EndDate ??= DateTime.UtcNow;
+            prevActivation.EndDate ??= new DateTime(prevActivation.StartDate.Year, prevActivation.StartDate.Month, prevActivation.StartDate.Day, 23, 59, 59);
             prevActivation.Status = 'C';
         }
 
@@ -73,6 +73,29 @@ public static partial class PotaHandlers
 
         return activation.ActivationId;
      }
+
+    public static async Task UpdateActivation(UpdateActivationRequest req, HrdDbContext dbContext)
+    {
+        UpdateActivationValidator.ValidateAndThrow(req);
+
+        var activation = await dbContext.PotaActivations.AsTracking().FirstOrDefaultAsync(x => x.ActivationId == req.Id) ?? throw new ArgumentException("Invalid activation ID");
+
+        var park = await dbContext.PotaParks.FirstOrDefaultAsync(x => x.ParkNum == req.ParkNum) ?? throw new ArgumentException("Invalid park number");
+
+        activation.ParkId = park.ParkId;
+        activation.Grid = req.Grid;
+        activation.County = req.County;
+        activation.State = req.State;
+        activation.Lat = req.Lat;
+        activation.Long = req.Long;
+        activation.StartDate = req.StartDate;
+        activation.EndDate = req.EndDate;
+        activation.LogSubmittedDate = req.LogSubmittedDate;
+        activation.SiteComments = req.SiteComments;
+        activation.Status = req.Status.Length > 0 ? req.Status[0] : activation.Status;
+
+        await dbContext.SaveChangesAsync();
+    }
 
     public static async Task<List<PotaParkDetails>> GetParks(string parkNum, int maxResults, HrdDbContext dbContext)
     {
@@ -221,7 +244,7 @@ public static partial class PotaHandlers
 
     public static async Task AddActivationQso(int activationId, int qsoId, IQrzService qrzSvc, HrdDbContext dbContext, CancellationToken ct)
     {
-        var qso = await dbContext.Log.AsTracking().FirstOrDefaultAsync(l => l.ColPrimaryKey == qsoId, ct) ?? throw new ArgumentException("Invalid QSO ID");
+        var qso = await dbContext.Log.FirstOrDefaultAsync(l => l.ColPrimaryKey == qsoId, ct) ?? throw new ArgumentException("Invalid QSO ID");
 
         var qrz = await QrzHandlers.Lookup(qso.ColCall, qrzSvc, ct);
 

@@ -113,12 +113,14 @@
               [class.ng-dirty]="isFieldInvalid('rstSent')"
               [pTooltip]="isFieldInvalid('rstSent') ? getErrorMessage('rstSent') : ''"
               tooltipPosition="top"
+              (input)="onRstSentInput()"
             />
             <label for="rstSent">RST Sent</label>
           </p-floatlabel>
 
           <p-floatlabel class="w-rst" variant="on">
             <input
+              #rstRcvdInput
               pInputText
               formControlName="rstRcvd"
               id="rstRcvd"
@@ -374,7 +376,7 @@
         </div>
       }
       <div class="form-actions-right">
-        <p-button label="Clear" icon="pi pi-times" severity="secondary" (onClick)="onClear()" title="F12" />
+        <p-button label="Clear" icon="pi pi-times" severity="secondary" (onClick)="onClear(false)" title="F12" />
         <p-button [label]="isEditMode ? 'Save' : 'Add'" [icon]="isEditMode ? 'pi pi-check' : 'pi pi-plus'" type="submit" [disabled]="qsoForm.pristine" (onClick)="onSave()" title="Ctrl-Enter" />
       </div>
     </div>

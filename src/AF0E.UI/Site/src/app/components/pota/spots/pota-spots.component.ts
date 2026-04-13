@@ -17,6 +17,7 @@ import {Dialog} from 'primeng/dialog';
 import {QsoEditComponent} from '../../logbook/qso-edit.component';
 import {ParkHuntingStatsComponent} from '../park/stats/park-hunting-stats.component';
 import {Badge} from 'primeng/badge';
+import {PotaAppService} from '../../../services/pota-app.service';
 
 @Component({
   templateUrl: './pota-spots.component.html',
@@ -44,13 +45,16 @@ export class PotaSpotsComponent implements OnInit, OnDestroy {
   private _potaSvc = inject(PotaService);
   private _ntfSvc= inject(NotificationService);
   private _infraSvc= inject(InfraService);
+  private _potaAppSvc= inject(PotaAppService);
   private _log = inject(LogService);
-  private allSpots = signal<PotaActivityStatsModel[]>([]);
+  private _allSpots = signal<PotaActivityStatsModel[]>([]);
   // Hash table of clicked callsigns for a quick lookup in the grid.
-  private clickedCallSigns = signal<Record<string, true>>({});
+  private _clickedCallSigns = signal<Record<string, true>>({});
+  private _spotFreq = 0;
+  private _spotParkNum = '';
 
   protected spots = computed(() => {
-    const all = this.allSpots();
+    const all = this._allSpots();
     const showDigitalModes = this.showDigi();
     const showPhoneModes = this.showPhone();
     const showCwMode = this.showCw();
@@ -140,7 +144,7 @@ export class PotaSpotsComponent implements OnInit, OnDestroy {
     this.isRefreshing.set(true);
     this._potaSvc.getActivity(undefined, undefined, this.showDups()).subscribe({
       next: (r: PotaActivityStatsModel[]) => {
-        this.allSpots.set(r);
+        this._allSpots.set(r);
         this.isRefreshing.set(false);
       },
       error: (e)=> {
@@ -150,7 +154,7 @@ export class PotaSpotsComponent implements OnInit, OnDestroy {
     });
   }
 
-  protected onCallSignClick(callSign: string, freqKhz: string, mode: string): void {
+  protected onCallSignClick(callSign: string, parkNum: string, freqKhz: string, mode: string): void {
     this.rememberClickedCallSign(callSign);
     this.selectedCall.set(callSign);
     this.qsoEditVisible.set(true);
@@ -159,11 +163,13 @@ export class PotaSpotsComponent implements OnInit, OnDestroy {
       return;
     }
 
-    let freq = Number(freqKhz);
+    this._spotParkNum = parkNum;
+    this._spotFreq = Number(freqKhz);
     if (mode === 'SSB') {
-      mode = freq > 14000 ? 'USB' : 'LSB';
+      mode = this._spotFreq > 14000 ? 'USB' : 'LSB';
     }
-    this._infraSvc.setRigStatus(Number(freqKhz)*1000, mode).subscribe({
+
+    this._infraSvc.setRigStatus(this._spotFreq * 1000, mode).subscribe({
       error: e => {
         Utils.showErrorMessage(e, this._ntfSvc, this._log);
         this.rigControl.set(false);
@@ -173,14 +179,14 @@ export class PotaSpotsComponent implements OnInit, OnDestroy {
 
   protected wasCallSignClicked(callSign: string): boolean {
     const key = this.normalizeCallSign(callSign);
-    return !!key && this.clickedCallSigns()[key];
+    return !!key && this._clickedCallSigns()[key];
   }
 
   private rememberClickedCallSign(callSign: string): void {
     const key = this.normalizeCallSign(callSign);
     if (!key) return;
 
-    this.clickedCallSigns.update(map => ({ ...map, [key]: true }));
+    this._clickedCallSigns.update(map => ({ ...map, [key]: true }));
   }
 
   private normalizeCallSign(callSign: string): string {
@@ -199,8 +205,18 @@ export class PotaSpotsComponent implements OnInit, OnDestroy {
 
   protected onQsoSaved(qso: any) {
     this.lastQso.set(qso);
+    this.addPotaSpot(qso);
     this.qsoEditVisible.set(false);
     this.refreshSpots();
+  }
+
+  private addPotaSpot(qso: any) {
+    if (!qso.huntingParkNum) return;
+
+    this._potaAppSvc.addSpot(this._spotParkNum, this._spotFreq.toString(), `${qso.rstSent} in CO. 73!`).subscribe({
+      next: () => {},
+      error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
+    });
   }
 
   protected getRowClass(spot: PotaActivityStatsModel): string {

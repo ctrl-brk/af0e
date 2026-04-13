@@ -28,7 +28,7 @@ export class PotaActivationMapComponent {
       return;
 
     this._firstLoad = false;
-    this.setupMap(this.logEntries().filter(q => q.lat && q.long));
+    this.setupMap(this.logEntries().filter(q => q.lat && q.lon));
     setTimeout(() => this.map.resize());
   }
 
@@ -37,8 +37,8 @@ export class PotaActivationMapComponent {
     let activators = contacts.filter(x => x.p2p.length !== 0);
 
     let bounds = contacts.reduce((bounds, q) =>
-      bounds.extend([q.long!, q.lat!]),
-      new mapbox.LngLatBounds([contacts[0].long!, contacts[0].lat!], [contacts[0].long!, contacts[0].lat!]));
+      bounds.extend([q.lon!, q.lat!]),
+      new mapbox.LngLatBounds([contacts[0].lon!, contacts[0].lat!], [contacts[0].lon!, contacts[0].lat!]));
 
     this.map = new mapbox.Map({
       accessToken: environment.mapBoxKey,
@@ -69,7 +69,7 @@ export class PotaActivationMapComponent {
           'type': 'FeatureCollection',
           'features': contacts.map(q => {
             const from = point([this.activation().long!, this.activation().lat!]);
-            const to = point([q.long!, q.lat!]);
+            const to = point([q.lon!, q.lat!]);
             const options = {npoints: 25}; // Define the resolution of the line
             return greatCircle(from, to, options);
           })
@@ -164,7 +164,7 @@ export class PotaActivationMapComponent {
           'type': 'Feature',
           'geometry': {
             'type': 'Point',
-            'coordinates': [q.long!, q.lat!]
+            'coordinates': [q.lon!, q.lat!]
           },
           'properties': {qso: q}
         }))

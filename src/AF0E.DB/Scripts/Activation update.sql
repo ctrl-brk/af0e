@@ -68,11 +68,15 @@ declare @lat decimal(10,6), @long decimal(10,6)
 --select @parkId = 130,   @parkNum = 'US-0185',  @grid = 'DM88hv', @city = null,         @county = 'Lincoln',    @state = 'CO', @lat = 38.935507, @long = -103.434010 -- US-0185 (Hugo SWA)
 --select @parkId = 761,   @parkNum = 'US-0861',  @grid = 'DM88rn', @city = null,         @county = 'Kiowa',      @state = 'CO', @lat = 38.541505, @long = -102.505032 -- US-0861 (Sand Creek Massacre National Historic Site)
 --select @parkId = 9934,  @parkNum = 'US-8296',  @grid = 'DM88fr', @city = 'Karval',     @county = 'Lincoln',    @state = 'CO', @lat = 38.714938, @long = -103.506025 -- US-8296 (Karval Reservoir SWA)
+--select @parkId = 11910, @parkNum = 'US-12354', @grid = 'DN80pv', @city = null,         @county = 'Logan',      @state = 'CO', @lat = 40.916100, @long = -102.671167 -- US-12354 (Red Lion SWA)
+--select @parkId = 11736, @parkNum = 'US-12178', @grid = 'DN80im', @city = null,         @county = 'Logan',      @state = 'CO', @lat = 40.510598, @long = -103.298810 -- US-12178 (Atwood SWA)
+--select @parkId = 12139, @parkNum = 'US-12585', @grid = 'DN80gj', @city = null,         @county = 'Morgan',     @state = 'CO', @lat = 40.395633, @long = -103.484103 -- US-12585 (Elliot SWA)
 
---select * from PotaParks where ParkNum = 'US-8296'
+--select * from PotaParks where ParkNum = 'US-12585'
+--select * from PotaParks where ParkId = 3038
 
 -- MAKE SURE ALL THREE ARE CORRECT and include minutes!
-select @startDate = '2026-03-29 00:22', @endDate = '2026-03-29 01:15', @submitDate = '2026-03-29 17:04'
+select @startDate = '2026-04-12 00:53', @endDate = '2026-04-12 01:03', @submitDate = null
 -- MAKE SURE IT'S ONE UTC DAY!
 
 insert into #tmp select COL_PRIMARY_KEY, COL_CALL from [HamLog].[dbo].[TABLE_HRD_CONTACTS_V01] where COL_TIME_ON between @startDate and @endDate

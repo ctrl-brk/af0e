@@ -117,7 +117,7 @@
         }
       </td>
       <td class="act-call">
-        <a (click)="onCallSignClick(act.activity.callSign, act.activity.freqKhz, act.activity.mode)">{{ act.activity.callSign }}</a>
+        <a (click)="onCallSignClick(act.activity.callSign, act.activity.parkNum, act.activity.freqKhz, act.activity.mode)">{{ act.activity.callSign }}</a>
         @if (act.totalCallSignContacts > 0) {
           <p-badge [value]="act.totalCallSignContacts" severity="info" />
         }
@@ -146,7 +146,7 @@
 
 <p-dialog header="Add QSO" [modal]="true" [(visible)]="qsoEditVisible" [style]="{width:'64rem'}" [focusOnShow]="false">
   @if (qsoEditVisible()) {
-    <app-qso-edit [logId]="-1" [callSign]="selectedCall()" [keyerControl]="keyerControl() && rigCommanderConfig().winkeyer.enabled" [rigControl]="rigControl()" [filtersEnabled]="rigCommanderConfig().activeProfile === 'IC-9100'" [potaMode]="true" (saved)="onQsoSaved($event)" />
+    <app-qso-edit [logId]="-1" [callSign]="selectedCall()" [keyerControl]="keyerControl() && rigCommanderConfig().winkeyer.enabled" [(rigControl)]="rigControl" [filtersEnabled]="rigCommanderConfig().activeProfile === 'IC-9100'" [potaHunting]="true" (saved)="onQsoSaved($event)" />
   }
 </p-dialog>
 
