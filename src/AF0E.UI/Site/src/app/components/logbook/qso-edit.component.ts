@@ -4,6 +4,7 @@ import {
   ElementRef,
   inject,
   input,
+  model,
   OnInit,
   output,
   signal,
@@ -45,6 +46,7 @@ import {Dialog} from 'primeng/dialog';
 import {Checkbox, CheckboxChangeEvent} from 'primeng/checkbox';
 import {PotaActivationModel} from '../../models/pota-activation.model';
 import {NewActivationFormData} from '../pota/activations/new-activation-form-data';
+import {QsoEditMode} from '../../shared/qso-edit-mode.enum';
 
 @Component({
   selector: 'app-qso-edit',
@@ -83,18 +85,21 @@ export class QsoEditComponent implements OnInit {
   private _infraSvc = inject(InfraService);
   private _callInput = viewChild<ElementRef>('callInput');
   private _rstSentInput = viewChild<ElementRef>('rstSentInput');
+  private _rstRcvdInput = viewChild<ElementRef>('rstRcvdInput');
+  private _lastCallsign = '';
 
   logId = input.required<number>();
   callSign = input<string>();
   keyerControl = input<boolean>(false);
-  potaMode = input<boolean>(false);
-  rigControl = input(false);
+  editMode = input<QsoEditMode>(QsoEditMode.View);
+  rigControl = model(false);
   filtersEnabled = input(false);
   potaActivation = input<PotaActivationModel|null>(null);
 
   editModeChange = output<boolean>();
   saved = output<any>();
   activationCreated = output<number>();
+  formInit = output<{call: string, qsoCount: number, DE: {grid: string, city: string, county: string, state: string}}>();
 
   protected qso: QsoDetailModel = null!;
   protected qsoForm!: FormGroup;
@@ -154,10 +159,12 @@ export class QsoEditComponent implements OnInit {
         } else {
           this.isEditMode = false;
           this.editModeChange.emit(false);
-          this.initializeNewQso();
+          this.initializeNewQso(false);
 
-          if (call)
-            this.qsoForm.patchValue({ call });
+          if (call) {
+            this.qsoForm.patchValue({call});
+            this.emitFormInit();
+          }
         }
 
         this.setCallFocus(true);
@@ -191,6 +198,7 @@ export class QsoEditComponent implements OnInit {
 
       this._infraSvc.setRigStatus(freq, mode, filter).subscribe({
         error: e => {
+          this.rigControl.set(false);
           Utils.showErrorMessage(e, this._ntfSvc, this._log);
         }
       });
@@ -274,9 +282,18 @@ export class QsoEditComponent implements OnInit {
     let greet = Utils.getTimeOfDay(state) + Utils.extractNameOrNickname(name);
     const rst = rstSent ? rstSent.replaceAll('9', 'n') : '5nn';
 
-    this.cwExchLabel.set(`R ${greet} UR ${rst} CO`);
-    this.cwExch2Label.set(`R TU ${rst} ${rst} CO CO`);
-    this.altCwExch = `R TU ${rst} CO`;
+    if (this.editMode() === QsoEditMode.PotaHunting) {
+      this.cwExchLabel.set(`R ${greet} UR ${rst} C|O`);
+      this.cwExch2Label.set(`R TU ${rst} ${rst} C|O C|O`);
+      this.altCwExch = `R TU ${rst} C|O`;
+    }
+    else if (this.editMode() === QsoEditMode.PotaActivating) {
+      const call = this.cwCallLabel() ? this.cwCallLabel() : '';
+
+      this.cwExchLabel.set(`${call} ${greet} UR ${rst} C|O`);
+      this.cwExch2Label.set(`${call} TU ${rst} ${rst} C|O C|O`);
+      this.altCwExch = `${call} TU ${rst} C|O`;
+    }
   }
 
   private onQsoChange(id: number) {
@@ -325,20 +342,28 @@ export class QsoEditComponent implements OnInit {
       return;
     }
 
-    this._potaSvc.getActivityByCall(callSign).subscribe({
-      next: (r) => {
-        if (!r.active)
-          this.getRadioStatus();
-        else
-          this.populatePotaDetails(r);
-      },
-      error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
-    });
+    if (this._lastCallsign == callSign.toLowerCase())
+      return;
+
+    this.emitFormInit();
+    this._lastCallsign = callSign.toLowerCase();
+
+    if (this.editMode() === QsoEditMode.PotaHunting) {
+      this._potaSvc.getActivityByCall(callSign).subscribe({
+        next: (r) => {
+          if (!r.active)
+            this.getRadioStatus();
+          else
+            this.populatePotaDetails(r);
+        },
+        error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
+      });
+    }
 
     this.imgUrl.set('progress.gif');
     this._qrzSvc.lookup(callSign).subscribe({
       next: (r) => {
-        this.populateQrzDetails(r);
+          this.populateQrzDetails(r);
         // @ts-ignore
         setTimeout(() => this._rstSentInput().nativeElement.select(), 1);
       },
@@ -354,7 +379,7 @@ export class QsoEditComponent implements OnInit {
     });
 
     this._lbSvc.getGridTrackerLog(callSign).subscribe({
-      next: (r) => this.callHistory.set(r),
+      next: (r) => { this.callHistory.set(r); this.emitFormInit(); },
       error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
     });
   }
@@ -363,6 +388,16 @@ export class QsoEditComponent implements OnInit {
     // Handle Tab key - trigger lookup
     if (event.key === 'Tab') {
       this.onCallBlur();
+    }
+  }
+
+  protected onRstSentInput() {
+    const mode = this.qsoForm.get('mode')?.value as string;
+    const rst: string = this.qsoForm.get('rstSent')?.value || '';
+    const targetLength = mode === 'CW' ? 3 : 2;
+    if (rst.length === targetLength) {
+      const el = this._rstRcvdInput()?.nativeElement;
+      if (el) { el.focus(); el.select(); }
     }
   }
 
@@ -386,6 +421,10 @@ export class QsoEditComponent implements OnInit {
   }
 
   private populateQrzDetails(r: QrzDetailsModel) {
+    this.imgUrl.set(r.image ? r.image : 'https://static.qrz.com/static/qrz/qrz_com.svgz');
+
+    if (this.editMode() === QsoEditMode.Edit) return;
+
     const name_fmt = r.name_fmt || '';
     const country = r.country || '';
     const grid = r.grid || '';
@@ -395,46 +434,57 @@ export class QsoEditComponent implements OnInit {
     const ituzone = r.ituzone || '';
     const dxcc = r.dxcc || '';
 
-    if (name_fmt && !this.qsoForm.get('name_fmt')?.value) {
-      this.qsoForm.get('name_fmt')?.setValue(name_fmt);
-      this.qsoForm.markAsDirty();
-    }
-    if (country && !this.qsoForm.get('country')?.value) {
-      this.qsoForm.get('country')?.setValue(country);
-      this.qsoForm.markAsDirty();
-    }
-    if (grid && !this.qsoForm.get('grid')?.value) {
-      this.qsoForm.get('grid')?.setValue(grid);
-      this.qsoForm.markAsDirty();
-    }
-    if (!this.potaMode() && county && !this.qsoForm.get('county')?.value) {
+    this.qsoForm.get('name_fmt')?.setValue(name_fmt);
+    this.qsoForm.get('country')?.setValue(country);
+
+    if (this.editMode() !== QsoEditMode.PotaHunting) {
       this.qsoForm.get('county')?.setValue(county);
-      this.qsoForm.markAsDirty();
-    }
-    if (state && !this.qsoForm.get('state')?.value) {
+      this.qsoForm.get('grid')?.setValue(grid);
       this.qsoForm.get('state')?.setValue(state);
-      this.qsoForm.markAsDirty();
     }
-    if (cqzone && !this.qsoForm.get('cqZone')?.value) {
-      this.qsoForm.get('cqZone')?.setValue(cqzone);
-      this.qsoForm.markAsDirty();
-    }
-    if (ituzone && !this.qsoForm.get('ituZone')?.value) {
-      this.qsoForm.get('ituZone')?.setValue(ituzone);
-      this.qsoForm.markAsDirty();
-    }
+
+    this.qsoForm.get('cqZone')?.setValue(cqzone);
+    this.qsoForm.get('ituZone')?.setValue(ituzone);
     this.qsoForm.get('dxcc')?.setValue(dxcc);
 
-    this.imgUrl.set(r.image ? r.image : 'https://static.qrz.com/static/qrz/qrz_com.svgz');
+    this.qsoForm.markAsDirty();
+
+
   }
 
-  private initializeNewQso() {
+  private initializeNewQso(keepFreq: boolean) {
+    const freq = this.qsoForm.get('freq')?.value;
+    const band = this.qsoForm.get('band')?.value;
+    const mode = this.qsoForm.get('mode')?.value;
+    // const rstSent = this.qsoForm.get('rstSent')?.value;
+    // const rstRcvd = this.qsoForm.get('rstRcvd')?.value;
+    const myGrid = this.qsoForm.get('myGrid')?.value;
+    const myCity = this.qsoForm.get('myCity')?.value;
+    const myCounty = this.qsoForm.get('myCounty')?.value;
+    const myState = this.qsoForm.get('myState')?.value;
+
     // Reset form to default values for new QSO
     // First reset without values to clear the form state
     this.qsoForm.reset();
     // Then patch with default values to ensure dropdowns work properly
     this.qsoForm.patchValue(this.getDefaultFormValues());
+
+    if (keepFreq) {
+      this.qsoForm.get('freq')?.setValue(freq);
+      this.qsoForm.get('band')?.setValue(band);
+      this.qsoForm.get('mode')?.setValue(mode);
+      // this.qsoForm.get('rstSent')?.setValue(rstSent);
+      // this.qsoForm.get('rstRcvd')?.setValue(rstRcvd);
+      this.qsoForm.get('myGrid')?.setValue(myGrid);
+      this.qsoForm.get('myCity')?.setValue(myCity);
+      this.qsoForm.get('myCounty')?.setValue(myCounty);
+      this.qsoForm.get('myState')?.setValue(myState);
+    }
+
+    this.callHistory.set([]);
+
     this.qsoForm.markAsPristine();
+    this.emitFormInit();
   }
 
   sendCw(text: string, k = false, updateUi = true) {
@@ -478,12 +528,15 @@ export class QsoEditComponent implements OnInit {
     if (!this.rigControl()) return;
 
     this._infraSvc.getRigStatus().subscribe({
-      next: (r) => {
+      next: r => {
         this.qsoForm.get('freq')?.setValue(r.frequencyHz, { emitEvent: false });
         this.qsoForm.get('band')?.setValue(Utils.getBandFromFrequency(r.frequencyHz), {emitEvent: false});
         this.qsoForm.get('mode')?.setValue(r.mode);
       },
-      error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
+      error: e => {
+        this.rigControl.set(false);
+        Utils.showErrorMessage(e, this._ntfSvc, this._log)
+      }
     });
   }
 
@@ -618,7 +671,7 @@ export class QsoEditComponent implements OnInit {
     this._lbSvc.createQso(activationId > 0 ? activationId : null, formValue).subscribe({
       next: () => {
         if (this.potaActivation()) {
-          this.initializeNewQso();
+          this.initializeNewQso(true);
           this.setCallFocus(false);
         }
         if (emitSaved)
@@ -628,7 +681,7 @@ export class QsoEditComponent implements OnInit {
     });
   }
 
-  onClear() {
+  onClear(keepFreq: boolean) {
     if (this.isEditMode && this.qso) {
       // In edit mode, reset to original values
       this.qsoForm.patchValue({
@@ -641,8 +694,13 @@ export class QsoEditComponent implements OnInit {
       this.qsoForm.markAsPristine();
     } else {
       // In creation mode, reset to an empty form
-      this.initializeNewQso();
+      this.initializeNewQso(keepFreq);
     }
+
+    this.callHistory.set([]);
+    this._lastCallsign = '';
+    this.imgUrl.set('');
+    this.setCallFocus(false);
   }
 
   private getDefaultFormValues() {
@@ -676,7 +734,7 @@ export class QsoEditComponent implements OnInit {
       qslRcvd: 'N',
       qslRcvdDate: null,
       qslRcvdVia: null,
-      comment: '',
+      comment: this.potaActivation()?.parkNum ? `POTA activation ${this.potaActivation()!.parkNum} (${Utils.abbreviateParkName(this.potaActivation()!.parkName)})` : '',
       siteComment: '',
       radioFilter: {value: '1', disabled: true}
     };
@@ -696,7 +754,7 @@ export class QsoEditComponent implements OnInit {
         callInputEl.nativeElement.focus();
         if (select)
           callInputEl.nativeElement.select();
-      }, 0);
+      }, 100);
     }
   }
 
@@ -760,7 +818,7 @@ export class QsoEditComponent implements OnInit {
         handled = true;
         $event.preventDefault();
         // @ts-ignore
-        this.sendCw(this.callSign());
+        this.sendCw(this.callSign()?.replaceAll('/', '//'));
         break;
       case 'F8':
         handled = true;
@@ -807,7 +865,7 @@ export class QsoEditComponent implements OnInit {
         break;
       case 'F12':
         handled = true;
-        this.onClear();
+        this.onClear(true);
         break;
       case 'PageDown':
         handled = true;
@@ -834,4 +892,19 @@ export class QsoEditComponent implements OnInit {
     if (!isValid) return;
     this.sendCw($event.key, false, false);
   }
+
+  private emitFormInit() {
+    this.formInit.emit({
+      call: (this.qsoForm.get('call')?.value || '').toUpperCase(),
+      qsoCount: this.callHistory().length,
+      DE: {
+        grid: this.qsoForm.get('myGrid')?.value || '',
+        city: this.qsoForm.get('myCity')?.value || '',
+        county: this.qsoForm.get('myCounty')?.value || '',
+        state: this.qsoForm.get('myState')?.value || '',
+      }
+    });
+  }
+
+  protected readonly QsoEditMode = QsoEditMode;
 }

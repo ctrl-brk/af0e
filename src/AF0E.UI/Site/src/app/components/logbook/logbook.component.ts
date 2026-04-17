@@ -21,6 +21,7 @@ import {ModeSeverityPipe, QsoModePipe} from '../../shared/pipes';
 import {DatePipe} from '@angular/common';
 import {AppAuthService} from '../../services/auth.service';
 import {QsoEditComponent} from './qso-edit.component';
+import {QsoEditMode} from '../../shared/qso-edit-mode.enum';
 
 @Component({
   selector: 'app-logbook',
@@ -65,6 +66,7 @@ export class LogbookComponent implements OnInit {
   qsoDetailsVisible = model(false); // model() for two-way binding with dialog
   qsoEditVisible = model(false); // model() for two-way binding with dialog
   myCallsign = signal('');
+  protected qsoEditMode = QsoEditMode.Add;
 
   ngOnInit() {
 
@@ -127,12 +129,14 @@ export class LogbookComponent implements OnInit {
   }
 
   protected onAddQso() {
+    this.qsoEditMode = QsoEditMode.Add;
     this.selectedId.set(this.selectedId() === 0 ? -1 : 0); // triggers form init
     this.qsoEditVisible.set(true);
   }
 
   onQsoSelect(qso: QsoSummaryModel) {
     this.selectedId.set(qso.id);
+    this.qsoEditMode = QsoEditMode.Edit;
 
     if (this._authSvc.hasRole('Admin')) {
       this.qsoEditVisible.set(true);
@@ -156,4 +160,6 @@ export class LogbookComponent implements OnInit {
       this.loadLog(this._call, 0, 50, this.qsoDateRange());
     }
   }
+
+  protected readonly QsoEditMode = QsoEditMode;
 }

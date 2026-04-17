@@ -22,7 +22,8 @@ export const initialActivationData: NewActivationFormData = {
 
 export const activationSchema = schema<NewActivationFormData>((root) => {
   required(root.parkNumber, {message: 'Park number is required'});
-  maxLength(root.parkNumber, 7, {message: 'Park number cannot be longer than 7 characters'});
+  minLength(root.parkNumber, 7, {message: 'Park number must be 7 or 8 characters'});
+  maxLength(root.parkNumber, 8, {message: 'Park number must be 7 or 8 characters'});
   required(root.grid, {message: 'Grid is required'});
   minLength(root.grid, 4, {message: 'Grid must be 4 or 6 characters'});
   maxLength(root.grid, 6, {message: 'Grid must be 4 or 6 characters'});

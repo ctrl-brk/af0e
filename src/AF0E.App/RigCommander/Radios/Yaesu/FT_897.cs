@@ -104,6 +104,7 @@ public sealed class FT_897 : IRadio
 
     public RadioStatus GetStatus()
     {
+        _port.DiscardInBuffer();
         Send5_NoScope(0x00, 0x00, 0x00, 0x00, 0x03);
         Thread.Sleep(_replyDelayMs);
         var reply = ReadExact_NoScope(5, timeoutMs: _readTimeoutMs);
@@ -121,7 +122,7 @@ public sealed class FT_897 : IRadio
     private bool GetSplit()
     {
         // Read RX Status
-        Send5_NoScope(0x00, 0x00, 0x00, 0x00, 0xE7);
+        Send5_NoScope(0x00, 0x00, 0x00, 0x00, 0xF7);
         Thread.Sleep(_replyDelayMs);
 
         var reply = ReadExact_NoScope(1, timeoutMs: _readTimeoutMs);
@@ -168,13 +169,14 @@ public sealed class FT_897 : IRadio
         0x00 => "LSB",
         0x01 => "USB",
         0x02 => "CW",
+        0x82 => "CW",
         0x03 => "CWR",
+        0x83 => "CWR",
         0x04 => "AM",
         0x06 => "WFM",
         0x08 => "FM",
         0x0A => "DIG",
         0x0C => "PKT",
-        0x88 => "FMN",
         _ => $"0x{code:X2}"
     };
 

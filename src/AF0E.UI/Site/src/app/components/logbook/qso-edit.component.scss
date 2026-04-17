@@ -1,9 +1,17 @@
 .p-dialog-header {
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
   padding: 0 0 0 1rem;
+  background: var(--p-tag-info-background);
+  color: var(--p-tag-info-color);
 }
 
 .p-dialog-content {
   padding: 0 0.5rem 0.5rem 0.5rem;
+}
+
+.p-dialog-title {
+  font-weight: normal;
 }
 
 .qso-edit-container {
@@ -201,7 +209,6 @@
       width: 5rem;
       > input {
         width: 4rem;
-        padding: 2px;
       }
     }
     .stop-btn {

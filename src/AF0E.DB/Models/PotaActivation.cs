@@ -3,18 +3,19 @@
 public sealed class PotaActivation
 {
     public int ActivationId { get; init; }
-    public int ParkId { get; init; }
-    public string Grid { get; init; } = null!;
-    public string? City { get; init; } = null!;
-    public string County { get; init; } = null!;
-    public string State { get; init; } = null!;
-    public DateTime StartDate { get; init; }
+    public int ParkId { get; set; }
+    public string Grid { get; set; } = null!;
+    public string? City { get; set; } = null!;
+    public string County { get; set; } = null!;
+    public string State { get; set; } = null!;
+    public DateTime StartDate { get; set; }
     public DateTime? EndDate { get; set; }
-    public DateTime? LogSubmittedDate { get; init; }
+    public DateTime? LogSubmittedDate { get; set; }
     // ReSharper disable once EntityFramework.ModelValidation.UnlimitedStringLength
-    public string? SiteComments { get; init; }
-    public decimal Lat { get; init; }
-    public decimal Long { get; init; }
+    public string? SiteComments { get; set; }
+    public string? Comments { get; set; }
+    public decimal Lat { get; set; }
+    public decimal Long { get; set; }
     public char Status { get; set; }
 
     public PotaPark Park { get; init; } = null!;

@@ -17,6 +17,7 @@ public sealed class PotaActivationDetails(PotaActivation activation)
     public string Grid { get; set; } = activation.Grid;
     public decimal Lat { get; set; } = activation.Lat;
     public decimal Long { get; set; } = activation.Long;
+    public string Status { get; set; } = activation.Status.ToString();
     public int Count { get; set; } = activation.PotaContacts.Count;
     public int CwCount { get; set; } = activation.PotaContacts.Count(c => c.Log.ColMode == "CW");
     public int DigiCount { get; set; } = activation.PotaContacts.Count(c => c.Log.ColMode is "FT8" or "MFSK");

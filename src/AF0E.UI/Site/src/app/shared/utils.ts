@@ -110,7 +110,7 @@ export class Utils {
 
   /**
    * Converts a UTC date string from the API to a Date object for form display
-   * This creates a "local" Date that displays the UTC values without timezone shift
+   * This creates a "local" Date that displays the UTC values without a timezone shift
    */
   public static utcStringToDate(dateString: string | Date | null | undefined): Date | null {
     if (!dateString) return null;
@@ -131,6 +131,24 @@ export class Utils {
       date.getUTCMinutes(),
       date.getUTCSeconds()
     );
+  }
+
+  public static abbreviateParkName(name: string): string {
+    const abbreviations: [string, string][] = [
+      ['State Wildlife Area',        'SWA'],
+      ['State Recreation Area',      'SRA'],
+      ['State Park',                 'SP'],
+      ['State Historic Site',        'SHS'],
+      ['National Forest',            'NF'],
+      ['National Wildlife Refugee',  'NWR'],
+      ['National Recreational Area', 'NRA'],
+      ['National Monument',          'NM'],
+      ['National Historic Site',     'NHS'],
+      ['State Fish Hatchery',        'SFH'],
+      ['Wildlife Management Area',   'WMA'],
+    ];
+
+    return abbreviations.reduce((acc, [full, abbr]) => acc.replace(full, abbr), name);
   }
 
   /**

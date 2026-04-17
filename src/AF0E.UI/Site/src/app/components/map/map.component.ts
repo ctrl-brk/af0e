@@ -56,7 +56,7 @@ export class MapComponent implements OnInit {
     fourth: '#1E90ff',
     default: '#f4a460',
   };
-  protected showActivations = true;
+  protected showActivations = false;
   protected searchName:string | undefined;
   protected parksFound: PotaParkModel[] = [];
   isLessThan1000px = false;
