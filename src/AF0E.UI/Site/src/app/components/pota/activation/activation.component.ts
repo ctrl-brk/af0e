@@ -36,6 +36,8 @@ import {PotaActivationInfoComponent} from './activation-info.component';
 import {Tooltip} from 'primeng/tooltip';
 import {form, FormField} from '@angular/forms/signals';
 import {DatePicker} from 'primeng/datepicker';
+import {NotificationMessageModel, NotificationMessageSeverity} from '../../../shared/notification-message.model';
+import {QsoEditMode} from '../../../shared/qso-edit-mode.enum';
 
 @Component({
   templateUrl: './activation.component.html',
@@ -74,6 +76,7 @@ export class PotaActivationComponent implements OnInit {
   private _potaAppSvc= inject(PotaAppService);
   private _ntfSvc= inject(NotificationService);
   private _log = inject(LogService);
+  private _lastDupCheck = '';
 
   private activationInfo = viewChild(PotaActivationInfoComponent);
 
@@ -82,6 +85,7 @@ export class PotaActivationComponent implements OnInit {
   protected logId = signal(-1);
   protected activation = signal<PotaActivationModel>(null!);
   protected logEntries = signal<ActivationQsoModel[]>([]);
+  protected qsoDlgHeader = signal('Edit QSO');
   protected qsoEditVisible = model(false);
   protected spotDlgVisible = model(false);
   protected editActivationVisible = model(false);
@@ -92,6 +96,7 @@ export class PotaActivationComponent implements OnInit {
   protected spotComment = signal('CQ');
   protected qsoStats = {total: 1, cw: 0, digi: 0, phone: 0};
   protected activationForm = form(this.activation, activationSchema)
+  protected qsoEditMode = QsoEditMode.View;
 
   protected qsoRate = computed(() => {
     const entries = this.logEntries();
@@ -105,6 +110,12 @@ export class PotaActivationComponent implements OnInit {
     const hours = (newest - oldest) / 3_600_000;
     if (hours === 0) return null;
     return Math.round(recent.length / hours);
+  });
+
+  protected lastQso = computed(() => {
+    const entries = this.logEntries();
+    if (!entries.length) return null;
+    return [...entries].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
   });
 
   ngOnInit(): void {
@@ -158,6 +169,7 @@ export class PotaActivationComponent implements OnInit {
 
   protected onAddQso() {
     this.logId.set(-1);
+    this.qsoEditMode = QsoEditMode.PotaActivating
     this.qsoEditVisible.set(true);
   }
 
@@ -179,6 +191,7 @@ export class PotaActivationComponent implements OnInit {
 
   protected onQsoSelected(logId: number) {
     this.logId.set(logId);
+    this.qsoEditMode = QsoEditMode.Edit
     this.qsoEditVisible.set(true);
   }
 
@@ -222,10 +235,24 @@ export class PotaActivationComponent implements OnInit {
   }
 
   protected onSpot() {
-    this._potaAppSvc.addSpot(this.activation().parkNum, this.spotFreq(), this.spotComment()).subscribe({
+    this._potaAppSvc.addSpot('AF0E', this.activation().parkNum, this.spotFreq(), undefined, this.spotComment()).subscribe({
       next: () => this.spotDlgVisible.set(false),
       error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
     });
+  }
+
+  protected onQsoFormInit(qso: { call: string; qsoCount: number, DE: { grid: string; city: string; county: string; state: string } }) {
+    if (this.qsoEditMode == QsoEditMode.Edit) return;
+
+    this.qsoDlgHeader.set(`${qso.call.replace('0', 'Ø')} (${qso.qsoCount}) de ${qso.DE.grid} ${qso.DE.city}, ${qso.DE.county}, ${qso.DE.state}`);
+
+    if (this._lastDupCheck === qso.call) return;
+
+    this._lastDupCheck = qso.call;
+    const existing = this.logEntries().filter(e => e.call === qso.call);
+    if (existing.length === 0) return;
+
+    this._ntfSvc.addMessage(new NotificationMessageModel(NotificationMessageSeverity.Warn, `DUP! (${existing.length} before)`));
   }
 
   protected setEndTimeAndStatus() {

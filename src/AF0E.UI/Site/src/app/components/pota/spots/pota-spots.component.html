@@ -144,9 +144,9 @@
 
 <p-scrollTop />
 
-<p-dialog header="Add QSO" [modal]="true" [(visible)]="qsoEditVisible" [style]="{width:'64rem'}" [focusOnShow]="false">
+<p-dialog [header]="qsoDlgHeader()" [modal]="true" [(visible)]="qsoEditVisible" [style]="{width:'64rem'}" [focusOnShow]="false">
   @if (qsoEditVisible()) {
-    <app-qso-edit [logId]="-1" [callSign]="selectedCall()" [keyerControl]="keyerControl() && rigCommanderConfig().winkeyer.enabled" [(rigControl)]="rigControl" [filtersEnabled]="rigCommanderConfig().activeProfile === 'IC-9100'" [potaHunting]="true" (saved)="onQsoSaved($event)" />
+    <app-qso-edit [logId]="-1" [callSign]="selectedCall()" [keyerControl]="keyerControl() && rigCommanderConfig().winkeyer.enabled" [(rigControl)]="rigControl" [filtersEnabled]="rigCommanderConfig().activeProfile !== 'FT-897'" (formInit)="onQsoFormInit($event)" [editMode]="QsoEditMode.PotaHunting" (saved)="onQsoSaved($event)" (close)="qsoDlgHeader.set('Add QSO')" />
   }
 </p-dialog>
 

@@ -25,15 +25,24 @@
       <p class="comment">{{activation()!.siteComments}}</p>
     </div>
     <div class="card-actions">
+      <div class="card-actions-row">
+        @if (_authSvc.hasRole('Admin')) {
+          <p-checkbox inputId="rigControl" [(ngModel)]="rigControl" [binary]="true" />
+          <label for="rigControl">Rig</label>&nbsp;
+          <p-checkbox inputId="keyerControl" [(ngModel)]="keyerControl" [binary]="true" />
+          <label for="keyerControl">Keyer</label>
+          <p-button severity="help" label="Spot" icon="pi pi-megaphone" [disabled]="activation().endDate" (onClick)="onSpotShow()" />
+          <p-button severity="success" label="QSO" icon="pi pi-plus" (onClick)="onAddQso()" />
+        }
+        <p-button severity="secondary" label="ADIF" icon="pi pi-download" (onClick)="onExportAdif()" />
+      </div>
       @if (_authSvc.hasRole('Admin')) {
-        <p-checkbox inputId="rigControl" [(ngModel)]="rigControl" [binary]="true" />
-        <label for="rigControl">Rig</label>&nbsp;
-        <p-checkbox inputId="keyerControl" [(ngModel)]="keyerControl" [binary]="true" />
-        <label for="keyerControl">Keyer</label>
-        <p-button severity="help" label="Spot" icon="pi pi-megaphone" [disabled]="activation().endDate" (onClick)="onSpotShow()" />
-        <p-button severity="success" label="QSO" icon="pi pi-plus" (onClick)="onAddQso()" />
+        <div class="last-call">
+          @if (lastQso()) {
+            {{lastQso()!.call}} | {{lastQso()!.date | date:'HH:mm'}} | {{lastQso()!.band}} {{lastQso()!.mode}}
+          }
+        </div>
       }
-      <p-button severity="secondary" label="ADIF" icon="pi pi-download" (onClick)="onExportAdif()" />
     </div>
   </div>
   }
@@ -61,129 +70,131 @@
   </p-tabpanels>
 </p-tabs>
 
-<p-dialog header="Add QSO" [modal]="true" [(visible)]="qsoEditVisible" [style]="{width:'64rem'}" [focusOnShow]="false">
-  @if (qsoEditVisible()) {
-    <app-qso-edit [logId]="logId()" [potaActivation]="activation()" [keyerControl]="keyerControl() && rigCommanderConfig().winkeyer.enabled" [(rigControl)]="rigControl" [filtersEnabled]="rigCommanderConfig().activeProfile === 'IC-9100'" (activationCreated)="onNewActivationCreated($event)" (saved)="onQsoSaved($event)" />
-  }
-</p-dialog>
+@if (_authSvc.hasRole('Admin')) {
+  <p-dialog [header]="qsoDlgHeader()" [modal]="true" [(visible)]="qsoEditVisible" [style]="{width:'64rem'}" [focusOnShow]="false">
+    @if (qsoEditVisible()) {
+      <app-qso-edit [logId]="logId()" [potaActivation]="activation()" [keyerControl]="keyerControl() && rigCommanderConfig().winkeyer.enabled" [(rigControl)]="rigControl" [filtersEnabled]="rigCommanderConfig().activeProfile !== 'FT-897'" [editMode]="qsoEditMode" (activationCreated)="onNewActivationCreated($event)" (formInit)="onQsoFormInit($event)" (saved)="onQsoSaved($event)" />
+    }
+  </p-dialog>
 
-<p-dialog header="Add spot" [modal]="true" [(visible)]="spotDlgVisible" [style]="{width:'16rem'}" [focusOnShow]="true">
-  @if (spotDlgVisible()) {
-    <div style="margin-top: 1rem;">
-      <p-floatlabel variant="on">
-        <input type="text" id="freq" pInputText [(ngModel)]="spotFreq"/>
-        <label for="freq">Frequency</label>
-      </p-floatlabel>
-      <br>
-      <p-floatlabel variant="on">
-        <input id="cmt" pInputText [(ngModel)]="spotComment"/>
-        <label for="cmt">Comment</label>
-      </p-floatlabel>
-      <br>
-      <p-button severity="success" label="Spot" icon="pi pi-megaphone" (onClick)="onSpot()" />
-    </div>
-  }
-</p-dialog>
-
-@if (editActivationVisible() && _authSvc.hasRole('Admin')) {
-  <p-dialog header="Edit activation" [modal]="true" [(visible)]="editActivationVisible" [style]="{ width: '40rem' }" [focusOnShow]="true">
-    <form id="activationForm" class="activation-form">
-      <p-floatlabel class="field">
-        <input id="parkNum" pInputText [formField]="activationForm.parkNum"/>
-        <label for="parkNum">Park Number</label>
-      </p-floatlabel>
-
-      <div class="field grid-field">
-        <p-floatlabel>
-          <input id="grid" pInputText [formField]="activationForm.grid" />
-          <label for="grid">Grid</label>
+  <p-dialog header="Add spot" [modal]="true" [(visible)]="spotDlgVisible" [style]="{width:'16rem'}" [focusOnShow]="true">
+    @if (spotDlgVisible()) {
+      <div style="margin-top: 1rem;">
+        <p-floatlabel variant="on">
+          <input type="text" id="freq" pInputText [(ngModel)]="spotFreq"/>
+          <label for="freq">Frequency</label>
         </p-floatlabel>
-      </div>
-
-      <p-floatlabel class="field">
-        <input id="lat" pInputText [formField]="$any(activationForm.lat)" />
-        <label for="lat">Latitude</label>
-      </p-floatlabel>
-
-      <div class="field lon-field">
-        <p-floatlabel>
-          <input id="lon" pInputText [formField]="$any(activationForm.long)" />
-          <label for="lon">Longitude</label>
+        <br>
+        <p-floatlabel variant="on">
+          <input id="cmt" pInputText [(ngModel)]="spotComment"/>
+          <label for="cmt">Comment</label>
         </p-floatlabel>
-        <p-button icon="pi pi-globe" severity="secondary" [rounded]="true" (onClick)="onOpenGoogleMaps()" pTooltip="Open in Google Maps" />
+        <br>
+        <p-button severity="success" label="Spot" icon="pi pi-megaphone" (onClick)="onSpot()" />
       </div>
+    }
+  </p-dialog>
 
-      <p-floatlabel class="field">
-        <input id="county" pInputText [formField]="activationForm.county" />
-        <label for="county">County</label>
-      </p-floatlabel>
+  @if (editActivationVisible()) {
+    <p-dialog header="Edit activation" [modal]="true" [(visible)]="editActivationVisible" [style]="{ width: '40rem' }" [focusOnShow]="true">
+      <form id="activationForm" class="activation-form">
+        <p-floatlabel class="field">
+          <input id="parkNum" pInputText [formField]="activationForm.parkNum"/>
+          <label for="parkNum">Park Number</label>
+        </p-floatlabel>
 
-      <p-floatlabel class="field">
-        <input id="state" pInputText [formField]="activationForm.state" />
-        <label for="state">State</label>
-      </p-floatlabel>
+        <div class="field grid-field">
+          <p-floatlabel>
+            <input id="grid" pInputText [formField]="activationForm.grid" />
+            <label for="grid">Grid</label>
+          </p-floatlabel>
+        </div>
 
-      <p-floatlabel class="field">
-        <p-datePicker
-          [(ngModel)]="activation().startDate"
-          inputId="startDate"
-          name="startDate"
-          dateFormat="yy-mm-dd"
-          [showTime]="true"
-          hourFormat="24"
-          [required]="true"
-          appendTo="body"
-        />
-        <label for="startDate">Start date</label>
-      </p-floatlabel>
+        <p-floatlabel class="field">
+          <input id="lat" pInputText [formField]="$any(activationForm.lat)" />
+          <label for="lat">Latitude</label>
+        </p-floatlabel>
 
-      <div class="field end-field">
-        <p-floatlabel>
+        <div class="field lon-field">
+          <p-floatlabel>
+            <input id="lon" pInputText [formField]="$any(activationForm.long)" />
+            <label for="lon">Longitude</label>
+          </p-floatlabel>
+          <p-button icon="pi pi-globe" severity="secondary" [rounded]="true" (onClick)="onOpenGoogleMaps()" pTooltip="Open in Google Maps" />
+        </div>
+
+        <p-floatlabel class="field">
+          <input id="county" pInputText [formField]="activationForm.county" />
+          <label for="county">County</label>
+        </p-floatlabel>
+
+        <p-floatlabel class="field">
+          <input id="state" pInputText [formField]="activationForm.state" />
+          <label for="state">State</label>
+        </p-floatlabel>
+
+        <p-floatlabel class="field">
           <p-datePicker
-            [(ngModel)]="activation().endDate"
-            inputId="endDate"
-            name="endDate"
+            [(ngModel)]="activation().startDate"
+            inputId="startDate"
+            name="startDate"
             dateFormat="yy-mm-dd"
             [showTime]="true"
             hourFormat="24"
             [required]="true"
             appendTo="body"
           />
-          <label for="endDate">End date</label>
+          <label for="startDate">Start date</label>
         </p-floatlabel>
-        <p-button
-          icon="pi pi-angle-double-left"
-          [text]="true"
-          [rounded]="true"
-          size="small"
-          severity="info"
-          (onClick)="setEndTimeAndStatus()"
-          class="date-now-btn"
-        />
-      </div>
 
-      <p-floatlabel class="field">
-        <p-datePicker
-          [(ngModel)]="activation().logSubmittedDate"
-          inputId="submitDate"
-          name="sbmitDate"
-          dateFormat="yy-mm-dd"
-          [showTime]="true"
-          hourFormat="24"
-          [required]="true"
-          appendTo="body"
-        />
-        <label for="submitDate">Submit date</label>
-      </p-floatlabel>
+        <div class="field end-field">
+          <p-floatlabel>
+            <p-datePicker
+              [(ngModel)]="activation().endDate"
+              inputId="endDate"
+              name="endDate"
+              dateFormat="yy-mm-dd"
+              [showTime]="true"
+              hourFormat="24"
+              [required]="true"
+              appendTo="body"
+            />
+            <label for="endDate">End date</label>
+          </p-floatlabel>
+          <p-button
+            icon="pi pi-angle-double-left"
+            [text]="true"
+            [rounded]="true"
+            size="small"
+            severity="info"
+            (onClick)="setEndTimeAndStatus()"
+            class="date-now-btn"
+          />
+        </div>
 
-      <p-floatlabel class="field">
-        <input id="status" pInputText [formField]="activationForm.status" />
-        <label for="status">Status (P,C)</label>
-      </p-floatlabel>
+        <p-floatlabel class="field">
+          <p-datePicker
+            [(ngModel)]="activation().logSubmittedDate"
+            inputId="submitDate"
+            name="sbmitDate"
+            dateFormat="yy-mm-dd"
+            [showTime]="true"
+            hourFormat="24"
+            [required]="true"
+            appendTo="body"
+          />
+          <label for="submitDate">Submit date</label>
+        </p-floatlabel>
 
-      <div class="form-actions">
-        <p-button label="Save" icon="pi pi-save" (onClick)="onSaveActivation()" [disabled]="activationForm().invalid()" />
-      </div>
-    </form>
-  </p-dialog>
+        <p-floatlabel class="field">
+          <input id="status" pInputText [formField]="activationForm.status" />
+          <label for="status">Status (P,C)</label>
+        </p-floatlabel>
+
+        <div class="form-actions">
+          <p-button label="Save" icon="pi pi-save" (onClick)="onSaveActivation()" [disabled]="activationForm().invalid()" />
+        </div>
+      </form>
+    </p-dialog>
+  }
 }

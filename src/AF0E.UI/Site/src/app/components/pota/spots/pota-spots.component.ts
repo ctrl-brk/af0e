@@ -18,6 +18,7 @@ import {QsoEditComponent} from '../../logbook/qso-edit.component';
 import {ParkHuntingStatsComponent} from '../park/stats/park-hunting-stats.component';
 import {Badge} from 'primeng/badge';
 import {PotaAppService} from '../../../services/pota-app.service';
+import {QsoEditMode} from '../../../shared/qso-edit-mode.enum';
 
 @Component({
   templateUrl: './pota-spots.component.html',
@@ -88,6 +89,7 @@ export class PotaSpotsComponent implements OnInit, OnDestroy {
     });
   });
 
+  protected qsoDlgHeader = signal('');
   protected rigCommanderConfig = signal<any>({});
   protected autoRefresh = signal(false);
   protected rigControl = signal(false);
@@ -211,12 +213,16 @@ export class PotaSpotsComponent implements OnInit, OnDestroy {
   }
 
   private addPotaSpot(qso: any) {
-    if (!qso.huntingParkNum) return;
+    if (!this._spotParkNum) return;
 
-    this._potaAppSvc.addSpot(this._spotParkNum, this._spotFreq.toString(), `${qso.rstSent} in CO. 73!`).subscribe({
+    this._potaAppSvc.addSpot(qso.call, this._spotParkNum, this._spotFreq.toString(), qso.mode, `${qso.rstSent} in ${qso.myGrid.slice(0, 4)} CO. TU ${Utils.extractNameOrNickname(qso.name_fmt)}!`).subscribe({
       next: () => {},
       error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
     });
+  }
+
+  protected onQsoFormInit(qso: { call: string; qsoCount: number, DE: { grid: string; city: string; county: string; state: string } }) {
+    this.qsoDlgHeader.set(`${qso.call.replace('0', 'Ø')} (${qso.qsoCount}) de ${qso.DE.grid} ${qso.DE.city}, ${qso.DE.county}, ${qso.DE.state}`);
   }
 
   protected getRowClass(spot: PotaActivityStatsModel): string {
@@ -246,4 +252,6 @@ export class PotaSpotsComponent implements OnInit, OnDestroy {
       clearInterval(this.refreshInterval);
     }
   }
+
+  protected readonly QsoEditMode = QsoEditMode;
 }

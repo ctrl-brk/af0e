@@ -9,8 +9,8 @@ export class PotaAppService {
   private _http = inject(HttpService);
   private _url = Configuration.potaAppUrl;
 
-  public addSpot(reference: string, frequency: string, comments: string): Observable<any> {
-    return this._http.post(`${this._url}/spot`, {activator: 'AF0E', spotter: 'AF0E', source: 'af0e.org', reference, frequency, comments});
+  public addSpot(call: string, reference: string, frequency: string, mode: string | undefined, comments: string): Observable<any> {
+    return this._http.post(`${this._url}/spot`, {activator: call, spotter: 'AF0E', source: 'af0e.org', reference, frequency, mode, comments});
   }
 
   public getSpotHistory(reference: string): Observable<PotaAppSpotHistoryModel[]> {

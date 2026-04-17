@@ -363,23 +363,23 @@
       </div>
     </aside>
 
-    <div class="form-actions form-actions-wide">
-      @if (keyerControl() || qsoForm.get('mode')?.value === 'CW') {
-        <div class="form-actions-left">
-          <p-button label="F4&middot;AFØE" severity="contrast" (onClick)="sendCw('AF0E')" />
-          <p-button label="F3&middot;Exch" severity="info" (onClick)="sendCw(cwExchLabel(), true)" [pTooltip]="cwExchLabel()" tooltipPosition="top"  />
-          <p-button label="x2" severity="info" size="small" class="x2-btn" (onClick)="sendCw(cwExch2Label(), true)" [pTooltip]="cwExch2Label()" tooltipPosition="top" />
-          <p-button label="F5&middot;{{cwCallLabel()}}" severity="warn" [disabled]="cwCallLabel() === '???'" />
-          <p-button label="F8&middot;?" severity="secondary" />
-          <p-inputNumber [(ngModel)]="cwSpeed" [showButtons]="true" inputId="minmax-buttons" [min]="10" [max]="32" size="small" class="cw-speed" />
-          <p-button label="Stop" severity="danger" class="stop-btn" (onClick)="stopCw()" [disabled]="!cwSending()" />
+      <div class="form-actions form-actions-wide">
+          <div class="form-actions-left">
+            @if (editMode() === QsoEditMode.PotaHunting || editMode() === QsoEditMode.PotaActivating && (keyerControl() || qsoForm.get('mode')?.value === 'CW')) {
+              <p-button label="F4&middot;AFØE" severity="contrast" (onClick)="sendCw('AF0E')" />
+              <p-button label="F3&middot;Exch" severity="info" (onClick)="sendCw(cwExchLabel(), true)" [pTooltip]="cwExchLabel()" tooltipPosition="top"  />
+              <p-button label="x2" severity="info" size="small" class="x2-btn" (onClick)="sendCw(cwExch2Label(), true)" [pTooltip]="cwExch2Label()" tooltipPosition="top" />
+              <p-button label="F5&middot;{{cwCallLabel()}}" severity="warn" [disabled]="cwCallLabel() === '???'" />
+              <p-button label="F8&middot;?" severity="secondary" />
+              <p-inputNumber [(ngModel)]="cwSpeed" [showButtons]="true" inputId="minmax-buttons" [min]="10" [max]="32" size="small" class="cw-speed" />
+    <!--          <p-button label="Stop" severity="danger" class="stop-btn" (onClick)="stopCw()" [disabled]="!cwSending()" />-->
+            }
+          </div>
+        <div class="form-actions-right">
+          <p-button label="Clear" icon="pi pi-times" severity="secondary" (onClick)="onClear(false)" title="F12" />
+          <p-button [label]="isEditMode ? 'Save' : 'Add'" [icon]="isEditMode ? 'pi pi-check' : 'pi pi-plus'" type="submit" [disabled]="qsoForm.pristine" (onClick)="onSave()" title="Ctrl-Enter" />
         </div>
-      }
-      <div class="form-actions-right">
-        <p-button label="Clear" icon="pi pi-times" severity="secondary" (onClick)="onClear(false)" title="F12" />
-        <p-button [label]="isEditMode ? 'Save' : 'Add'" [icon]="isEditMode ? 'pi pi-check' : 'pi pi-plus'" type="submit" [disabled]="qsoForm.pristine" (onClick)="onSave()" title="Ctrl-Enter" />
       </div>
-    </div>
   </div>
 
   <p-dialog [modal]="true" [showHeader]="false" [(visible)]="cwTextVisible" [focusOnShow]="true" [style]="{ width: '20rem' }">
