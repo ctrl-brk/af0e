@@ -18,11 +18,26 @@
     .card-main { }
     .card-actions {
       display: flex;
-      align-items: center;
-      justify-content: flex-end;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: center;
       flex: 1;
       gap: 0.4rem;
-      p-button { margin-left: 0.6rem; }
+      .card-actions-row {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        p-button { margin-left: 0.6rem; }
+      }
+      .last-call {
+        border: 1px #ccc solid;
+        border-radius: 4px;
+        background: var(--p-tag-info-background);
+        padding: 2px;
+        color: var(--p-tag-info-color);
+        min-width: 27rem;
+        height: 1.5rem;
+      }
     }
   }
 }
@@ -33,5 +48,37 @@
   .log-container {
     display: grid;
     grid-template-columns: 1fr auto;
+  }
+}
+
+.activation-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem 1.5rem;
+  padding-top: 1.5rem;
+
+  .field {
+    width: 100%;
+    p-floatlabel {
+      display: block;
+      width: 100%;
+    }
+    input, p-inputnumber, p-datepicker {
+      width: 100%;
+    }
+    &.grid-field, &.lon-field, &.end-field {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      p-floatlabel {
+        flex: 1;
+        width: auto;
+      }
+    }
+  }
+
+  .form-actions {
+    grid-column: 2;
+    text-align: right;
   }
 }

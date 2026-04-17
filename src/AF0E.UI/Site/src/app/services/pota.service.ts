@@ -74,6 +74,10 @@ export class PotaService {
     return this._http.post(Configuration.potaUrl(`activations`), form);
   }
 
+  public updateActivation(activation: PotaActivationModel): Observable<void>  {
+    return this._http.put(Configuration.potaUrl(`activations`), activation);
+  }
+
   public getActivationsGeoJson(): Observable<any> {
     return this._http.get(Configuration.potaUrl('geojson/activations/all'));
   }

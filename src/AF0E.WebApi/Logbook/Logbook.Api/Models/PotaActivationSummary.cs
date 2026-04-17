@@ -9,6 +9,7 @@ public sealed class PotaActivationSummary(PotaActivation activation)
     public DateTime? EndDate { get; set; } = activation.EndDate;
     public string ParkNum { get; set; } = activation.Park.ParkNum;
     public string ParkName { get; set; } = activation.Park.ParkName;
+    public string State { get; set; } = activation.State;
     public int Count { get; set; } = activation.PotaContacts.Count;
     public int CwCount { get; set; } = activation.PotaContacts.Count(c => c.Log.ColMode == "CW");
     public int DigiCount { get; set; } = activation.PotaContacts.Count(c => c.Log.ColMode is "FT8" or "MFSK");

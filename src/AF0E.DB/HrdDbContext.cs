@@ -39,11 +39,11 @@ public class HrdDbContext(string connectionString, QueryTrackingBehavior trackin
     {
         modelBuilder.Entity<PotaContact>(entity =>
         {
+            entity.Property(e => e.ContactId).ValueGeneratedOnAdd();
             entity.HasKey(e => e.ContactId).HasName("PK_PotaContacts");
             entity.HasIndex(e => e.ActivationId, "IX_PotaContacts_ActivationId");
             entity.HasIndex(e => e.LogId, "IX_PotaContacts_LogId");
 
-            entity.Property(e => e.ContactId).ValueGeneratedOnAdd();
             entity.Property(e => e.P2P).HasMaxLength(100).IsUnicode(false);
             entity.Property(e => e.Lat).HasColumnType("decimal(10, 6)");
             entity.Property(e => e.Long).HasColumnType("decimal(10, 6)");
@@ -101,6 +101,7 @@ public class HrdDbContext(string connectionString, QueryTrackingBehavior trackin
             entity.Property(e => e.Lat).HasColumnType("decimal(10,6)");
             entity.Property(e => e.Long).HasColumnType("decimal(10,6)");
             entity.Property(e => e.LogSubmittedDate).HasColumnType("datetime");
+            entity.Property(e => e.Comments).IsUnicode(false);
             entity.Property(e => e.SiteComments).IsUnicode(false);
 
             entity.HasOne(d => d.Park).WithMany(p => p.PotaActivations)

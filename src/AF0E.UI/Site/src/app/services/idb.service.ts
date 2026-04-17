@@ -43,8 +43,10 @@ export class IdbService {
         db => new Promise<IDBValidKey>((resolve, reject) => {
           const tx = db.transaction(STORE_NAME, 'readwrite');
           const store = tx.objectStore(STORE_NAME);
-          // put() will insert or update based on keyPath (id)
-          const request = store.put({...qso, activationId, _savedAt: new Date().toISOString()});
+          const record: any = {...qso, activationId, _savedAt: new Date().toISOString()};
+          // id=0 means new record — remove it so autoIncrement assigns a fresh key
+          if (!record.id) delete record.id;
+          const request = store.put(record);
           request.onsuccess = () => resolve(request.result);
           request.onerror  = () => reject(request.error);
         })
