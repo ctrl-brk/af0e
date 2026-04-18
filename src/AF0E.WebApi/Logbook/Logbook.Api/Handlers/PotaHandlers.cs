@@ -28,6 +28,8 @@ public static partial class PotaHandlers
             .Include(x => x.Park)
             .Include(x => x.PotaContacts)
             .ThenInclude(l => l.Log)
+            .ThenInclude(h => h.PotaHunting)
+            .ThenInclude(p => p.Park)
             .FirstOrDefaultAsync(x => x.ActivationId == id);
 
         return res == null ? null : new PotaActivationDetails(res);
@@ -37,6 +39,8 @@ public static partial class PotaHandlers
         await dbContext.PotaContacts
             .Where(x => x.ActivationId == id)
             .Include(x => x.Log)
+            .ThenInclude(h => h.PotaHunting)
+            .ThenInclude(p => p.Park)
             .Select(x => new PotaActivationQsoSummary(x))
             .ToListAsync();
 

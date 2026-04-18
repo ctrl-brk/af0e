@@ -9,7 +9,6 @@ public sealed class PotaContact
     public int ContactId { get; init; }
     public int LogId { get; init; }
     public int ActivationId { get; init; }
-    public string? P2P { get; set; }
     public decimal? Lat { get; set; }
     public decimal? Long { get; set; }
     public DateTime? QrzLookupDate { get; set; }

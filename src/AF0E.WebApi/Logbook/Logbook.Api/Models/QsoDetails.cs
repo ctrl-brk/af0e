@@ -42,7 +42,7 @@ public sealed class QsoDetails
         QslRcvdDate = log.ColQslrdate;
         QslRcvdVia = log.ColQslRcvdVia;
         POTA = [.. log.PotaContacts.Select(x => x.Activation.Park.ParkNum)];
-        p2p = log.PotaContacts.Count > 0 && !string.IsNullOrEmpty(log.PotaContacts.First().P2P);
+        p2p = log.PotaHunting.Count > 0;
         SatName = log.ColSatName;
         SatMode = log.ColSatMode;
         Contest = log.ColContestId;

@@ -36,10 +36,12 @@ internal sealed class HostedService(ILogger<HostedService> logger, IHostApplicat
     {
         var contacts = await _dbContext!.PotaContacts
             .AsTracking()
-            .Where(x => x.Lat == null && x.P2P == null && (x.QrzLookupDate == null || EF.Functions.DateDiffHour(x.QrzLookupDate, DateTime.UtcNow) > 720)) //1 month
             .Include(x => x.Log)
+            .ThenInclude(x => x.PotaHunting)
             .Include(x => x.Activation)
             .ThenInclude(x => x.Park)
+            // x.Log.PotaHunting.Count == 0 is to exclude any contacts that are already associated with a POTA hunting record, as those are likely to be park-to-park contacts where the geolocation of the contact is not relevant.
+            .Where(x => x.Lat == null && x.Log.PotaHunting.Count == 0 && (x.QrzLookupDate == null || EF.Functions.DateDiffHour(x.QrzLookupDate, DateTime.UtcNow) > 720)) //1 month
             .ToListAsync(ct);
 
         var cnt = 0;
