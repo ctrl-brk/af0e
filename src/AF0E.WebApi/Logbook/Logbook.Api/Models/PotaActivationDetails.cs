@@ -22,5 +22,6 @@ public sealed class PotaActivationDetails(PotaActivation activation)
     public int CwCount { get; set; } = activation.PotaContacts.Count(c => c.Log.ColMode == "CW");
     public int DigiCount { get; set; } = activation.PotaContacts.Count(c => c.Log.ColMode is "FT8" or "MFSK");
     public int PhoneCount { get; set; } = activation.PotaContacts.Count(c => c.Log.ColMode is "SSB" or "LSB" or "USB" or "FM" or "AM");
-    public int P2pCount { get; set; } = activation.PotaContacts.Count(c => c.P2P != null);
+    //public int P2pCount { get; set; } = activation.PotaContacts.Count(c => c.P2P != null);
+    public int P2pCount { get; set; } = activation.PotaContacts.Count(c => c.Log.PotaHunting.Count > 0);
 }
