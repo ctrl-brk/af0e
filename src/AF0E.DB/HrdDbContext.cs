@@ -44,7 +44,6 @@ public class HrdDbContext(string connectionString, QueryTrackingBehavior trackin
             entity.HasIndex(e => e.ActivationId, "IX_PotaContacts_ActivationId");
             entity.HasIndex(e => e.LogId, "IX_PotaContacts_LogId");
 
-            entity.Property(e => e.P2P).HasMaxLength(100).IsUnicode(false);
             entity.Property(e => e.Lat).HasColumnType("decimal(10, 6)");
             entity.Property(e => e.Long).HasColumnType("decimal(10, 6)");
             entity.Property(e => e.QrzGeoLoc).HasMaxLength(10).IsUnicode(false);

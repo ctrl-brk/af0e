@@ -24,9 +24,6 @@
     <Project Path="AF0E.App/PotaHuntingLookup/PotaHuntingLookup.csproj">
       <BuildType Solution="Development|*" Project="Debug" />
     </Project>
-    <Project Path="AF0E.App/PotaLookup/PotaLookup.csproj">
-      <BuildType Solution="Development|*" Project="Debug" />
-    </Project>
     <Project Path="AF0E.App/QrzLookup/QrzLookup.csproj">
       <BuildType Solution="Development|*" Project="Debug" />
     </Project>

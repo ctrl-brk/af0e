@@ -67,6 +67,7 @@ public static class LogbookHandlers
     public static async Task<QsoDetails?> GetQsoDetails(int logId, HrdDbContext dbContext, IAuthorizationService authSvc, IHttpContextAccessor httpContext)
     {
         var log = await dbContext.Log
+            .Include(h => h.PotaHunting)
             .Include(x => x.PotaContacts)
             .ThenInclude(c => c.Activation)
             .ThenInclude(p => p.Park)
