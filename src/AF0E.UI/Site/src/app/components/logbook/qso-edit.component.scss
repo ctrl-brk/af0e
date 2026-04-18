@@ -16,7 +16,10 @@
 
 .qso-edit-container {
   width: 100%;
-  :focus {
+  &:focus, &:focus-visible {
+    outline: none;
+  }
+  :focus, :focus-visible {
     outline: none;
   }
 

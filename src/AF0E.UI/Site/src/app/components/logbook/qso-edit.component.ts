@@ -110,6 +110,7 @@ export class QsoEditComponent implements OnInit {
   protected cwExch2Label = signal('');
   private altCwExch = '';
   protected cwSending = signal(false);
+  protected cqSending = signal(false);
   protected cwSpeed = signal(22);
   protected callHistory = signal<GridTrackerLookupModel[]>([]);
   protected cwTextVisible = signal(false);
@@ -489,7 +490,7 @@ export class QsoEditComponent implements OnInit {
 
   sendCw(text: string, k = false, updateUi = true) {
     let timeToSend = 0;
-      this.cwSending.set(true);
+    this.cwSending.set(true);
 
     text = `${text}${k ? ' K' : ''}`;
 
@@ -512,7 +513,19 @@ export class QsoEditComponent implements OnInit {
     });
   }
 
+  protected sendPotaCq(startCq: boolean, timeout = 5000) {
+    if (!startCq && !this.cqSending()) return;
+
+    const msg = 'CQ POTA DE AF0E AF0E K';
+    const timeToSend = Utils.calculateMorseTime(msg, this.cwSpeed());
+    this.cqSending.set(true);
+    this.sendCw(msg, false, false);
+    setTimeout(() => this.sendPotaCq(false), timeToSend + timeout);
+  }
+
   stopCw() {
+    this.cqSending.set(false);
+
     this._infraSvc.cancelCw().subscribe({
       next: () => {
         this.cwSending.set(false);
@@ -791,10 +804,31 @@ export class QsoEditComponent implements OnInit {
     return 'Invalid value';
   }
 
+  protected onContainerClick(event: MouseEvent) {
+    (event.currentTarget as HTMLElement).focus();
+  }
+
   protected onKeyDown($event: KeyboardEvent) {
     let handled = false;
 
     switch ($event.key) {
+      case 'F1':
+        if (this.editMode() !== QsoEditMode.PotaActivating) break;
+        handled = true;
+        $event.preventDefault();
+        if (this.cqSending())
+          this.stopCw();
+        else
+          this.sendPotaCq(true);
+        break;
+      case 'F2':
+        handled = true;
+        $event.preventDefault();
+        if ($event.altKey)
+          this.sendCw('73 de AF0E');
+        else
+          this.sendCw('73 E|E');
+        break;
       case 'F4':
         handled = true;
         $event.preventDefault();
@@ -853,7 +887,7 @@ export class QsoEditComponent implements OnInit {
         }
         break;
       case 'Escape':
-        if (!this.cwSending()) return;
+        if (!this.cwSending() && !this.cqSending()) return;
         handled = true;
         this.stopCw();
         break;
@@ -878,6 +912,10 @@ export class QsoEditComponent implements OnInit {
         let speed1 = this.cwSpeed();
         if (speed1 >= 32) return;
         this.cwSpeed.set(speed1 + 2);
+        break;
+      default:
+        if (this.cqSending())
+          this.stopCw();
         break;
     }
 
@@ -907,4 +945,5 @@ export class QsoEditComponent implements OnInit {
   }
 
   protected readonly QsoEditMode = QsoEditMode;
+  protected readonly HTMLElement = HTMLElement;
 }
