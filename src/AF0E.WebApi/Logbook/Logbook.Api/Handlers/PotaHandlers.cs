@@ -101,6 +101,85 @@ public static partial class PotaHandlers
         await dbContext.SaveChangesAsync();
     }
 
+    public static async Task<int> CloneActivation(CloneActivationRequest req, HrdDbContext dbContext)
+    {
+        CloneActivationValidator.ValidateAndThrow(req);
+
+        var sourceActivation = await dbContext.PotaActivations.FirstOrDefaultAsync(x => x.ActivationId == req.activationId)
+            ?? throw new ArgumentException("Invalid activation ID");
+
+        var park = await dbContext.PotaParks.FirstOrDefaultAsync(x => x.ParkNum == req.ParkNumber)
+            ?? throw new ArgumentException("Invalid park number");
+
+        var sourceContacts = await dbContext.PotaContacts
+            .Where(x => x.ActivationId == sourceActivation.ActivationId)
+            .ToListAsync();
+
+        await using var tx = await dbContext.Database.BeginTransactionAsync();
+
+        var clone = new PotaActivation
+        {
+            ParkId = park.ParkId,
+            Grid = sourceActivation.Grid,
+            County = sourceActivation.County,
+            State = sourceActivation.State,
+            Lat = sourceActivation.Lat,
+            Long = sourceActivation.Long,
+            StartDate = sourceActivation.StartDate,
+            EndDate = sourceActivation.EndDate,
+            LogSubmittedDate = sourceActivation.LogSubmittedDate,
+            SiteComments = sourceActivation.SiteComments,
+            Status = sourceActivation.Status
+        };
+
+        dbContext.PotaActivations.Add(clone);
+        await dbContext.SaveChangesAsync();
+
+        if (sourceContacts.Count > 0)
+        {
+            var clonedContacts = sourceContacts.Select(c => new PotaContact
+            {
+                ActivationId = clone.ActivationId,
+                LogId = c.LogId,
+                Lat = c.Lat,
+                Long = c.Long,
+                QrzLookupDate = c.QrzLookupDate,
+                QrzGeoLoc = c.QrzGeoLoc
+            });
+
+            dbContext.PotaContacts.AddRange(clonedContacts);
+            await dbContext.SaveChangesAsync();
+        }
+
+        await tx.CommitAsync();
+
+        return clone.ActivationId;
+    }
+
+    public static async Task DeleteActivation(int activationId, HrdDbContext dbContext)
+    {
+        if (activationId <= 0)
+            throw new ArgumentException("Invalid activation ID");
+
+        var activation = await dbContext.PotaActivations
+            .FirstOrDefaultAsync(x => x.ActivationId == activationId)
+            ?? throw new ArgumentException("Invalid activation ID");
+
+        await using var tx = await dbContext.Database.BeginTransactionAsync();
+
+        var contacts = await dbContext.PotaContacts
+            .Where(x => x.ActivationId == activationId)
+            .ToListAsync();
+
+        if (contacts.Count > 0)
+            dbContext.PotaContacts.RemoveRange(contacts);
+
+        dbContext.PotaActivations.Remove(activation);
+
+        await dbContext.SaveChangesAsync();
+        await tx.CommitAsync();
+    }
+
     public static async Task<List<PotaParkDetails>> GetParks(string parkNum, int maxResults, HrdDbContext dbContext)
     {
         if (string.IsNullOrEmpty(parkNum))
@@ -219,7 +298,7 @@ public static partial class PotaHandlers
             .ToDictionary(s => s.CallSign, s => s.Count, StringComparer.OrdinalIgnoreCase);
 
         // Combine data
-        return filteredSpots.Select(spot =>
+        return [.. filteredSpots.Select(spot =>
         {
             var parkNum = spot.ParkNum ?? "";
             var normalizedParkNum = string.IsNullOrEmpty(parkNum) ? "" : NormalizeParkNumber(parkNum);
@@ -243,7 +322,7 @@ public static partial class PotaHandlers
                 TotalParkContacts = totalParkContacts,
                 TotalCallSignContacts = totalCallSignContacts
             };
-        }).ToList();
+        })];
     }
 
     public static async Task AddActivationQso(int activationId, int qsoId, IQrzService qrzSvc, HrdDbContext dbContext, CancellationToken ct)

@@ -6,6 +6,7 @@ using AF0E.Services.Qrz;
 using Logbook.Api.Handlers;
 using Logbook.Api.Models;
 using Logbook.Api.Requests;
+using Logbook.Api.Responses;
 using Logbook.Api.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -90,6 +91,29 @@ public static class V1Endpoints
         builder.MapGet("{call?}", async (string? call, int? skip, int? take, string? sort, int? orderBy, string? begin, string? end, HrdDbContext dbContext) =>
                 TypedResults.Ok(await LogbookHandlers.GetLog(call, skip, take, sort, orderBy, begin, end, dbContext)))
             .WithName("Logbook");
+
+        builder.MapPost("upload", async Task<Results<BadRequest<string>, Ok<AdifImportResponse>>> ([FromForm] UploadAdifRequest request, IQrzService qrzSvc, HrdDbContext dbContext, CancellationToken ct) =>
+            {
+                if (request.File is null || request.File.Length == 0)
+                    return TypedResults.BadRequest("A non-empty .adif file is required");
+
+                if (!request.File.FileName.EndsWith(".adi", StringComparison.OrdinalIgnoreCase) &&
+                    !request.File.FileName.EndsWith(".adif", StringComparison.OrdinalIgnoreCase))
+                    return TypedResults.BadRequest("File must be an ADIF file (.adi or .adif)");
+
+                try
+                {
+                    return TypedResults.Ok(await LogbookHandlers.UploadAdif(request.File, request.ActivationId, qrzSvc, dbContext, ct));
+                }
+                catch (ArgumentException ex)
+                {
+                    return TypedResults.BadRequest(ex.Message);
+                }
+            })
+            .Accepts<UploadAdifRequest>("multipart/form-data")
+            .RequireAuthorization(Policies.AdminOnly)
+            .DisableAntiforgery()
+            .WithName("LogbookUpload");
     }
 
     private static void RegisterPotaEndpoints(IEndpointRouteBuilder v1Builder)
@@ -140,8 +164,38 @@ public static class V1Endpoints
                 }
 
             })
-            .WithName("UpdateActivation")
-            .RequireAuthorization(Policies.AdminOnly);
+            .RequireAuthorization(Policies.AdminOnly)
+            .WithName("UpdateActivation");
+
+        builder.MapPost("activations/clone", async Task<Results<BadRequest<string>, Created<int>>> (CloneActivationRequest req, HrdDbContext dbContext) =>
+            {
+                try
+                {
+                    var clonedId = await PotaHandlers.CloneActivation(req, dbContext);
+                    return TypedResults.Created($"/api/v1/pota/activations/{clonedId}", clonedId);
+                }
+                catch (ArgumentException e)
+                {
+                    return TypedResults.BadRequest(e.Message);
+                }
+            })
+            .RequireAuthorization(Policies.AdminOnly)
+            .WithName("CloneActivation");
+
+        builder.MapDelete("activations/{activationId:int}", async Task<Results<BadRequest<string>, NoContent>> (int activationId, HrdDbContext dbContext) =>
+            {
+                try
+                {
+                    await PotaHandlers.DeleteActivation(activationId, dbContext);
+                    return TypedResults.NoContent();
+                }
+                catch (ArgumentException e)
+                {
+                    return TypedResults.BadRequest(e.Message);
+                }
+            })
+            .RequireAuthorization(Policies.AdminOnly)
+            .WithName("DeleteActivation");
 
         builder.MapGet("parks/search/{parkNum}", async (string parkNum, [FromQuery(Name = "max-results")] int? maxResults, HrdDbContext dbContext) =>
                 TypedResults.Ok(await PotaHandlers.GetParks(parkNum, maxResults ?? 25, dbContext)))

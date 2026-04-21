@@ -12,10 +12,11 @@ import {
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {activationSchema, PotaActivationModel} from '../../../models/pota-activation.model';
 import {PotaService} from '../../../services/pota.service';
+import {LogbookService} from '../../../services/logbook.service';
 import {Utils} from '../../../shared/utils';
 import {NotificationService} from '../../../shared/notification.service';
 import {LogService} from '../../../shared/log.service';
-import {ActivatedRoute} from '@angular/router';
+import {ActivatedRoute, Router} from '@angular/router';
 import {DatePipe} from '@angular/common';
 import {Tag} from 'primeng/tag';
 import {Card} from 'primeng/card';
@@ -38,6 +39,10 @@ import {form, FormField} from '@angular/forms/signals';
 import {DatePicker} from 'primeng/datepicker';
 import {NotificationMessageModel, NotificationMessageSeverity} from '../../../shared/notification-message.model';
 import {QsoEditMode} from '../../../shared/qso-edit-mode.enum';
+import {ConfirmPopup} from 'primeng/confirmpopup';
+import {Toast} from 'primeng/toast';
+import {ConfirmationService} from 'primeng/api';
+import {AdifImportResponseModel} from '../../../models/adif-import-response.model';
 
 @Component({
   templateUrl: './activation.component.html',
@@ -66,12 +71,20 @@ import {QsoEditMode} from '../../../shared/qso-edit-mode.enum';
     FormField,
     DatePicker,
     ReactiveFormsModule,
+    ConfirmPopup,
+    Toast,
   ],
+  providers: [
+    ConfirmationService
+  ]
 })
 export class PotaActivationComponent implements OnInit {
+  private _router = inject(Router);
   private _activatedRoute = inject(ActivatedRoute)
   private _destroyRef = inject(DestroyRef);
+  private _confirmSvc = inject(ConfirmationService);
   private _potaSvc = inject(PotaService);
+  private _logbookSvc = inject(LogbookService);
   private _infraSvc= inject(InfraService);
   private _potaAppSvc= inject(PotaAppService);
   private _ntfSvc= inject(NotificationService);
@@ -97,6 +110,8 @@ export class PotaActivationComponent implements OnInit {
   protected qsoStats = {total: 1, cw: 0, digi: 0, phone: 0};
   protected activationForm = form(this.activation, activationSchema)
   protected qsoEditMode = QsoEditMode.View;
+  protected cloneDlgVisible = signal(false);
+  protected cloneParkNum = signal('');
 
   protected qsoRate = computed(() => {
     const entries = this.logEntries();
@@ -219,7 +234,6 @@ export class PotaActivationComponent implements OnInit {
 
   protected onSpotShow() {
     if (this.rigControl()) {
-
       this._infraSvc.getRigStatus().subscribe({
         next: (r) => {
           const f = r.frequencyHz.toString().slice(0, -1);
@@ -235,7 +249,7 @@ export class PotaActivationComponent implements OnInit {
   }
 
   protected onSpot() {
-    this._potaAppSvc.addSpot('AF0E', this.activation().parkNum, this.spotFreq(), undefined, this.spotComment()).subscribe({
+    this._potaAppSvc.addSpot('AF0E', this.activation().parkNum, this.spotFreq(), Utils.frequencyToMode(this.spotFreq()), this.spotComment()).subscribe({
       next: () => this.spotDlgVisible.set(false),
       error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
     });
@@ -272,6 +286,61 @@ export class PotaActivationComponent implements OnInit {
     window.open(`https://www.google.com/maps?q=${lat},${lon}`, '_blank');
   }
 
+  protected onCloneActivation() {
+    this._potaSvc.cloneActivation(this.activationId(), this.cloneParkNum()).subscribe({
+      next: (id: number) => {
+        this.cloneDlgVisible.set(false);
+        this.cloneParkNum.set('');
+        this._router.navigate(['/pota/activations', id]);
+      },
+      error: (e) => Utils.showErrorMessage(e, this._ntfSvc, this._log)
+    });
+  }
+
+  protected onMergeAdifFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files?.length) return;
+    const file = input.files[0];
+    this._logbookSvc.uploadAdif(this.activationId(), file).subscribe({
+      next: (r: AdifImportResponseModel) => {
+        const severity = r.skipped.length > 0 ? NotificationMessageSeverity.Warn : NotificationMessageSeverity.Success;
+        let title = 'ADIF'
+        if (r.skipped.length > 0) {
+          title += ' (see console)'
+          this._log.warn(`ADIF import result: Total:${r.received} Accepted:${r.accepted} Skipped:${r.skipped} Qrz:${r.qrz}`);
+        }
+        this._ntfSvc.addMessage(new NotificationMessageModel(severity, title, `Total:${r.received} Accepted:${r.accepted} Skipped:${r.skipped.length} Qrz:${r.qrz}`, true));
+        this.onActivationChange(this.activationId());
+      },
+      error: (e) => Utils.showErrorMessage(e, this._ntfSvc, this._log)
+    });
+    input.value = '';
+  }
+
+  protected onConfirmDelete(event: Event) {
+    this._confirmSvc.confirm({
+      target: event.currentTarget as EventTarget,
+      message: 'Delete the activation?',
+      icon: 'pi pi-info-circle',
+      rejectButtonProps: {
+        label: 'Cancel',
+        severity: 'secondary',
+        outlined: true
+      },
+      acceptButtonProps: {
+        label: 'Delete',
+        severity: 'danger'
+      },
+      accept: () => {
+        this._potaSvc.deleteActivation(this.activationId()).subscribe({
+          next: () => { this._router.navigate(['/pota/activations']); },
+          error: (e) => Utils.showErrorMessage(e, this._ntfSvc, this._log)
+        });
+      },
+      reject: () => {}
+    });
+  }
+
   protected onExportAdif() {
     const activation = this.activation();
     const entries = this.logEntries();
@@ -291,8 +360,11 @@ export class PotaActivationComponent implements OnInit {
       return m;
     };
 
+    const sd = activation.startDate;
+    const dateStr = `${sd.getFullYear()}-${String(sd.getMonth() + 1).padStart(2, '0')}-${String(sd.getDate()).padStart(2, '0')}`;
+
     const header =
-      `ADIF for AF0E: POTA at ${activation.parkNum} ${activation.parkName} on ${activation.startDate}\n` +
+      `ADIF for AF0E: POTA at ${activation.parkNum} ${activation.parkName} on ${dateStr}\n` +
       `<ADIF_VER:5>3.1.5\n` +
       `<PROGRAMID:8>AF0E.org\n` +
       `<EOH>\n`;
@@ -351,8 +423,6 @@ export class PotaActivationComponent implements OnInit {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    const sd = activation.startDate;
-    const dateStr = `${sd.getFullYear()}-${String(sd.getMonth() + 1).padStart(2, '0')}-${String(sd.getDate()).padStart(2, '0')}`;
     a.download = `${dateStr} ${activation.parkNum} (${Utils.abbreviateParkName(activation.parkName)}).adi`;
     a.click();
     URL.revokeObjectURL(url);

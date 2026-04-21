@@ -5,11 +5,14 @@ public sealed class HrdLog
     /// <summary>
     /// Initializes class with default values for HRD logbook. It doesn't handle nulls well.
     /// </summary>
+    /// <remarks>
+    /// If adding/changing fields, check TryCreateLogEntry in LogBookHandlers.cs (Logbook.Api)
+    /// </remarks>
     public HrdLog()
     {
-        ColAge = ColAIndex = ColAntAz = ColAntEl = ColCqz = ColDistance = ColForceInit = ColFreqRx = 0;
+        ColAge = ColAIndex = ColAntAz = ColAntEl = ColCqz = ColDistance = ColForceInit = ColFreqRx = ColDistance = 0;
         ColHeading = ColKIndex = ColLat = ColMyLat = ColLon = ColMyLon = ColMaxBursts = ColNrBursts = ColNrPings = 0;
-        ColQsoRandom = ColRxPwr = ColSfi = ColSrx = ColStx = ColSwl = ColTenTen = 0;
+        ColQsoRandom = ColRxPwr = ColSfi = ColSrx = ColStx = ColSwl = ColTenTen = ColForceInit = 0;
         ColTxPwr = 0;
     }
 

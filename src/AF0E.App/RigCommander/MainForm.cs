@@ -1,126 +1,93 @@
-﻿using Microsoft.Win32;
+using System.ComponentModel;
+using RigCommander.Abstractions;
+using RigCommander.Presentation;
+using RigCommander.Services;
 
 namespace RigCommander;
 
-public sealed class MainForm : Form
+public sealed partial class MainForm : Form
 {
-    private const string StartupValueName = "RigCommander";
-
-    private readonly IHost _app;
-    private readonly RigCommanderSettings _settings;
-
-    private readonly NotifyIcon _trayIcon;
-    private readonly ContextMenuStrip _trayMenu;
-
-    private readonly CheckBox _runAtStartupCheckBox;
+    private readonly MainFormPresenter _presenter;
+    private readonly IHostShutdownService? _hostShutdownService;
+    private readonly NotifyIconTrayShell? _trayShell;
 
     private bool _allowClose;
-    private bool _shownOnce;
+    private bool _suppressStartupToggle;
 
-    public MainForm(IHost app, string serverUrl, RigCommanderSettings settings)
+    public RichTextBox LogBox => _logBox;
+    public RichTextBox ScriptLogBox => _scriptLogBox;
+
+    public MainForm()
+        : this(
+            serverUrl: new Uri("http://localhost:5050"),
+            settings: new RigCommanderSettings { ActiveProfile = "Design-time profile" },
+            hostShutdownService: null,
+            startupRegistration: null,
+            isDesignTime: true)
     {
-        _app = app;
-        _settings = settings;
+    }
 
-        Text = "Rig Commander";
-        StartPosition = FormStartPosition.CenterScreen;
-        Width = 560;
-        Height = 300;
-        MinimumSize = new Size(560, 300);
+    public MainForm(IHost app, Uri serverUrl, RigCommanderSettings settings)
+        : this(
+            serverUrl,
+            settings,
+            new HostShutdownService(app),
+            new WindowsStartupRegistration("RigCommander"),
+            IsDesignerHosted())
+    {
+    }
+
+    private MainForm(
+        Uri serverUrl,
+        RigCommanderSettings settings,
+        IHostShutdownService? hostShutdownService,
+        IStartupRegistration? startupRegistration,
+        bool isDesignTime)
+    {
+        _hostShutdownService = hostShutdownService;
+        _presenter = new MainFormPresenter(settings, startupRegistration);
+
+        InitializeComponent();
+
+        ApplyRuntimeState(serverUrl, isDesignTime);
+
+        _trayShell = isDesignTime
+            ? null
+            : new NotifyIconTrayShell(this, "Rig Commander", Icon ?? SystemIcons.Application, ExitApplicationAsync);
+    }
+
+    private static bool IsDesignerHosted() => LicenseManager.UsageMode == LicenseUsageMode.Designtime;
+
+    private void ApplyRuntimeState(Uri serverUrl, bool isDesignTime)
+    {
+        var state = _presenter.BuildInitialState(serverUrl);
+        _serverLabel.Text = state.ServerLabelText;
 
         var iconPath = Path.Combine(AppContext.BaseDirectory, "app.ico");
         if (File.Exists(iconPath))
             Icon = new Icon(iconPath);
 
-        var titleLabel = new Label
-        {
-            AutoSize = true,
-            Left = 20,
-            Top = 20,
-            Font = new Font(Font.FontFamily, 12, FontStyle.Bold),
-            Text = "Rig Commander"
-        };
+        if (isDesignTime)
+            return;
 
-        var serverLabel = new Label
-        {
-            AutoSize = true,
-            Left = 20,
-            Top = 60,
-            Text = $"Server: {serverUrl}\nRadio: {settings.ActiveProfile}"
-        };
-
-        _runAtStartupCheckBox = new CheckBox
-        {
-            Left = 20,
-            Top = 160,
-            Width = 180,
-            Text = "Run at Windows startup",
-            Checked = IsStartupEnabled()
-        };
-        _runAtStartupCheckBox.CheckedChanged += (_, _) => SetStartup(_runAtStartupCheckBox.Checked);
-
-        var hideButton = new Button
-        {
-            Left = 20,
-            Top = 200,
-            Width = 120,
-            Height = 32,
-            Text = "Hide to Tray"
-        };
-        hideButton.Click += (_, _) => HideToTray();
-
-        var exitButton = new Button
-        {
-            Left = 160,
-            Top = 200,
-            Width = 120,
-            Height = 32,
-            Text = "Exit"
-        };
-        exitButton.Click += async (_, _) => await ExitApplicationAsync();
-
-        Controls.Add(titleLabel);
-        Controls.Add(serverLabel);
-        Controls.Add(_runAtStartupCheckBox);
-        Controls.Add(hideButton);
-        Controls.Add(exitButton);
-
-        _trayMenu = new ContextMenuStrip();
-        _trayMenu.Items.Add("Show", null, (_, _) => RestoreFromTray());
-        _trayMenu.Items.Add("Exit", null, async (_, _) => await ExitApplicationAsync());
-
-        _trayIcon = new NotifyIcon
-        {
-            Text = "Rig Commander",
-            Visible = true,
-            ContextMenuStrip = _trayMenu,
-            Icon = Icon ?? SystemIcons.Application
-        };
-        _trayIcon.DoubleClick += (_, _) => RestoreFromTray();
-
-        Resize += MainForm_Resize;
-        FormClosing += MainForm_FormClosing;
-        Shown += MainForm_Shown;
+        _suppressStartupToggle = true;
+        _runAtStartupCheckBox.Checked = state.RunAtStartupEnabled;
+        _suppressStartupToggle = false;
     }
 
     private void MainForm_Shown(object? sender, EventArgs e)
     {
-        if (_shownOnce)
+        if (!_presenter.ShouldStartMinimizedOnShown())
             return;
 
-        _shownOnce = true;
-
-        if (_settings.Ui.StartMinimized)
-        {
-            WindowState = FormWindowState.Minimized;
-            HideToTray(showBalloon: false);
-        }
+        WindowState = FormWindowState.Minimized;
+        _trayShell?.HideToTray(showBalloon: false);
     }
 
     private void MainForm_Resize(object? sender, EventArgs e)
     {
-        if (WindowState == FormWindowState.Minimized)
-            HideToTray();
+        if (MainFormPresenter.ShouldHideToTrayOnResize(WindowState))
+            _trayShell?.HideToTray();
     }
 
     private void MainForm_FormClosing(object? sender, FormClosingEventArgs e)
@@ -129,40 +96,18 @@ public sealed class MainForm : Form
             return;
 
         e.Cancel = true;
-        HideToTray();
-    }
-
-    private void HideToTray(bool showBalloon = true)
-    {
-        Hide();
-        ShowInTaskbar = false;
-
-        if (!showBalloon)
-            return;
-
-        /*
-            _trayIcon.BalloonTipTitle = "Rig Commander";
-            _trayIcon.BalloonTipText = "Still running in the system tray.";
-            _trayIcon.ShowBalloonTip(1500);
-        */
-    }
-
-    private void RestoreFromTray()
-    {
-        Show();
-        ShowInTaskbar = true;
-        WindowState = FormWindowState.Normal;
-        Activate();
+        _trayShell?.HideToTray();
     }
 
     private async Task ExitApplicationAsync()
     {
         _allowClose = true;
-        _trayIcon.Visible = false;
+        _trayShell?.SetVisible(false);
 
         try
         {
-            await _app.StopAsync(TimeSpan.FromSeconds(5));
+            if (_hostShutdownService is not null)
+                await _hostShutdownService.StopAsync(TimeSpan.FromSeconds(5));
         }
         catch
         {
@@ -172,40 +117,18 @@ public sealed class MainForm : Form
         Close();
     }
 
-    private static bool IsStartupEnabled()
+    private void RunAtStartupCheckBox_CheckedChanged(object? sender, EventArgs e)
     {
-        using var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", false);
-        return key?.GetValue(StartupValueName) is string;
+        _presenter.OnRunAtStartupToggled(_runAtStartupCheckBox.Checked, _suppressStartupToggle, IsDesignerHosted());
     }
 
-    private static void SetStartup(bool enabled)
+    private void HideButton_Click(object? sender, EventArgs e)
     {
-        using var key = Registry.CurrentUser.OpenSubKey(
-            @"Software\Microsoft\Windows\CurrentVersion\Run",
-            writable: true);
-
-        if (key is null)
-            return;
-
-        if (enabled)
-        {
-            var exePath = Application.ExecutablePath;
-            key.SetValue(StartupValueName, $"\"{exePath}\"");
-        }
-        else
-        {
-            key.DeleteValue(StartupValueName, false);
-        }
+        _trayShell?.HideToTray();
     }
 
-    protected override void Dispose(bool disposing)
+    private async void ExitButton_Click(object? sender, EventArgs e)
     {
-        if (disposing)
-        {
-            _trayIcon.Dispose();
-            _trayMenu.Dispose();
-        }
-
-        base.Dispose(disposing);
+        await ExitApplicationAsync();
     }
 }

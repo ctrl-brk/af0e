@@ -4,7 +4,7 @@ using RigCommander.Contracts;
 namespace RigCommander.Radios.Icom;
 
 // ReSharper disable once InconsistentNaming
-public sealed class IC_9100(string portName, int baudRate, byte radioAddress, byte controllerAddress) : IRadio
+public sealed class IC_7410(string portName, int baudRate, byte radioAddress, byte controllerAddress) : IRadio
 {
     private readonly CivIcomSerial _civ = new(portName, baudRate, radioAddress, controllerAddress);
 
@@ -23,7 +23,7 @@ public sealed class IC_9100(string portName, int baudRate, byte radioAddress, by
 
     public void SetNoiseReduction(bool enabled)
     {
-        _civ.SetNoiseReduction9100(enabled);
+        _civ.SetNoiseReduction7410(enabled);
     }
 
     public void SetNoiseBlanker(bool enabled)

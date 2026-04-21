@@ -474,8 +474,9 @@ export class QsoEditComponent implements OnInit {
       this.qsoForm.get('freq')?.setValue(freq);
       this.qsoForm.get('band')?.setValue(band);
       this.qsoForm.get('mode')?.setValue(mode);
-      // this.qsoForm.get('rstSent')?.setValue(rstSent);
-      // this.qsoForm.get('rstRcvd')?.setValue(rstRcvd);
+      const rst = mode === 'CW' ? '599' : '59';
+      this.qsoForm.get('rstSent')?.setValue(rst);
+      this.qsoForm.get('rstRcvd')?.setValue(rst);
       this.qsoForm.get('myGrid')?.setValue(myGrid);
       this.qsoForm.get('myCity')?.setValue(myCity);
       this.qsoForm.get('myCounty')?.setValue(myCounty);
@@ -616,7 +617,7 @@ export class QsoEditComponent implements OnInit {
     };
 
     formValue.call = formValue.call.toUpperCase();
-    formValue.state = formValue.state.toUpperCase();
+    formValue.state = formValue.state?.toUpperCase();
 
     let activationId = this.potaActivation() ? this.potaActivation()!.id : 0; //stupid typescript
 
@@ -829,14 +830,6 @@ export class QsoEditComponent implements OnInit {
         else
           this.sendCw('73 E|E');
         break;
-      case 'F4':
-        handled = true;
-        $event.preventDefault();
-        if ($event.altKey)
-          this.sendCw('DE AF0|E');
-        else
-          this.sendCw('AF0|E');
-        break;
       case 'F3':
         handled = true;
         $event.preventDefault();
@@ -847,17 +840,28 @@ export class QsoEditComponent implements OnInit {
         else
           this.sendCw(this.cwExchLabel(), true)
         break;
-      case 'F5':
-        if (!this.callSign()) return;
+      case 'F4':
         handled = true;
         $event.preventDefault();
-        // @ts-ignore
-        this.sendCw(this.callSign()?.replaceAll('/', '//'));
+        if ($event.altKey)
+          this.sendCw('DE AF0|E');
+        else
+          this.sendCw('AF0|E');
+        break;
+      case 'F5':
+        handled = true;
+        $event.preventDefault();
+        if (this.cwCallLabel() !== '???')
+          this.sendCw(this.cwCallLabel()?.replaceAll('/', '//'));
         break;
       case 'F8':
         handled = true;
         $event.preventDefault();
         this.sendCw('?');
+        break;
+      case 'F9':
+        handled = true;
+        this.onClear(true);
         break;
       case 'K':
       case 'k':
@@ -897,10 +901,6 @@ export class QsoEditComponent implements OnInit {
           this.onSave();
         }
         break;
-      case 'F12':
-        handled = true;
-        this.onClear(true);
-        break;
       case 'PageDown':
         handled = true;
         let speed = this.cwSpeed();
@@ -914,7 +914,7 @@ export class QsoEditComponent implements OnInit {
         this.cwSpeed.set(speed1 + 2);
         break;
       default:
-        if (this.cqSending())
+        if (this.cqSending() && /^[a-z0-9]$/i.test($event.key)) //alphanumeric only
           this.stopCw();
         break;
     }

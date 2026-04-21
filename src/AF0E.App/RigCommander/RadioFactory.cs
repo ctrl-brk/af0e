@@ -23,11 +23,12 @@ public static class RadioFactory
             throw new InvalidOperationException($"Profile '{profile.Name}' is missing its Icom block.");
 
         var icom = profile.Icom;
-        return new IC_9100(
-            portName: icom.PortName,
-            baudRate: icom.BaudRate,
-            radioAddress: icom.RadioAddress,
-            controllerAddress: icom.ControllerAddress);
+        return profile.Name switch
+        {
+            "IC-7410" => new IC_7410(portName: icom.PortName, baudRate: icom.BaudRate, radioAddress: icom.RadioAddress, controllerAddress: icom.ControllerAddress),
+            "IC-9100" => new IC_9100(portName: icom.PortName, baudRate: icom.BaudRate, radioAddress: icom.RadioAddress, controllerAddress: icom.ControllerAddress),
+            _ => throw new InvalidOperationException($"Unsupported radio name '{profile.Name}'.")
+        };
     }
 
     private static IRadio CreateYaesu(RadioProfileSettings profile)

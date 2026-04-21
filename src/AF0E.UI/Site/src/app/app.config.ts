@@ -37,6 +37,11 @@ export const appConfig: ApplicationConfig = {
             httpMethod: 'PUT',
           },
           {
+            // ADIF upload - require authentication
+            uri: '/api/v1/logbook/upload',
+            httpMethod: 'POST',
+          },
+          {
             // Create activation - require authentication
             uri: '/api/v1/pota/activations',
             httpMethod: 'POST',
@@ -45,6 +50,16 @@ export const appConfig: ApplicationConfig = {
             // Update activation - require authentication
             uri: '/api/v1/pota/activations',
             httpMethod: 'PUT',
+          },
+          {
+            // Clone activation - require authentication
+            uri: '/api/v1/pota/activations/clone',
+            httpMethod: 'POST',
+          },
+          {
+            // Delete activation - require authentication
+            uri: '/api/v1/pota/activations/*',
+            httpMethod: 'DELETE',
           },
           {
             // QSZ services - require authentication
