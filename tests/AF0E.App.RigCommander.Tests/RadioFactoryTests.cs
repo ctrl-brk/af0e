@@ -14,7 +14,7 @@ public sealed class RadioFactoryTests
     {
         var profile = new RadioProfileSettings
         {
-            Name = "lab",
+            Name = "IC-9100",
             Kind = RadioProfileKind.Icom,
             Icom = new IcomSettings
             {

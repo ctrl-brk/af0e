@@ -28,4 +28,24 @@ public static class Utils
 
         return $"{fieldLon}{fieldLat}{squareLon}{squareLat}{subLon}{subLat}";
     }
+
+    public static string AbbreviateParkName(string name)
+    {
+        var abbreviations = new Dictionary<string, string>
+        {
+            { "State Wildlife Area",        "SWA" },
+            { "State Recreation Area",      "SRA" },
+            { "State Park",                 "SP"  },
+            { "State Historic Site",        "SHS" },
+            { "National Forest",            "NF"  },
+            { "National Wildlife Refugee",  "NWR" },
+            { "National Recreational Area", "NRA" },
+            { "National Monument",          "NM"  },
+            { "National Historic Site",     "NHS" },
+            { "State Fish Hatchery",        "SFH" },
+            { "Wildlife Management Area",   "WMA" }
+        };
+
+        return abbreviations.Aggregate(name, (current, entry) => current.Replace(entry.Key, entry.Value, StringComparison.OrdinalIgnoreCase));
+    }
 }

@@ -12,9 +12,16 @@ using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 using Serilog;
 
-Log.Logger = new LoggerConfiguration()
-    .WriteTo.File("logs/logbook-api-.log", rollingInterval: RollingInterval.Day, retainedFileCountLimit: 14)
-    .CreateBootstrapLogger();
+var isDevelopment = string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"), "Development", StringComparison.OrdinalIgnoreCase)
+    || string.Equals(Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT"), "Development", StringComparison.OrdinalIgnoreCase);
+
+var bootstrapLoggerConfiguration = new LoggerConfiguration()
+    .WriteTo.File("logs/logbook-api-.log", rollingInterval: RollingInterval.Day, retainedFileCountLimit: 14);
+
+if (isDevelopment)
+    bootstrapLoggerConfiguration.WriteTo.Debug();
+
+Log.Logger = bootstrapLoggerConfiguration.CreateBootstrapLogger();
 
 try
 {
@@ -23,7 +30,8 @@ try
     builder.Host.UseSerilog((context, services, loggerConfiguration) => loggerConfiguration
         .ReadFrom.Configuration(context.Configuration)
         .ReadFrom.Services(services)
-        .Enrich.FromLogContext());
+        .Enrich.FromLogContext()
+        .WriteTo.Conditional(_ => context.HostingEnvironment.IsDevelopment(), wt => wt.Debug()));
 
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddOpenApi(options =>

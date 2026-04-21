@@ -7,6 +7,7 @@ import {QsoDetailModel} from '../models/qso-detail.model';
 import {Utils} from '../shared/utils';
 import {LogSearchResponseModel} from '../models/logsearch-response.model';
 import {GridTrackerLookupModel} from '../models/gridtracker-lookup.model';
+import {AdifImportResponseModel} from '../models/adif-import-response.model';
 
 @Injectable({providedIn: 'root'})
 export class LogbookService {
@@ -55,5 +56,12 @@ export class LogbookService {
 
   public updateQso(qso: QsoDetailModel): Observable<QsoDetailModel> {
     return this._http.put(`${this._svcUrl}/qso`, qso);
+  }
+
+  public uploadAdif(activationId: number, file: File): Observable<AdifImportResponseModel> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('activationId', activationId.toString());
+    return this._http.post(`${this._svcUrl}/upload`, formData);
   }
 }

@@ -78,6 +78,14 @@ export class PotaService {
     return this._http.put(Configuration.potaUrl(`activations`), activation);
   }
 
+  public cloneActivation(activationId: number, parkNumber: string): Observable<number>  {
+    return this._http.post(Configuration.potaUrl(`activations/clone`), {activationId, parkNumber});
+  }
+
+  public deleteActivation(activationId: number): Observable<any>  {
+    return this._http.delete(Configuration.potaUrl(`activations/${activationId}`));
+  }
+
   public getActivationsGeoJson(): Observable<any> {
     return this._http.get(Configuration.potaUrl('geojson/activations/all'));
   }

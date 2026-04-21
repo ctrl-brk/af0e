@@ -23,7 +23,7 @@ public sealed class IC_9100(string portName, int baudRate, byte radioAddress, by
 
     public void SetNoiseReduction(bool enabled)
     {
-        _civ.SetNoiseReduction(enabled);
+        _civ.SetNoiseReduction9100(enabled);
     }
 
     public void SetNoiseBlanker(bool enabled)
@@ -61,24 +61,4 @@ public sealed class IC_9100(string portName, int baudRate, byte radioAddress, by
     }
 
     public void Dispose() => _civ.Dispose();
-}
-
-public sealed record IcomRadioStatus(long FrequencyHz, IcomMode Mode, byte Filter, bool DataModeOn, bool NoiseReductionOn, bool NoiseBlankerOn, bool SplitOn)
-{
-    public string DisplayMode => DataModeOn && Mode is IcomMode.USB or IcomMode.LSB ? $"{Mode}-D" : Mode.ToString();
-}
-
-#pragma warning disable CA1028
-public enum IcomMode : byte
-#pragma warning restore CA1028
-{
-    LSB = 0x00,
-    USB = 0x01,
-    AM = 0x02,
-    CW = 0x03,
-    RTTY = 0x04,
-    FM = 0x05,
-    WFM = 0x06,
-    CW_R = 0x07,
-    RTTYR = 0x08
 }
