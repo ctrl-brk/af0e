@@ -489,8 +489,9 @@ export class QsoEditComponent implements OnInit {
     this.emitFormInit();
   }
 
-  sendCw(text: string, k = false, updateUi = true) {
+  sendCw(text: string, k = false, updateUi = true, repeat: number|null = null, repeatDelaySeconds: number|null = null) {
     let timeToSend = 0;
+    this.cqSending.set(false);
     this.cwSending.set(true);
 
     text = `${text}${k ? ' K' : ''}`;
@@ -498,7 +499,7 @@ export class QsoEditComponent implements OnInit {
     if (updateUi)
       timeToSend = Utils.calculateMorseTime(text, this.cwSpeed());
 
-    this._infraSvc.sendCw(text, this.rigControl(), this.cwSpeed()).subscribe({
+    this._infraSvc.sendCw(text, this.rigControl(), this.cwSpeed(), repeat, repeatDelaySeconds).subscribe({
       next: (r) => {
         if (r.split && !r.sent) {
           this._ntfSvc.addMessage(new NotificationMessageModel(NotificationMessageSeverity.Warn, "SPLIT ON!", "Split is on. Send again.", false));
@@ -514,14 +515,11 @@ export class QsoEditComponent implements OnInit {
     });
   }
 
-  protected sendPotaCq(startCq: boolean, timeout = 5000) {
+  protected sendPotaCq(startCq: boolean) {
     if (!startCq && !this.cqSending()) return;
 
-    const msg = 'CQ POTA DE AF0E AF0E K';
-    const timeToSend = Utils.calculateMorseTime(msg, this.cwSpeed());
+    this.sendCw('CQ POTA DE AF0E AF0E K', false, false, 50, 5);
     this.cqSending.set(true);
-    this.sendCw(msg, false, false);
-    setTimeout(() => this.sendPotaCq(false), timeToSend + timeout);
   }
 
   stopCw() {
