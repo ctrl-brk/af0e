@@ -95,11 +95,16 @@ public sealed class CivIcomSerial(string portName, int baudRate, byte radioAddre
         return payload.Span[2] != 0x00;
     }
 
-    public void SetNoiseReduction(bool enabled)
+    public void SetNoiseReduction9100(bool enabled)
     {
         // 16 40 00 = NR OFF
         // 16 40 01 = NR ON
         SendFrame([0x16, 0x40, (byte)(enabled ? 0x01 : 0x00)]);
+    }
+
+    public void SetNoiseReduction7410(bool enabled)
+    {
+        SetNoiseReduction9100(enabled);
     }
 
     public bool GetNoiseBlanker()

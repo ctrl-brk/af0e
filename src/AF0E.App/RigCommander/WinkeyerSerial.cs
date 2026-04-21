@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.IO.Ports;
 using System.Text;
+using RigCommander.Abstractions;
 using Timer = System.Threading.Timer;
 
 namespace RigCommander;
@@ -55,7 +56,9 @@ public sealed class WinkeyerSerial : IDisposable
     private readonly int _minWpm;
     private readonly int _maxWpm;
 
-    public WinkeyerSerial(string portName, int baudRate, int minWpm, int maxWpm, TimeSpan idleTimeout, ILogger logger)
+    private readonly IScriptActivityLog? _activityLog;
+
+    public WinkeyerSerial(string portName, int baudRate, int minWpm, int maxWpm, TimeSpan idleTimeout, ILogger logger, IScriptActivityLog? activityLog = null)
     {
         if (minWpm < 5)
             throw new ArgumentOutOfRangeException(nameof(minWpm), "MinWpm must be at least 5");
@@ -66,6 +69,7 @@ public sealed class WinkeyerSerial : IDisposable
         _maxWpm = maxWpm;
         _idleTimeout = idleTimeout;
         _logger = logger;
+        _activityLog = activityLog;
 
         _port = new SerialPort(portName, baudRate, Parity.None, 8, StopBits.Two)
         {
@@ -144,8 +148,6 @@ public sealed class WinkeyerSerial : IDisposable
 
                     if (i < repeat - 1 && repeatDelaySeconds > 0)
                     {
-                        // WK3 host-mode buffered wait command
-                        // 0x1A <seconds>
                         WriteBytes_NoLock(0x1A, (byte)Math.Min(repeatDelaySeconds, 255));
                     }
                 }
@@ -154,6 +156,11 @@ public sealed class WinkeyerSerial : IDisposable
 
                 Touch_NoLock();
                 _logger.LogDebug("[Winkeyer] Sent script \"{Script}\" x{Repeat} with {Delay}s delay ({Length} bytes each)", script, repeat, repeatDelaySeconds, bytes.Length);
+
+                var entry = repeat > 1
+                    ? $"{script}  (x{repeat}{(repeatDelaySeconds > 0 ? $", {repeatDelaySeconds}s delay" : "")})"
+                    : script;
+                _activityLog?.AppendLine(entry);
             }
             catch (Exception ex)
             {
@@ -177,6 +184,11 @@ public sealed class WinkeyerSerial : IDisposable
                 _port.BaseStream.Flush();
 
                 Touch_NoLock();
+
+                var entry = repeat > 1
+                    ? $"{script}  (x{repeat}{(repeatDelaySeconds > 0 ? $", {repeatDelaySeconds}s delay" : "")}) [retried]"
+                    : $"{script}  [retried]";
+                _activityLog?.AppendLine(entry);
             }
         }
     }
@@ -477,18 +489,6 @@ public sealed class WinkeyerSerial : IDisposable
         var output = new List<byte>();
         var textBuffer = new StringBuilder();
 
-        void FlushText()
-        {
-            if (textBuffer.Length == 0)
-                return;
-
-            var sanitized = SanitizePlainText(textBuffer.ToString());
-            if (!string.IsNullOrEmpty(sanitized))
-                output.AddRange(Encoding.ASCII.GetBytes(sanitized));
-
-            textBuffer.Clear();
-        }
-
         for (var i = 0; i < script.Length; i++)
         {
             var ch = script[i];
@@ -588,7 +588,19 @@ public sealed class WinkeyerSerial : IDisposable
         }
 
         FlushText();
-        return output.ToArray();
+        return [.. output];
+
+        void FlushText()
+        {
+            if (textBuffer.Length == 0)
+                return;
+
+            var sanitized = SanitizePlainText(textBuffer.ToString());
+            if (!string.IsNullOrEmpty(sanitized))
+                output.AddRange(Encoding.ASCII.GetBytes(sanitized));
+
+            textBuffer.Clear();
+        }
     }
 
     private static int ReadTwoDigits(string text, int start, string errorMessage)
@@ -634,7 +646,7 @@ public sealed class WinkeyerSerial : IDisposable
                 continue;
 
             // plain text should not contain slash commands at this point;
-            // escaped // is already handled by the parser
+            // the parser already handles escaped //
             sb.Append(ch <= 0x7E ? ch : '?');
         }
 

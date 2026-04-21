@@ -402,6 +402,36 @@ export class Utils {
     return time;
   }
 
+  /**
+   * Returns the typical mode (CW or SSB) for a given frequency in kHz
+   * based on standard amateur radio band plans.
+   */
+  public static frequencyToMode(freqKhz: number | string): 'CW' | 'SSB' {
+    const freq = typeof freqKhz === 'string' ? parseFloat(freqKhz) : freqKhz;
+    if (isNaN(freq)) return 'CW';
+    // CW band segments (in kHz): [start, end]
+    const cwSegments: [number, number][] = [
+      [1800, 1880],    // 160m CW
+      [3500, 3600],    // 80m CW
+      [5332, 5348],    // 60m CW (channel 1 area)
+      [7000, 7125],    // 40m CW
+      [10100, 10150],  // 30m (CW/digital only)
+      [14000, 14150],  // 20m CW
+      [18068, 18110],  // 17m CW
+      [21000, 21200],  // 15m CW
+      [24890, 24930],  // 12m CW
+      [28000, 28300],  // 10m CW
+      [50000, 50100],  // 6m CW
+      [144000, 144110],// 2m CW
+    ];
+
+    for (const [start, end] of cwSegments) {
+      if (freq >= start && freq <= end) return 'CW';
+    }
+
+    return 'SSB';
+  }
+
   public static latLonToGrid(lat: number, lon: number): string {
     const adjLon = lon + 180;
     const adjLat = lat + 90;

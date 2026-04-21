@@ -4,7 +4,15 @@
     <div class="card-main">
       <h3>
         <a href="https://pota.app/#/park/{{activation()!.parkNum}}">{{activation()!.parkNum}} - {{activation()!.parkName}}</a>
-        @if (_authSvc.hasRole('Admin')) {&nbsp;&nbsp;<p-button severity="info" icon="pi pi-pencil" size="small" (onClick)="editActivationVisible.set(true)" />}
+        @if (_authSvc.hasRole('Admin')) {
+          <p-toast />
+          <p-confirmpopup />
+          &nbsp;&nbsp;<p-button severity="info" icon="pi pi-pencil" size="small" title="Edit" outlined="true" (onClick)="editActivationVisible.set(true)" />
+          &nbsp;<p-button severity="warn" icon="pi pi-clone" size="small" title="Clone" outlined="true" (onClick)="cloneDlgVisible.set(true)" />
+          &nbsp;<p-button severity="success" icon="pi pi-upload" size="small" title="Merge ADIF" outlined="true" (onClick)="adifFileInput.click()" />
+          <input #adifFileInput type="file" accept=".adi,.adif" style="display:none" (change)="onMergeAdifFileSelected($event)" />
+          &nbsp;<p-button severity="danger" icon="pi pi-trash" size="small" title="Delete" outlined="true" (onClick)="onConfirmDelete($event)" />
+        }
       </h3>
       <p>
         <b>{{qsoStats.total}}</b> QSOs&nbsp;&nbsp;
@@ -197,4 +205,16 @@
       </form>
     </p-dialog>
   }
+
+  <p-dialog [modal]="true" [showHeader]="false" [(visible)]="cloneDlgVisible" [focusOnShow]="true" [style]="{ width: '20rem' }">
+    <div style="padding-top: 1rem">
+      <p-floatlabel variant="on">
+        <input pInputText id="parkNum" style="width:100%; margin-top: 0.5rem;" [(ngModel)]="cloneParkNum" />
+        <label for="parkNum">Park</label>
+      </p-floatlabel>
+      <div style="display:flex; justify-content:flex-end; margin-top:0.5rem;">
+        <p-button label="Clone" icon="pi pi-clone" (onClick)="onCloneActivation()" [disabled]="!cloneParkNum()" />
+      </div>
+    </div>
+  </p-dialog>
 }
