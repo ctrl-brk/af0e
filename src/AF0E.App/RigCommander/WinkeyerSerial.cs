@@ -58,6 +58,12 @@ public sealed class WinkeyerSerial : IDisposable
 
     private readonly IScriptActivityLog? _activityLog;
 
+    // Set by Abort() without acquiring the lock so it can interrupt a running repeat loop
+    private volatile bool _abortRequested;
+
+    // Incremented for every SendScript call; older cycles stop when superseded by a newer token.
+    private int _sendCycleToken;
+
     public WinkeyerSerial(string portName, int baudRate, int minWpm, int maxWpm, TimeSpan idleTimeout, ILogger logger, IScriptActivityLog? activityLog = null)
     {
         if (minWpm < 5)
@@ -132,6 +138,122 @@ public sealed class WinkeyerSerial : IDisposable
         if (bytes.Length == 0)
             return;
 
+        var cycleToken = Interlocked.Increment(ref _sendCycleToken);
+
+        // Preempt any in-flight cycle immediately by clearing keyer buffer.
+        lock (_lock)
+        {
+            if (_port.IsOpen && _hostOpen)
+            {
+                WriteBytes_NoLock(0x0A); // Clear Buffer
+                Touch_NoLock();
+            }
+        }
+
+        _abortRequested = false;
+        var totalSent = 0;
+        var retried = false;
+
+        totalSent += ExecuteRepeatLoop(script, bytes, repeat, repeatDelaySeconds, cycleToken, ref retried);
+
+        var cancelled = IsCycleCancelled(cycleToken, CancellationToken.None);
+
+        _logger.LogDebug("[Winkeyer] Script summary: requested={Requested}, sent={Sent}, delay={Delay}s, cancelled={Cancelled}, retried={Retried}",
+            repeat, totalSent, repeatDelaySeconds, cancelled, retried);
+
+        // Log final summary only if there's additional context beyond per-send logs
+        if (repeat > 1 || cancelled || retried)
+        {
+            _activityLog?.AppendLine(BuildActivityEntry(script, repeat, repeatDelaySeconds, totalSent, cancelled, retried));
+        }
+    }
+
+    private int ExecuteRepeatLoop(string script, byte[] bytes, int repeat, int repeatDelaySeconds, int cycleToken, ref bool retried)
+    {
+        var sent = 0;
+
+        for (var i = 0; i < repeat; i++)
+        {
+            if (IsCycleCancelled(cycleToken, CancellationToken.None))
+                break;
+
+            var sendRetried = SendScriptBytesWithRetry(bytes);
+            retried |= sendRetried;
+            sent++;
+
+            _logger.LogDebug("[Winkeyer] Sent script iteration {Iteration}/{Repeat}", sent, repeat);
+
+            // Log per-send activity immediately with full script text
+            _activityLog?.AppendLine(repeat > 1 ? $"{script}  [{sent}/{repeat}]" : script);
+
+            if (i >= repeat - 1)
+                continue;
+
+            if (!WaitUntilKeyerIsFree(cycleToken, CancellationToken.None))
+                break;
+
+            if (!WaitForRepeatDelay(cycleToken, repeatDelaySeconds, CancellationToken.None))
+                break;
+        }
+
+        return sent;
+    }
+
+    private static string BuildActivityEntry(string script, int requestedRepeat, int repeatDelaySeconds, int sent, bool aborted, bool retried)
+    {
+        if (requestedRepeat <= 1)
+        {
+            var suffixParts = new List<string>();
+            if (aborted)
+                suffixParts.Add("aborted");
+            if (retried)
+                suffixParts.Add("retried");
+
+            return suffixParts.Count == 0
+                ? script
+                : $"{script}  ({string.Join(", ", suffixParts)})";
+        }
+
+        var details = new List<string>
+        {
+            $"sent {sent}/{requestedRepeat}"
+        };
+
+        if (repeatDelaySeconds > 0)
+            details.Add($"{repeatDelaySeconds}s delay");
+
+        if (aborted)
+            details.Add("aborted");
+
+        if (retried)
+            details.Add("retried");
+
+        return $"{script}  ({string.Join(", ", details)})";
+    }
+
+    private bool SendScriptBytesWithRetry(byte[] bytes)
+    {
+        try
+        {
+            SendScriptBytes(bytes);
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[Winkeyer] Script send failed; reconnecting");
+
+            lock (_lock)
+            {
+                ForceDisconnect_NoLock();
+            }
+
+            SendScriptBytes(bytes);
+            return true;
+        }
+    }
+
+    private void SendScriptBytes(byte[] bytes)
+    {
         lock (_lock)
         {
             Touch_NoLock();
@@ -140,61 +262,74 @@ public sealed class WinkeyerSerial : IDisposable
             if (!_hostOpen)
                 throw new InvalidOperationException("Winkeyer host is not open.");
 
-            try
-            {
-                for (var i = 0; i < repeat; i++)
-                {
-                    _port.Write(bytes, 0, bytes.Length);
+            _port.Write(bytes, 0, bytes.Length);
+            _port.BaseStream.Flush();
 
-                    if (i < repeat - 1 && repeatDelaySeconds > 0)
-                    {
-                        WriteBytes_NoLock(0x1A, (byte)Math.Min(repeatDelaySeconds, 255));
-                    }
-                }
+            // Prevent immediate re-send on stale cached status; wait loop will clear this
+            // once the keyer reports it is no longer busy.
+            _busy = true;
 
-                _port.BaseStream.Flush();
-
-                Touch_NoLock();
-                _logger.LogDebug("[Winkeyer] Sent script \"{Script}\" x{Repeat} with {Delay}s delay ({Length} bytes each)", script, repeat, repeatDelaySeconds, bytes.Length);
-
-                var entry = repeat > 1
-                    ? $"{script}  (x{repeat}{(repeatDelaySeconds > 0 ? $", {repeatDelaySeconds}s delay" : "")})"
-                    : script;
-                _activityLog?.AppendLine(entry);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "[Winkeyer] Script send failed; reconnecting");
-
-                ForceDisconnect_NoLock();
-
-                Touch_NoLock();
-                EnsureConnected_NoLock();
-
-                for (var i = 0; i < repeat; i++)
-                {
-                    _port.Write(bytes, 0, bytes.Length);
-
-                    if (i < repeat - 1 && repeatDelaySeconds > 0)
-                    {
-                        WriteBytes_NoLock(0x1A, (byte)Math.Min(repeatDelaySeconds, 255));
-                    }
-                }
-
-                _port.BaseStream.Flush();
-
-                Touch_NoLock();
-
-                var entry = repeat > 1
-                    ? $"{script}  (x{repeat}{(repeatDelaySeconds > 0 ? $", {repeatDelaySeconds}s delay" : "")}) [retried]"
-                    : $"{script}  [retried]";
-                _activityLog?.AppendLine(entry);
-            }
+            Touch_NoLock();
         }
     }
 
+    private bool WaitUntilKeyerIsFree(int cycleToken, CancellationToken ct)
+    {
+        while (true)
+        {
+            if (IsCycleCancelled(cycleToken, ct))
+                return false;
+
+            bool isKnown;
+            bool isFree;
+
+            lock (_lock)
+            {
+                Touch_NoLock();
+                EnsureConnected_NoLock();
+                WriteBytes_NoLock(0x15); // Get Status
+                isKnown = _busy.HasValue || _wait.HasValue || _xoff.HasValue;
+                isFree = !(_busy ?? false) && !(_wait ?? false) && !(_xoff ?? false);
+            }
+
+            if (isKnown && isFree)
+                return true;
+
+            Thread.Sleep(100);
+        }
+    }
+
+    private bool WaitForRepeatDelay(int cycleToken, int repeatDelaySeconds, CancellationToken ct)
+    {
+        if (repeatDelaySeconds <= 0)
+            return !IsCycleCancelled(cycleToken, ct);
+
+        var remaining = TimeSpan.FromSeconds(repeatDelaySeconds);
+
+        while (remaining > TimeSpan.Zero)
+        {
+            if (IsCycleCancelled(cycleToken, ct))
+                return false;
+
+            var slice = remaining > TimeSpan.FromMilliseconds(100)
+                ? TimeSpan.FromMilliseconds(100)
+                : remaining;
+
+            Thread.Sleep(slice);
+            remaining -= slice;
+        }
+
+        return !IsCycleCancelled(cycleToken, ct);
+    }
+
+    private bool IsCycleCancelled(int cycleToken, CancellationToken ct)
+        => _abortRequested || ct.IsCancellationRequested || Volatile.Read(ref _sendCycleToken) != cycleToken;
+
     public void Abort()
     {
+        // Signal any running repeat loop to stop immediately, without needing the lock
+        _abortRequested = true;
+
         lock (_lock)
         {
             Touch_NoLock();

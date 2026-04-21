@@ -126,9 +126,16 @@ public sealed partial class MainForm : Form
     {
         _trayShell?.HideToTray();
     }
-
     private async void ExitButton_Click(object? sender, EventArgs e)
     {
         await ExitApplicationAsync();
+    }
+    private void ClearScriptLogButton_Click(object? sender, EventArgs e)
+    {
+        _scriptLogBox.Clear();
+    }
+    private void ClearLogButton_Click(object? sender, EventArgs e)
+    {
+        _logBox.Clear();
     }
 }
