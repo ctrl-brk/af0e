@@ -6,6 +6,7 @@ using AF0E.Services.Pota.Models;
 using AF0E.Services.Qrz;
 using Logbook.Api.Models;
 using Logbook.Api.Requests;
+using Logbook.Api.Responses;
 using Logbook.Api.Validators;
 using Microsoft.EntityFrameworkCore;
 
@@ -325,16 +326,12 @@ public static partial class PotaHandlers
         })];
     }
 
-    public static async Task AddActivationQso(int activationId, int qsoId, IQrzService qrzSvc, HrdDbContext dbContext, CancellationToken ct)
+    public static async Task AddActivationQso(int activationId, HrdLog log, QrzResponse? qrz, HrdDbContext dbContext, CancellationToken ct)
     {
-        var qso = await dbContext.Log.FirstOrDefaultAsync(l => l.ColPrimaryKey == qsoId, ct) ?? throw new ArgumentException("Invalid QSO ID");
-
-        var qrz = await QrzHandlers.Lookup(qso.ColCall, qrzSvc, ct);
-
-        var contact = new PotaContact
+       var contact = new PotaContact
         {
             ActivationId = activationId,
-            LogId = qsoId
+            LogId = log.ColPrimaryKey
         };
 
         if (qrz is { notFound: false, qrzResult.Callsign: not null })

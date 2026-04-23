@@ -34,13 +34,15 @@ public sealed class NotifyIconTrayShell : ITrayShell
         _owner.ShowInTaskbar = false;
 
         if (showBalloon)
-        {
-            /*
-                _trayIcon.BalloonTipTitle = "Rig Commander";
-                _trayIcon.BalloonTipText = "Still running in the system tray.";
-                _trayIcon.ShowBalloonTip(1500);
-            */
-        }
+            ShowBalloon("Rig Commander", "Still running in the system tray.", ToolTipIcon.Info, 1500);
+    }
+
+    public void ShowBalloon(string title, string text, ToolTipIcon icon = ToolTipIcon.None, int timeoutMs = 3000)
+    {
+        _trayIcon.BalloonTipTitle = title;
+        _trayIcon.BalloonTipText = text;
+        _trayIcon.BalloonTipIcon = icon;
+        _trayIcon.ShowBalloonTip(timeoutMs);
     }
 
     public void RestoreFromTray()

@@ -107,16 +107,29 @@ public static class LogbookHandlers
         return await GetQsoDetails(log.ColPrimaryKey, dbContext, authSvc, httpContext);
     }
 
-    public static async Task<QsoDetails> CreateQso(QsoDetails qso, HrdDbContext dbContext, IAuthorizationService authSvc, IHttpContextAccessor httpContext)
+    public static async Task<QsoDetails> CreateQso(QsoDetails qso, int? activationId, IQrzService qrzSvc,
+        IAuthorizationService authSvc, HrdDbContext dbContext, IHttpContextAccessor httpContext, CancellationToken ct)
     {
+        QrzResponse? qrz = null;
+
         QsoDetailsValidator.ValidateAndThrow(qso);
 
-        var isAdmin = await AuthHelper.HasPolicyAsync(Policies.AdminOnly, authSvc, httpContext);
+        //not necessary now, but if other users added...
+        //var isAdmin = await AuthHelper.HasPolicyAsync(Policies.AdminOnly, authSvc, httpContext);
 
-        var log = qso.ToHrdLog(includeAdminFields: isAdmin);
+        var log = qso.ToHrdLog(includeAdminFields: true /*isAdmin*/);
+
+        if (string.IsNullOrEmpty(log.ColName) || activationId is not null)
+        {
+            qrz = await QrzHandlers.Lookup(log.ColCall, qrzSvc, ct);
+            log.UpdateFromQrzLookup(qrz);
+        }
 
         dbContext.Log.Add(log);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(ct);
+
+        if (activationId is not null)
+            await PotaHandlers.AddActivationQso(activationId.Value, log, qrz, dbContext, ct);
 
         return (await GetQsoDetails(log.ColPrimaryKey, dbContext, authSvc, httpContext))!;
     }
