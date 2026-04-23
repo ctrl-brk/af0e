@@ -114,6 +114,7 @@ export class QsoEditComponent implements OnInit {
   protected cwSpeed = signal(22);
   protected callHistory = signal<GridTrackerLookupModel[]>([]);
   protected cwTextVisible = signal(false);
+  protected readonly QsoEditMode = QsoEditMode;
 
   // Dropdown options
   protected modeOptions = MODE_OPTIONS;
@@ -284,16 +285,16 @@ export class QsoEditComponent implements OnInit {
     const rst = rstSent ? rstSent.replaceAll('9', 'n') : '5nn';
 
     if (this.editMode() === QsoEditMode.PotaHunting) {
-      this.cwExchLabel.set(`R ${greet} UR ${rst} C|O`);
+      this.cwExchLabel.set(`R TU ${rst} C|O`);
       this.cwExch2Label.set(`R TU ${rst} ${rst} C|O C|O`);
-      this.altCwExch = `R TU ${rst} C|O`;
+      this.altCwExch = `R ${greet} UR ${rst} C|O`;
     }
     else if (this.editMode() === QsoEditMode.PotaActivating) {
       const call = this.cwCallLabel() ? this.cwCallLabel() : '';
 
-      this.cwExchLabel.set(`${call} ${greet} UR ${rst} C|O`);
+      this.cwExchLabel.set(`${call} TU ${rst} C|O`);
       this.cwExch2Label.set(`${call} TU ${rst} ${rst} C|O C|O`);
-      this.altCwExch = `${call} TU ${rst} C|O`;
+      this.altCwExch = `${call} ${greet} UR ${rst} C|O`;
     }
   }
 
@@ -593,7 +594,7 @@ export class QsoEditComponent implements OnInit {
          }
       }).filter(x => x.errors != null);
 
-      console.warn('Form is invalid:', errors);
+      this._log.warn('Form validation failed', errors);
 
       this._ntfSvc.addMessage(
         new NotificationMessageModel(
@@ -855,7 +856,10 @@ export class QsoEditComponent implements OnInit {
       case 'F8':
         handled = true;
         $event.preventDefault();
-        this.sendCw('?');
+        if ($event.altKey)
+          this.sendCw('AGN?');
+        else
+          this.sendCw('?');
         break;
       case 'F9':
         handled = true;
@@ -941,7 +945,4 @@ export class QsoEditComponent implements OnInit {
       }
     });
   }
-
-  protected readonly QsoEditMode = QsoEditMode;
-  protected readonly HTMLElement = HTMLElement;
 }
