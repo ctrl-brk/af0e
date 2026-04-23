@@ -5,6 +5,7 @@ using AF0E.Services.Qrz;
 using Logbook.Api.Converters;
 using Logbook.Api.Endpoints;
 using Logbook.Api.Security;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
@@ -75,6 +76,7 @@ try
     builder.Services.AddHttpClient();
     builder.Services.AddScoped<IPotaApiService, PotaApiService>();
     builder.Services.Configure<QrzSettings>(builder.Configuration.GetSection("QrzSettings"));
+    builder.Services.Configure<ApiKeyAuthSettings>(builder.Configuration.GetSection("ApiKeyAuth"));
     builder.Services.AddSingleton<IQrzService, QrzService>();
 
 //builder.Services.AddDbContext<HrdDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("HrdLog")));
@@ -95,10 +97,13 @@ try
                 NameClaimType = "name",
                 RoleClaimType = builder.Configuration["Auth0:RoleClaimType"],
             };
-        });
+        })
+        .AddScheme<AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>(ApiKeyAuthenticationDefaults.Scheme, _ => { });
 
     builder.Services.AddAuthorizationBuilder()
-        .AddPolicy(Policies.AdminOnly, policy => policy.RequireRole(Roles.Admin));
+        .AddPolicy(Policies.AdminOnly, policy => policy
+        .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme, ApiKeyAuthenticationDefaults.Scheme)
+        .RequireRole(Roles.Admin));
     //.AddPolicy("CanWrite", policy => policy.RequireClaim("permissions", "write:data"));
 
     WebApplication app = builder.Build();

@@ -73,10 +73,7 @@ public static class V1Endpoints
             {
                 try
                 {
-                    var result = await LogbookHandlers.CreateQso(req.Qso, dbContext, authSvc, httpContext);
-
-                    if (req.PotaActivationId is not null)
-                        await PotaHandlers.AddActivationQso(req.PotaActivationId.Value, result.Id, qrzSvc, dbContext, ct);
+                    var result = await LogbookHandlers.CreateQso(req.Qso, req.PotaActivationId, qrzSvc, authSvc, dbContext, httpContext, ct);
 
                     return TypedResults.Created($"/api/v1/logbook/qso/{result.Id}", result);
                 }

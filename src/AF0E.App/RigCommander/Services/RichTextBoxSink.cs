@@ -15,6 +15,8 @@ public sealed class RichTextBoxSink : ILogEventSink
 
     private RichTextBox? _target;
 
+    public event Action<string>? WarningOrErrorEmitted;
+
     public void Attach(RichTextBox target)
     {
         _target = target;
@@ -30,6 +32,9 @@ public sealed class RichTextBoxSink : ILogEventSink
         _formatter.Format(logEvent, writer);
         var text = writer.ToString();
         var color = LevelColor(logEvent.Level);
+
+        if (logEvent.Level >= LogEventLevel.Warning)
+            WarningOrErrorEmitted?.Invoke(text);
 
         if (box.IsHandleCreated)
             box.BeginInvoke(() => AppendColoredLine(box, text, color));
