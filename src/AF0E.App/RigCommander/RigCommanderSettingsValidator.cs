@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Options;
+using System.Net;
 
 namespace RigCommander;
 
@@ -58,6 +59,56 @@ public sealed class RigCommanderSettingsValidator : IValidateOptions<RigCommande
         if (options.StatusDelayMs < 0)
             errors.Add("RigCommander:StatusDelayMs must be zero or greater.");
 
+        if (options.AdifUdp.Port is <= 0 or > 65535)
+            errors.Add("RigCommander:AdifUdp:Port must be a valid port number between 1 and 65535.");
+
+        if (options.AdifUdp.JoinMulticastGroup)
+        {
+            if (string.IsNullOrWhiteSpace(options.AdifUdp.MulticastGroup))
+            {
+                errors.Add("RigCommander:AdifUdp:MulticastGroup is required when JoinMulticastGroup is enabled.");
+            }
+            else if (!IPAddress.TryParse(options.AdifUdp.MulticastGroup, out var multicastAddress) || !IsIpv4Multicast(multicastAddress))
+            {
+                errors.Add("RigCommander:AdifUdp:MulticastGroup must be a valid IPv4 multicast address (224.0.0.0 to 239.255.255.255).");
+            }
+        }
+
+        if (options.AdifUdp is { AcceptWsjtxFormat: false, AcceptRawAdif: false })
+            errors.Add("RigCommander:AdifUdp must accept at least one format (AcceptWsjtxFormat or AcceptRawAdif).");
+
+        if (options.AdifUdp.Forwarding.Enabled)
+        {
+            var forwarding = options.AdifUdp.Forwarding;
+
+            if (string.IsNullOrWhiteSpace(forwarding.EndpointUrl))
+            {
+                errors.Add("RigCommander:AdifUdp:Forwarding:EndpointUrl is required when forwarding is enabled.");
+            }
+            else if (!Uri.TryCreate(forwarding.EndpointUrl, UriKind.Absolute, out _))
+            {
+                errors.Add("RigCommander:AdifUdp:Forwarding:EndpointUrl must be an absolute URI.");
+            }
+
+            if (forwarding.TimeoutSeconds <= 0)
+                errors.Add("RigCommander:AdifUdp:Forwarding:TimeoutSeconds must be greater than zero.");
+
+            if (forwarding.QueueCapacity <= 0)
+                errors.Add("RigCommander:AdifUdp:Forwarding:QueueCapacity must be greater than zero.");
+
+            if (forwarding.MaxRetries < 0)
+                errors.Add("RigCommander:AdifUdp:Forwarding:MaxRetries must be zero or greater.");
+
+            if (forwarding.RetryDelayMs < 0)
+                errors.Add("RigCommander:AdifUdp:Forwarding:RetryDelayMs must be zero or greater.");
+
+            if (string.IsNullOrWhiteSpace(forwarding.ApiKeyHeaderName))
+                errors.Add("RigCommander:AdifUdp:Forwarding:ApiKeyHeaderName is required when forwarding is enabled.");
+
+            if (forwarding.SkipWhenProcessRunning.Any(string.IsNullOrWhiteSpace))
+                errors.Add("RigCommander:AdifUdp:Forwarding:SkipWhenProcessRunning cannot contain blank process names.");
+        }
+
         return errors.Count > 0
             ? ValidateOptionsResult.Fail(errors)
             : ValidateOptionsResult.Success;
@@ -99,5 +150,14 @@ public sealed class RigCommanderSettingsValidator : IValidateOptions<RigCommande
 
         if (yaesu.ReadTimeoutMs <= 0)
             errors.Add($"RigCommander:Profiles[{profile.Name}].Yaesu.ReadTimeoutMs must be greater than zero.");
+    }
+
+    private static bool IsIpv4Multicast(IPAddress address)
+    {
+        if (address.AddressFamily != System.Net.Sockets.AddressFamily.InterNetwork)
+            return false;
+
+        var firstOctet = address.GetAddressBytes()[0];
+        return firstOctet is >= 224 and <= 239;
     }
 }
