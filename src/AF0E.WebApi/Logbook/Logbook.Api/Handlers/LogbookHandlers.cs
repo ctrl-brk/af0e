@@ -4,6 +4,7 @@ using AF0E.DB;
 using AF0E.DB.Models;
 using Logbook.Api.Extensions;
 using Logbook.Api.Models;
+using Logbook.Api.Realtime;
 using Logbook.Api.Responses;
 using Logbook.Api.Security;
 using Logbook.Api.Validators;
@@ -18,7 +19,7 @@ public static class LogbookHandlers
 {
     public static async Task<List<QsoSummary>> GetLogByCall(string call, HrdDbContext dbContext)
     {
-        return [.. (await dbContext.Log.Where(x => x.ColCall == WebUtility.UrlDecode(call)).OrderByDescending(x => x.ColTimeOn).ToListAsync()).Select(x => new QsoSummary(x))];
+        return [.. (await dbContext.Log.Where(x => x.ColCall == call).OrderByDescending(x => x.ColTimeOn).ToListAsync()).Select(x => new QsoSummary(x))];
     }
 
     public static async Task<List<string>> GetPartialLookup(string call, int maxResults, HrdDbContext dbContext)
@@ -36,7 +37,7 @@ public static class LogbookHandlers
                                                           """).ToListAsync();
     }
 
-    public static async Task<LogSearchResponse> GetLog(string? call, int? skip, int? take, string? sort, int? orderBy, string? begin, string? end, HrdDbContext dbContext)
+    public static async Task<LogSearchResponse> GetLog(string? call, int? skip, int? take, string? sort, int? orderBy, string? begin, string? end, HrdDbContext dbContext, IAuthorizationService authSvc, IHttpContextAccessor httpContext)
     {
         const int DEFAULT_PAGE_SIZE = 50;
         const int MAX_PAGE_SIZE = 500;
@@ -63,7 +64,8 @@ public static class LogbookHandlers
         logQuery = orderBy == 1 ? logQuery.OrderBy(x => x.ColTimeOn) : logQuery.OrderByDescending(x => x.ColTimeOn);
         logQuery = logQuery.Skip(skip.Value).Take(take.Value);
 
-        var qsoList = await logQuery.Select(x => new QsoSummary(x)).ToListAsync();
+        var isAdmin = await AuthHelper.HasPolicyAsync(Policies.AdminOnly, authSvc, httpContext);
+        var qsoList = await logQuery.Select(x => new QsoSummary(x, isAdmin)).ToListAsync();
 
         return new LogSearchResponse { TotalCount = cnt, Contacts = qsoList };
     }
@@ -87,7 +89,7 @@ public static class LogbookHandlers
         return qso;
     }
 
-    public static async Task<QsoDetails?> UpdateQsoDetails(QsoDetails qso, HrdDbContext dbContext, IAuthorizationService authSvc, IHttpContextAccessor httpContext)
+    public static async Task<QsoDetails?> UpdateQsoDetails(QsoDetails qso, HrdDbContext dbContext, IAuthorizationService authSvc, IHttpContextAccessor httpContext, ILogEventsPublisher eventsPublisher)
     {
         QsoDetailsValidator.ValidateAndThrow(qso);
 
@@ -100,28 +102,61 @@ public static class LogbookHandlers
 
         var isAdmin = await AuthHelper.HasPolicyAsync(Policies.AdminOnly, authSvc, httpContext);
 
+        qso.Band = NormalizeBand(qso.Band)!;
         log.UpdateFromQsoDetails(qso, includeAdminFields: isAdmin);
 
         await dbContext.SaveChangesAsync();
 
+        await eventsPublisher.PublishAsync(new LogChangedEvent(
+            Operation: "updated",
+            LogId: log.ColPrimaryKey,
+            ActivationId: null,
+            Call: log.ColCall,
+            Source: ResolveSource(httpContext.HttpContext),
+            OccurredUtc: DateTime.UtcNow,
+            Version: CreateEventVersion()));
+
         return await GetQsoDetails(log.ColPrimaryKey, dbContext, authSvc, httpContext);
     }
 
-    public static async Task<QsoDetails> CreateQso(QsoDetails qso, HrdDbContext dbContext, IAuthorizationService authSvc, IHttpContextAccessor httpContext)
+    public static async Task<QsoDetails> CreateQso(QsoDetails qso, int? activationId, IQrzService qrzSvc,
+        IAuthorizationService authSvc, HrdDbContext dbContext, IHttpContextAccessor httpContext, ILogEventsPublisher eventsPublisher, CancellationToken ct)
     {
+        QrzResponse? qrz = null;
+
         QsoDetailsValidator.ValidateAndThrow(qso);
 
-        var isAdmin = await AuthHelper.HasPolicyAsync(Policies.AdminOnly, authSvc, httpContext);
+        //not necessary now, but if other users added...
+        //var isAdmin = await AuthHelper.HasPolicyAsync(Policies.AdminOnly, authSvc, httpContext);
 
-        var log = qso.ToHrdLog(includeAdminFields: isAdmin);
+        qso.Band = NormalizeBand(qso.Band)!;
+        var log = qso.ToHrdLog(includeAdminFields: true /*isAdmin*/);
+
+        if (string.IsNullOrEmpty(log.ColName) || activationId is not null)
+        {
+            qrz = await QrzHandlers.Lookup(log.ColCall, qrzSvc, ct);
+            log.UpdateFromQrzLookup(qrz);
+        }
 
         dbContext.Log.Add(log);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(ct);
+
+        if (activationId is not null)
+            await PotaHandlers.AddActivationQso(activationId.Value, log, qrz, dbContext, ct);
+
+        await eventsPublisher.PublishAsync(new LogChangedEvent(
+            Operation: "created",
+            LogId: log.ColPrimaryKey,
+            ActivationId: activationId,
+            Call: log.ColCall,
+            Source: ResolveSource(httpContext.HttpContext),
+            OccurredUtc: DateTime.UtcNow,
+            Version: CreateEventVersion()), ct);
 
         return (await GetQsoDetails(log.ColPrimaryKey, dbContext, authSvc, httpContext))!;
     }
 
-    public static async Task<AdifImportResponse> UploadAdif(IFormFile file, int? activationId, IQrzService qrzSvc, HrdDbContext dbContext, CancellationToken ct)
+    public static async Task<AdifImportResponse> UploadAdif(IFormFile file, int? activationId, IQrzService qrzSvc, HrdDbContext dbContext, ILogEventsPublisher eventsPublisher, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(file);
 
@@ -265,8 +300,27 @@ public static class LogbookHandlers
 
         await tx.CommitAsync(ct);
 
+        await eventsPublisher.PublishAsync(new LogChangedEvent(
+            Operation: "imported",
+            LogId: null,
+            ActivationId: activationId,
+            Call: null,
+            Source: "adif",
+            OccurredUtc: DateTime.UtcNow,
+            Version: CreateEventVersion()), ct);
+
         return new AdifImportResponse(records.Count, newLogs.Count, SortSkipped(skipped), qrzLookup.Count);
     }
+
+    private static string ResolveSource(HttpContext? httpContext)
+    {
+        if (string.Equals(httpContext?.User.Identity?.AuthenticationType, ApiKeyAuthenticationDefaults.Scheme, StringComparison.OrdinalIgnoreCase))
+            return "rigcommander";
+
+        return httpContext?.User.Identity?.IsAuthenticated == true ? "ui" : "system";
+    }
+
+    private static long CreateEventVersion() => DateTime.UtcNow.Ticks;
 
     private static List<string> SortSkipped(List<string> skipped)
         => [.. skipped.OrderBy(call => call, StringComparer.OrdinalIgnoreCase)];

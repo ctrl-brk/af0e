@@ -1,14 +1,21 @@
-﻿namespace RigCommander;
+﻿// ReSharper disable UnusedAutoPropertyAccessor.Global
+// ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
+
+using System.Diagnostics.CodeAnalysis;
+using RigCommander.Abstractions;
+
+#pragma warning disable CA1002 // Do not expose generic lists
+
+namespace RigCommander;
 
 public sealed class RigCommanderSettings
 {
     public string? ActiveProfile { get; set; }
     public string? ListenPort { get; init; }
     public int StatusDelayMs { get; init; } = 1000;
-#pragma warning disable CA1002 // Do not expose generic lists
     public List<RadioProfileSettings> Profiles { get; init; } = [];
-#pragma warning restore CA1002
     public WinkeyerSettings? Winkeyer { get; init; }
+    public AdifUdpSettings AdifUdp { get; init; } = new();
     public Ui Ui { get; init; } = new();
 
     public RadioProfileSettings? FindProfileByName(string? name)
@@ -19,6 +26,34 @@ public sealed class RigCommanderSettings
         return Profiles.FirstOrDefault(p =>
             string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase));
     }
+}
+
+public sealed class AdifUdpSettings
+{
+    public bool Enabled { get; init; } = true;
+    public int Port { get; init; } = 2237;
+    public bool JoinMulticastGroup { get; init; } = true;
+    public string MulticastGroup { get; init; } = "224.0.0.1";
+    public bool AcceptWsjtxFormat { get; init; } = true;
+    public bool AcceptRawAdif { get; init; } = true;
+    public bool LogUnknownFormats { get; init; } = true;
+    public AdifForwardingSettings Forwarding { get; init; } = new();
+}
+
+[SuppressMessage("Design", "CA1056:URI-like properties should not be strings")]
+public sealed class AdifForwardingSettings
+{
+    public bool Enabled { get; init; }
+    public string? EndpointUrl { get; init; }
+    public int TimeoutSeconds { get; init; } = 10;
+    public int QueueCapacity { get; init; } = 200;
+    public int MaxRetries { get; init; } = 3;
+    public int RetryDelayMs { get; init; } = 1000;
+    public string? ApiKey { get; init; }
+    public string ApiKeyHeaderName { get; init; } = "X-Api-Key";
+#pragma warning disable CA1002 // Do not expose generic lists
+    public List<string> SkipWhenProcessRunning { get; init; } = ["HRDLogbook", "HRD Logbook"];
+#pragma warning restore CA1002
 }
 
 public sealed class RadioProfileSettings
@@ -53,6 +88,7 @@ public sealed class YaesuSettings
     public int ReadTimeoutMs { get; init; } = 1000;
 }
 
+// ReSharper disable once ClassNeverInstantiated.Global
 public sealed class WinkeyerSettings
 {
     public bool Enabled { get; init; }
@@ -66,5 +102,11 @@ public sealed class WinkeyerSettings
 
 public sealed class Ui
 {
-    public bool StartMinimized { get; init; } = false;
+    public bool StartMinimized { get; init; }
+    public ActivityLogSettings ActivityLog { get; init; } = new();
+}
+
+public sealed class ActivityLogSettings
+{
+    public ActivityLogLevel MinimumLevel { get; init; } = ActivityLogLevel.Information;
 }

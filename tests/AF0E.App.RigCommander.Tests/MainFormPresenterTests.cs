@@ -19,7 +19,7 @@ public sealed class MainFormPresenterTests
 
         var state = presenter.BuildInitialState(new Uri("http://localhost:5050"));
 
-        state.ServerLabelText.Should().Be($"Server: http://localhost:5050/{Environment.NewLine}Radio: IC-9100");
+        state.ServerLabelText.Should().Be($"Server: http://localhost:5050/{Environment.NewLine}Radio: IC-9100{Environment.NewLine}Forwarding: disabled");
         state.RunAtStartupEnabled.Should().BeTrue();
         startupSpy.IsEnabledCalls.Should().Be(1);
     }

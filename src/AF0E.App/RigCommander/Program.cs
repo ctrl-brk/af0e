@@ -36,10 +36,6 @@ try
         .Enrich.FromLogContext()
         .WriteTo.Sink(richTextBoxSink, restrictedToMinimumLevel: LogEventLevel.Warning));
 
-    builder.Configuration
-        .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-        .AddEnvironmentVariables();
-
     builder.Services.AddCors(options =>
     {
         options.AddPolicy("AllowAll", policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
@@ -82,6 +78,9 @@ try
     var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
     var logger = loggerFactory.CreateLogger("RigCommander.App");
     var settings = app.Services.GetRequiredService<IOptions<RigCommanderSettings>>().Value;
+    var activationIdStore = new ActivationIdStore();
+
+    scriptActivityLog.MinimumLevel = settings.Ui.ActivityLog.MinimumLevel;
 
     app.UseCors("AllowAll");
 
@@ -106,10 +105,53 @@ try
 #pragma warning disable CA2000
     var radio = RadioFactory.Create(activeProfile);
 #pragma warning restore CA2000
-    app.Lifetime.ApplicationStopping.Register(() => radio.Dispose());
+    app.Lifetime.ApplicationStopping.Register(radio.Dispose);
     logger.LogInformation("Using profile '{Profile}' ({Kind})", activeProfile.Name, activeProfile.Kind);
 
     app.RegisterRadioEndpoints(radio, settings, logger);
+
+    AdifApiForwarder? adifApiForwarder = null;
+
+    if (settings.AdifUdp.Forwarding.Enabled)
+    {
+        try
+        {
+#pragma warning disable CA2000
+            adifApiForwarder = new AdifApiForwarder(
+                settings.AdifUdp.Forwarding,
+                app.Services.GetRequiredService<ILogger<AdifApiForwarder>>(),
+                scriptActivityLog,
+                activationIdStore);
+#pragma warning restore CA2000
+
+            _ = adifApiForwarder.StartAsync(app.Lifetime.ApplicationStopping);
+            app.Lifetime.ApplicationStopping.Register(adifApiForwarder.Dispose);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to start ADIF API forwarder");
+        }
+    }
+
+    if (settings.AdifUdp.Enabled)
+    {
+        try
+        {
+#pragma warning disable CA2000
+            var adifUdpListener = new AdifUdpBroadcastListener(
+                settings.AdifUdp,
+                app.Services.GetRequiredService<ILogger<AdifUdpBroadcastListener>>(),
+                scriptActivityLog,
+                adifApiForwarder);
+#pragma warning restore CA2000
+            _ = adifUdpListener.StartAsync(app.Lifetime.ApplicationStopping);
+            app.Lifetime.ApplicationStopping.Register(adifUdpListener.Dispose);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to start ADIF UDP listener on port {Port}", settings.AdifUdp.Port);
+        }
+    }
 
     if (settings.Winkeyer?.Enabled is true)
     {
@@ -136,17 +178,33 @@ try
 
     // -----------------------------------------------------------------------------
 
-    const string serverUrl = "http://localhost:5050";
-    var serverUri = new Uri(serverUrl);
+    var serverUri = new Uri($"http://localhost:{settings.ListenPort}");
 
     // Start the HTTP server in the background
-    _ = app.RunAsync(serverUrl);
+    _ = app.RunAsync(serverUri.ToString());
 
     // Start the WinForms shell
-    using var mainForm = new MainForm(app, serverUri, settings);
-    richTextBoxSink.Attach(mainForm.LogBox);
-    scriptActivityLog.Attach(mainForm.ScriptLogBox);
-    Application.Run(mainForm);
+    using var mainForm = new MainForm(app, serverUri, settings, activationIdStore);
+    var mainFormRef = new WeakReference<MainForm>(mainForm);
+
+    void OnWarningOrErrorLogged(string message)
+    {
+        if (mainFormRef.TryGetTarget(out var form) && !form.IsDisposed)
+            form.ShowErrorBalloon(message);
+    }
+
+    richTextBoxSink.WarningOrErrorEmitted += OnWarningOrErrorLogged;
+
+    try
+    {
+        richTextBoxSink.Attach(mainForm.LogBox);
+        scriptActivityLog.Attach(mainForm.ScriptLogBox);
+        Application.Run(mainForm);
+    }
+    finally
+    {
+        richTextBoxSink.WarningOrErrorEmitted -= OnWarningOrErrorLogged;
+    }
 }
 catch (Exception ex)
 {

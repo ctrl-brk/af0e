@@ -36,3 +36,4 @@ _ReSharper*/
 node_modules/
 
 UpgradeLog.htm
+_buildcheck-*/

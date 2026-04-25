@@ -22,7 +22,7 @@ export const appConfig: ApplicationConfig = {
       httpInterceptor: {
         allowedList: [
           {
-            uri: '/api/v1/logbook/qso*',
+            uri: '/api/v1/logbook*',
             httpMethod: 'GET',
             allowAnonymous: true,
           },

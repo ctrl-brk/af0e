@@ -82,7 +82,7 @@ export class WinkeyerComponent {
     if (!text)
       return;
 
-    this._infraSvc.sendCw(text, false, null).subscribe({
+    this._infraSvc.sendCw(text, false, null, null, null).subscribe({
       error: e => {
         Utils.showErrorMessage(e, this._ntfSvc, this._log);
       }

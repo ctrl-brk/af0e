@@ -114,6 +114,7 @@ export class QsoEditComponent implements OnInit {
   protected cwSpeed = signal(22);
   protected callHistory = signal<GridTrackerLookupModel[]>([]);
   protected cwTextVisible = signal(false);
+  protected readonly QsoEditMode = QsoEditMode;
 
   // Dropdown options
   protected modeOptions = MODE_OPTIONS;
@@ -284,16 +285,16 @@ export class QsoEditComponent implements OnInit {
     const rst = rstSent ? rstSent.replaceAll('9', 'n') : '5nn';
 
     if (this.editMode() === QsoEditMode.PotaHunting) {
-      this.cwExchLabel.set(`R ${greet} UR ${rst} C|O`);
+      this.cwExchLabel.set(`R TU ${rst} C|O`);
       this.cwExch2Label.set(`R TU ${rst} ${rst} C|O C|O`);
-      this.altCwExch = `R TU ${rst} C|O`;
+      this.altCwExch = `R ${greet} UR ${rst} C|O`;
     }
     else if (this.editMode() === QsoEditMode.PotaActivating) {
       const call = this.cwCallLabel() ? this.cwCallLabel() : '';
 
-      this.cwExchLabel.set(`${call} ${greet} UR ${rst} C|O`);
+      this.cwExchLabel.set(`${call} TU ${rst} C|O`);
       this.cwExch2Label.set(`${call} TU ${rst} ${rst} C|O C|O`);
-      this.altCwExch = `${call} TU ${rst} C|O`;
+      this.altCwExch = `${call} ${greet} UR ${rst} C|O`;
     }
   }
 
@@ -489,8 +490,9 @@ export class QsoEditComponent implements OnInit {
     this.emitFormInit();
   }
 
-  sendCw(text: string, k = false, updateUi = true) {
+  sendCw(text: string, k = false, updateUi = true, repeat: number|null = null, repeatDelaySeconds: number|null = null) {
     let timeToSend = 0;
+    this.cqSending.set(false);
     this.cwSending.set(true);
 
     text = `${text}${k ? ' K' : ''}`;
@@ -498,7 +500,7 @@ export class QsoEditComponent implements OnInit {
     if (updateUi)
       timeToSend = Utils.calculateMorseTime(text, this.cwSpeed());
 
-    this._infraSvc.sendCw(text, this.rigControl(), this.cwSpeed()).subscribe({
+    this._infraSvc.sendCw(text, this.rigControl(), this.cwSpeed(), repeat, repeatDelaySeconds).subscribe({
       next: (r) => {
         if (r.split && !r.sent) {
           this._ntfSvc.addMessage(new NotificationMessageModel(NotificationMessageSeverity.Warn, "SPLIT ON!", "Split is on. Send again.", false));
@@ -514,14 +516,11 @@ export class QsoEditComponent implements OnInit {
     });
   }
 
-  protected sendPotaCq(startCq: boolean, timeout = 5000) {
+  protected sendPotaCq(startCq: boolean) {
     if (!startCq && !this.cqSending()) return;
 
-    const msg = 'CQ POTA DE AF0E AF0E K';
-    const timeToSend = Utils.calculateMorseTime(msg, this.cwSpeed());
+    this.sendCw('CQ POTA DE AF0E AF0E K', false, false, 50, 5);
     this.cqSending.set(true);
-    this.sendCw(msg, false, false);
-    setTimeout(() => this.sendPotaCq(false), timeToSend + timeout);
   }
 
   stopCw() {
@@ -595,7 +594,7 @@ export class QsoEditComponent implements OnInit {
          }
       }).filter(x => x.errors != null);
 
-      console.warn('Form is invalid:', errors);
+      this._log.warn('Form validation failed', errors);
 
       this._ntfSvc.addMessage(
         new NotificationMessageModel(
@@ -857,7 +856,10 @@ export class QsoEditComponent implements OnInit {
       case 'F8':
         handled = true;
         $event.preventDefault();
-        this.sendCw('?');
+        if ($event.altKey)
+          this.sendCw('AGN?');
+        else
+          this.sendCw('?');
         break;
       case 'F9':
         handled = true;
@@ -943,7 +945,4 @@ export class QsoEditComponent implements OnInit {
       }
     });
   }
-
-  protected readonly QsoEditMode = QsoEditMode;
-  protected readonly HTMLElement = HTMLElement;
 }

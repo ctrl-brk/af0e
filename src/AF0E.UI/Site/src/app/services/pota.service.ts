@@ -59,8 +59,8 @@ export class PotaService {
     );
   }
 
-  public getActivationLog(id: number): Observable<ActivationQsoModel[]> {
-    return this._http.get(Configuration.potaUrl(`activations/${id}/log`)).pipe(
+  public getActivationLog(activationId: number): Observable<ActivationQsoModel[]> {
+    return this._http.get(Configuration.potaUrl(`activations/${activationId}/log`)).pipe(
       map((x: ActivationQsoModel[]) => {
         return x.map((m) => {
           m.date = new Date(m.date);

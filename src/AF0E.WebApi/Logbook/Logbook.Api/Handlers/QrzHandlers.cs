@@ -1,10 +1,13 @@
-﻿using AF0E.Common.Qrz;
-using AF0E.Services.Qrz;
+﻿using AF0E.Services.Qrz;
+using Logbook.Api.Responses;
 
 namespace Logbook.Api.Handlers;
 
 public static class QrzHandlers
 {
-    public static async Task<(QrzDatabase? qrzResult, bool notFound)> Lookup(string callSign, IQrzService qrzService, CancellationToken ct) =>
-        await qrzService.QueryCallsignAsync(callSign, ct);
+    public static async Task<QrzResponse> Lookup(string callSign, IQrzService qrzService, CancellationToken ct)
+    {
+        var (response, notFound) = await qrzService.QueryCallsignAsync(callSign, ct);
+        return new QrzResponse(response, notFound);
+    }
 }
