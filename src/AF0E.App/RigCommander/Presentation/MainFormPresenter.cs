@@ -12,11 +12,15 @@ public sealed class MainFormPresenter(RigCommanderSettings settings, IStartupReg
 
         return new MainFormViewState(
             ServerLabelText: $"Server: {serverUrl}{Environment.NewLine}Radio: {settings.ActiveProfile}{Environment.NewLine}Forwarding: {listening}",
-            RunAtStartupEnabled: startupRegistration?.IsEnabled() ?? false);
+            RunAtStartupEnabled: startupRegistration?.IsEnabled() ?? false,
+            ActivationIdInputEnabled: settings.AdifUdp.Forwarding.Enabled);
     }
 
     private static string BuildListeningLabel(RigCommanderSettings settings)
     {
+        if (!settings.AdifUdp.Forwarding.Enabled)
+            return "disabled";
+
         if (!settings.AdifUdp.Enabled)
             return "disabled";
 

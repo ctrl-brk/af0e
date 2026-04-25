@@ -162,10 +162,14 @@ public sealed class WinkeyerSerial : IDisposable
             repeat, totalSent, repeatDelaySeconds, cancelled, retried);
 
         // Log final summary only if there's additional context beyond per-send logs
-        if (repeat > 1 || cancelled || retried)
-        {
-            _activityLog?.AppendLine(BuildActivityEntry(script, repeat, repeatDelaySeconds, totalSent, cancelled, retried));
-        }
+        if (repeat <= 1 && !cancelled && !retried)
+            return;
+
+        var entry = BuildActivityEntry(script, repeat, repeatDelaySeconds, totalSent, cancelled, retried);
+        if (cancelled || retried)
+            _activityLog?.LogWarning(entry);
+        else
+            _activityLog?.LogInformation(entry);
     }
 
     private int ExecuteRepeatLoop(string script, byte[] bytes, int repeat, int repeatDelaySeconds, int cycleToken, ref bool retried)
@@ -184,7 +188,7 @@ public sealed class WinkeyerSerial : IDisposable
             _logger.LogDebug("[Winkeyer] Sent script iteration {Iteration}/{Repeat}", sent, repeat);
 
             // Log per-send activity immediately with full script text
-            _activityLog?.AppendLine(repeat > 1 ? $"{script}  [{sent}/{repeat}]" : script);
+            _activityLog?.LogInformation(repeat > 1 ? $"{script}  [{sent}/{repeat}]" : script);
 
             if (i >= repeat - 1)
                 continue;

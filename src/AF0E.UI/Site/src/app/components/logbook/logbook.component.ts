@@ -22,6 +22,7 @@ import {DatePipe} from '@angular/common';
 import {AppAuthService} from '../../services/auth.service';
 import {QsoEditComponent} from './qso-edit.component';
 import {QsoEditMode} from '../../shared/qso-edit-mode.enum';
+import {LogUpdatesService} from '../../services/log-updates.service';
 
 @Component({
   selector: 'app-logbook',
@@ -50,10 +51,12 @@ export class LogbookComponent implements OnInit {
   private _destroyRef = inject(DestroyRef);
   protected _authSvc = inject(AppAuthService);
   private _logbookSvc = inject(LogbookService);
+  private _logUpdatesSvc = inject(LogUpdatesService);
   private _ntfSvc = inject(NotificationService);
   private _log = inject(LogService);
 
   private _call: string | null = null;
+  private gridState = {skip: 0, take: 50, sortDirection: SortDirection.Descending, sortBy: 'date'};
 
   logEntries = signal<QsoSummaryModel[]>([]);
   totalRecords = signal(0);
@@ -86,7 +89,21 @@ export class LogbookComponent implements OnInit {
       }
     });
 
-    this._destroyRef.onDestroy(() => sub.unsubscribe());
+    this._logUpdatesSvc.ensureConnected().catch(err => this._log.error('Logbook realtime connection failed', err));
+    const updatesSub = this._logUpdatesSvc.changed$.subscribe(evt => {
+      if (evt.operation !== 'created' && evt.operation !== 'updated' && evt.operation !== 'imported')
+        return;
+
+      if (this._call && evt.call && this._call.toUpperCase() !== evt.call.toUpperCase())
+        return;
+
+      this.loadLog(this._call, this.gridState.skip, this.gridState.take, this.qsoDateRange(), this.gridState.sortDirection, this.gridState.sortBy);
+    });
+
+    this._destroyRef.onDestroy(() => {
+      sub.unsubscribe();
+      updatesSub.unsubscribe();
+    });
   }
 
   private onCallChange(call: string | null) {
@@ -110,6 +127,7 @@ export class LogbookComponent implements OnInit {
 
   private loadLog(call: string | null, skip: number, take: number = 0, dateRange?: Date[], order: SortDirection = SortDirection.Descending, sortBy = 'date') {
     this.loading.set(true);
+    this.gridState = {skip, take, sortDirection: order, sortBy};
 
     let minDate = !dateRange || !dateRange[0] || !dateRange[1] ? this.qsoMinDate() : dateRange[0];
     let maxDate = !dateRange || !dateRange[0] || !dateRange[1] ? this.qsoMaxDate() : dateRange[1];
@@ -156,9 +174,9 @@ export class LogbookComponent implements OnInit {
   onQsoSaved(qso: any) {
     this.qsoEditVisible.set(false);
 
-    if (!qso.id) {
-      this.loadLog(this._call, 0, 50, this.qsoDateRange());
-    }
+    // if (!qso.id) {
+    //   this.loadLog(this._call, 0, 50, this.qsoDateRange());
+    // }
   }
 
   protected readonly QsoEditMode = QsoEditMode;

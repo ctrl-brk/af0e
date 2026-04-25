@@ -2,6 +2,7 @@
 // ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
 
 using System.Diagnostics.CodeAnalysis;
+using RigCommander.Abstractions;
 
 #pragma warning disable CA1002 // Do not expose generic lists
 
@@ -102,4 +103,10 @@ public sealed class WinkeyerSettings
 public sealed class Ui
 {
     public bool StartMinimized { get; init; }
+    public ActivityLogSettings ActivityLog { get; init; } = new();
+}
+
+public sealed class ActivityLogSettings
+{
+    public ActivityLogLevel MinimumLevel { get; init; } = ActivityLogLevel.Information;
 }

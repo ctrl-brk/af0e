@@ -47,6 +47,9 @@
       <th>Call</th>
       <th>Band</th>
       <th>Mode</th>
+      @if (_authSvc.hasRole('Admin')) {
+        <th>Comment</th>
+      }
       <th title="POTA activation">POTA</th>
       <th title="Satellite name">SAT</th>
     </tr>
@@ -58,6 +61,9 @@
       <td>{{ qso.call }}</td>
       <td>{{ qso.band }}</td>
       <td><p-tag [value]="qso.mode|qsoMode" [severity]="qso.mode|modeSeverity" /></td>
+      @if (_authSvc.hasRole('Admin')) {
+        <td>{{ qso.comment }}</td>
+      }
       <td>
         @if (qso.potaCount) {
           <span class="material-symbols-outlined">park</span>

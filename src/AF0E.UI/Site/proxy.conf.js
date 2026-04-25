@@ -5,6 +5,8 @@ module.exports = {
   '/api': {
     target: 'http://localhost:5200',
     secure: false,
+    ws: true,
+    changeOrigin: true,
     agent: new Agent({
       maxSockets: 100,
       keepAlive: true,

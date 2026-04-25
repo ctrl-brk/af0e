@@ -114,6 +114,7 @@ export class QsoEditComponent implements OnInit {
   protected cwSpeed = signal(22);
   protected callHistory = signal<GridTrackerLookupModel[]>([]);
   protected cwTextVisible = signal(false);
+  protected readonly QsoEditMode = QsoEditMode;
 
   // Dropdown options
   protected modeOptions = MODE_OPTIONS;
@@ -593,7 +594,7 @@ export class QsoEditComponent implements OnInit {
          }
       }).filter(x => x.errors != null);
 
-      console.warn('Form is invalid:', errors);
+      this._log.warn('Form validation failed', errors);
 
       this._ntfSvc.addMessage(
         new NotificationMessageModel(
@@ -944,7 +945,4 @@ export class QsoEditComponent implements OnInit {
       }
     });
   }
-
-  protected readonly QsoEditMode = QsoEditMode;
-  protected readonly HTMLElement = HTMLElement;
 }

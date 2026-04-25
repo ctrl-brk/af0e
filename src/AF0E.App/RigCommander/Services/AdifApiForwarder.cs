@@ -62,7 +62,7 @@ public sealed class AdifApiForwarder(
             return true;
 
         logger.LogWarning("ADIF forwarding queue full; dropping record call={Call}", item.Fields.TryGetValue("CALL", out var call) ? call : "-");
-        activityLog?.AppendLine("[ADIF UDP] Forwarding queue full. Dropped record.");
+        activityLog?.LogWarning("[ADIF UDP] Forwarding queue full. Dropped record.");
         return false;
     }
 
@@ -88,7 +88,7 @@ public sealed class AdifApiForwarder(
     {
         if (TryGetBlockingProcess(out var processName))
         {
-            activityLog?.AppendLine($"[ADIF UDP] Skipped API forward: '{processName}' is running.");
+            activityLog?.LogDebug($"[ADIF UDP] Skipped API forward: '{processName}' is running.");
             return;
         }
 
@@ -97,7 +97,7 @@ public sealed class AdifApiForwarder(
         if (!AdifQsoRequestMapper.TryMap(item.Fields, activationId, out var payload, out var mappingError))
         {
             logger.LogWarning("Skipping ADIF forward because mapping failed: {Error}", mappingError);
-            activityLog?.AppendLine($"[ADIF UDP] Skipped API forward: {mappingError}");
+            activityLog?.LogWarning($"[ADIF UDP] Skipped API forward: {mappingError}");
             return;
         }
 
@@ -109,7 +109,7 @@ public sealed class AdifApiForwarder(
 
                 if (response.IsSuccessStatusCode)
                 {
-                    activityLog?.AppendLine($"[ADIF UDP] Forwarded QSO to API: call={payload.Qso.Call}, band={payload.Qso.Band}, mode={payload.Qso.Mode}");
+                    activityLog?.LogInformation($"[ADIF UDP] LOG: Call: {payload.Qso.Call}, Band: {payload.Qso.Band}, Mode: {payload.Qso.Mode}, Grid: {payload.Qso.Grid}, Cmt: {payload.Qso.Comment}");
                     return;
                 }
 
@@ -141,7 +141,7 @@ public sealed class AdifApiForwarder(
                 await Task.Delay(settings.RetryDelayMs, cancellationToken);
         }
 
-        activityLog?.AppendLine("[ADIF UDP] Failed to forward ADIF record after retries.");
+        activityLog?.LogError("[ADIF UDP] Failed to forward ADIF record after retries.");
     }
 
     private bool TryGetBlockingProcess(out string processName)
