@@ -80,6 +80,8 @@ try
     var settings = app.Services.GetRequiredService<IOptions<RigCommanderSettings>>().Value;
     var activationIdStore = new ActivationIdStore();
 
+    scriptActivityLog.MinimumLevel = settings.Ui.ActivityLog.MinimumLevel;
+
     app.UseCors("AllowAll");
 
     app.MapGet("/health", () => Results.Ok(new { ok = true }));

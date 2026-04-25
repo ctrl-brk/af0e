@@ -114,6 +114,17 @@ public sealed partial class MainForm : Form
         _runAtStartupCheckBox.Checked = state.RunAtStartupEnabled;
         _suppressStartupToggle = false;
 
+        _activationIdLabel.Enabled = state.ActivationIdInputEnabled;
+        _activationIdTextBox.Enabled = state.ActivationIdInputEnabled;
+        _clearActivationIdButton.Enabled = state.ActivationIdInputEnabled;
+
+        if (!state.ActivationIdInputEnabled)
+        {
+            _activationIdStore?.Set(null);
+            _activationIdTextBox.Text = string.Empty;
+            _activationIdTextBox.BackColor = SystemColors.Control;
+        }
+
         _activationIdTextBox.TextChanged += ActivationIdTextBox_TextChanged;
         _clearActivationIdButton.Click += ClearActivationIdButton_Click;
         UpdateActivationIdStateFromText();
@@ -195,6 +206,13 @@ public sealed partial class MainForm : Form
 
     private void UpdateActivationIdStateFromText()
     {
+        if (!_activationIdTextBox.Enabled)
+        {
+            _activationIdStore?.Set(null);
+            _activationIdTextBox.BackColor = SystemColors.Control;
+            return;
+        }
+
         var raw = _activationIdTextBox.Text.Trim();
 
         if (string.IsNullOrWhiteSpace(raw))

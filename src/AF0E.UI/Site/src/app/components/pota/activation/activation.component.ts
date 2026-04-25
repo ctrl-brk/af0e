@@ -22,7 +22,7 @@ import {Tag} from 'primeng/tag';
 import {Card} from 'primeng/card';
 import {Tab, TabList, TabPanel, TabPanels, Tabs} from 'primeng/tabs';
 import {PotaActivationLogComponent} from './activation-log.component';
-import {ActivationQsoModel} from '../../../models/activation-qso.model';
+import {ActivationQsoModel, QsoDetailsToActivationQsoModel} from '../../../models/activation-qso.model';
 import {PotaActivationMapComponent} from './activation-map.component';
 import {Button} from 'primeng/button';
 import {AppAuthService} from '../../../services/auth.service';
@@ -43,6 +43,8 @@ import {ConfirmPopup} from 'primeng/confirmpopup';
 import {Toast} from 'primeng/toast';
 import {ConfirmationService} from 'primeng/api';
 import {AdifImportResponseModel} from '../../../models/adif-import-response.model';
+import {LogUpdatesService} from '../../../services/log-updates.service';
+import {QsoDetailModel} from '../../../models/qso-detail.model';
 
 @Component({
   templateUrl: './activation.component.html',
@@ -85,6 +87,7 @@ export class PotaActivationComponent implements OnInit {
   private _confirmSvc = inject(ConfirmationService);
   private _potaSvc = inject(PotaService);
   private _logbookSvc = inject(LogbookService);
+  private _logUpdatesSvc = inject(LogUpdatesService);
   private _infraSvc= inject(InfraService);
   private _potaAppSvc= inject(PotaAppService);
   private _ntfSvc= inject(NotificationService);
@@ -151,7 +154,24 @@ export class PotaActivationComponent implements OnInit {
       }
     });
 
-    this._destroyRef.onDestroy(() => sub.unsubscribe());
+    this._logUpdatesSvc.ensureConnected().catch(err => this._log.error('Activation realtime connection failed', err));
+    const updatesSub = this._logUpdatesSvc.changed$.subscribe(evt => {
+      if (evt.operation !== 'created' && evt.operation !== 'updated' && evt.operation !== 'imported')
+        return;
+
+      if (evt.activationId !== this.activationId())
+        return;
+
+      if (evt.operation === 'updated')
+        this.loadActivationLog(this.activationId());
+      else
+        this.loadQso(evt.logId!);
+    });
+
+    this._destroyRef.onDestroy(() => {
+      sub.unsubscribe();
+      updatesSub.unsubscribe();
+    });
   }
 
   private onActivationChange(id: number) {
@@ -171,11 +191,22 @@ export class PotaActivationComponent implements OnInit {
     this.loadActivationLog(id)
   }
 
-  private loadActivationLog(id: number) {
-    this._potaSvc.getActivationLog(id).subscribe({
+  private loadActivationLog(activationId: number) {
+    this._potaSvc.getActivationLog(activationId).subscribe({
       next: (r: ActivationQsoModel[]) => this.logEntries.set(r),
       error: e=> Utils.showErrorMessage(e, this._ntfSvc, this._log),
     });
+  }
+
+  private loadQso(logId: number) {
+    this._logbookSvc.getQso(logId).subscribe({
+      next: (q: QsoDetailModel) => {
+        const aqm = QsoDetailsToActivationQsoModel(q);
+        this.logEntries.set([aqm, ...this.logEntries()]);
+      },
+      error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
+    });
+
   }
 
   onTabChange(tab: unknown) {

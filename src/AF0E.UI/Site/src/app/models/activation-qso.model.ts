@@ -1,3 +1,5 @@
+import {QsoDetailModel} from './qso-detail.model';
+
 export interface ActivationQsoModel {
   logId: number;
   band: string | null;
@@ -21,4 +23,34 @@ export interface ActivationQsoModel {
   p2p: string[];
   satName: string | null;
   state: string | null;
+}
+
+/**
+ * Converts a QsoDetailModel to an ActivationQsoModel, only populating grid fields
+ */
+export function QsoDetailsToActivationQsoModel(q: QsoDetailModel): ActivationQsoModel {
+  return {
+    cqz: null,
+    dxcc: null,
+    freq: null,
+    grid: null,
+    ituz: null,
+    lat: null,
+    lon: null,
+    myCity: null,
+    myCnty: null,
+    myCountry: null,
+    myGrid: null,
+    myState: null,
+    p2p: [],
+    rstRcvd: null,
+    rstSent: null,
+    state: null,
+    logId: q.id,
+    date: q.date,
+    call: q.call,
+    band: q.band,
+    mode: q.mode,
+    satName: q.satName
+  };
 }

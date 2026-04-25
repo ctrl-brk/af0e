@@ -8,6 +8,8 @@ export class Configuration {
   private static _qrzUrl = `${Configuration._apiUrl}/qrz`;
   private static _utilsUrl = `${Configuration._apiUrl}/tools`;
   private static _notificationUrl = `${Configuration._apiUrl}/notification`;
+  private static _hubRootUrl = Configuration._apiUrl.replace(/\/v\d+$/i, '');
+  private static _logbookHubUrl = `${Configuration._hubRootUrl}/hubs/logbook`;
   public static infraUrl = environment.infraUrl;
   public static potaAppUrl = environment.potaAppUrl;
 
@@ -41,5 +43,9 @@ export class Configuration {
 
   public static notificationUrl(url: string): string {
     return `${this._notificationUrl}/${url}`;
+  }
+
+  public static logbookHubUrl(): string {
+    return this._logbookHubUrl;
   }
 }

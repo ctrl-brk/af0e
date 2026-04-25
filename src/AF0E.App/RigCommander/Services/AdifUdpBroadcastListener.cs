@@ -77,22 +77,22 @@ public sealed class AdifUdpBroadcastListener(
         }
 
         var records = AdifParser.Parse(adifPayload);
-        activityLog?.AppendLine($"[ADIF UDP] {sourceDescription}: {FormatPayloadForActivity(adifPayload)}");
+        activityLog?.LogDebug($"[ADIF UDP] {sourceDescription}: {FormatPayloadForActivity(adifPayload)}");
 
         if (records.Count == 0)
         {
             if (settings.LogUnknownFormats)
                 logger.LogDebug("Received ADIF UDP payload with no records from {RemoteEndPoint}", remoteEndPoint);
-            activityLog?.AppendLine($"[ADIF UDP] No ADIF records parsed from {remoteEndPoint}");
+            activityLog?.LogWarning($"[ADIF UDP] No ADIF records parsed from {remoteEndPoint}");
             return;
         }
 
-        activityLog?.AppendLine($"[ADIF UDP] Parsed {records.Count} record(s) from {remoteEndPoint}");
+        activityLog?.LogDebug($"[ADIF UDP] Parsed {records.Count} record(s) from {remoteEndPoint}");
 
         for (var index = 0; index < records.Count; index++)
         {
             var record = records[index];
-            activityLog?.AppendLine(
+            activityLog?.LogDebug(
                 $"[ADIF UDP] #{index + 1} call={record["CALL"] ?? "-"}, band={record["BAND"] ?? "-"}, mode={record["MODE"] ?? "-"}, submode={record["SUBMODE"] ?? "-"}");
 
             if (apiForwarder is null)

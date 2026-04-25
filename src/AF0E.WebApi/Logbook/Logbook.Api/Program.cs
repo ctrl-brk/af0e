@@ -4,6 +4,7 @@ using AF0E.Services.Pota;
 using AF0E.Services.Qrz;
 using Logbook.Api.Converters;
 using Logbook.Api.Endpoints;
+using Logbook.Api.Realtime;
 using Logbook.Api.Security;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -75,9 +76,11 @@ try
     builder.Services.AddHttpContextAccessor();
     builder.Services.AddHttpClient();
     builder.Services.AddScoped<IPotaApiService, PotaApiService>();
+    builder.Services.AddSignalR();
     builder.Services.Configure<QrzSettings>(builder.Configuration.GetSection("QrzSettings"));
     builder.Services.Configure<ApiKeyAuthSettings>(builder.Configuration.GetSection("ApiKeyAuth"));
     builder.Services.AddSingleton<IQrzService, QrzService>();
+    builder.Services.AddScoped<ILogEventsPublisher, SignalRLogEventsPublisher>();
 
 //builder.Services.AddDbContext<HrdDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("HrdLog")));
     builder.Services.AddScoped<HrdDbContext>(_ => new HrdDbContext(builder.Configuration.GetConnectionString("HrdLog")!));
@@ -155,6 +158,7 @@ try
 
     app.MapGet("/health", () => Results.Ok(new { ok = true }));
     app.RegisterV1Endpoints();
+    app.MapHub<LogbookHub>("/api/hubs/logbook");
 
     app.MapFallbackToFile("/index.html");
     app.Run();

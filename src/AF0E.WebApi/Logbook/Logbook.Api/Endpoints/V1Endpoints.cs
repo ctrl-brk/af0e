@@ -5,6 +5,7 @@ using AF0E.Services.Pota;
 using AF0E.Services.Qrz;
 using Logbook.Api.Handlers;
 using Logbook.Api.Models;
+using Logbook.Api.Realtime;
 using Logbook.Api.Requests;
 using Logbook.Api.Responses;
 using Logbook.Api.Security;
@@ -54,11 +55,11 @@ public static class V1Endpoints
             })
             .WithName("QsoDetails");
 
-        builder.MapPut("qso", async Task<Results<BadRequest<string>, NotFound, Ok<QsoDetails>>> (QsoDetails qso, HrdDbContext dbContext, IAuthorizationService authSvc, IHttpContextAccessor httpContext) =>
+        builder.MapPut("qso", async Task<Results<BadRequest<string>, NotFound, Ok<QsoDetails>>> (QsoDetails qso, HrdDbContext dbContext, IAuthorizationService authSvc, IHttpContextAccessor httpContext, ILogEventsPublisher eventsPublisher) =>
             {
                 try
                 {
-                    var res = await LogbookHandlers.UpdateQsoDetails(qso, dbContext, authSvc, httpContext);
+                    var res = await LogbookHandlers.UpdateQsoDetails(qso, dbContext, authSvc, httpContext, eventsPublisher);
                     return res is null ? TypedResults.NotFound() : TypedResults.Ok(res);
                 }
                 catch (ArgumentException ex)
@@ -69,11 +70,11 @@ public static class V1Endpoints
             .RequireAuthorization(Policies.AdminOnly)
             .WithName("QsoUpdate");
 
-        builder.MapPost("qso", async Task<Results<BadRequest<string>, Created<QsoDetails>>> (QsoRequest req, IQrzService qrzSvc, HrdDbContext dbContext, IAuthorizationService authSvc, IHttpContextAccessor httpContext, CancellationToken ct) =>
+        builder.MapPost("qso", async Task<Results<BadRequest<string>, Created<QsoDetails>>> (QsoRequest req, IQrzService qrzSvc, HrdDbContext dbContext, IAuthorizationService authSvc, IHttpContextAccessor httpContext, ILogEventsPublisher eventsPublisher, CancellationToken ct) =>
             {
                 try
                 {
-                    var result = await LogbookHandlers.CreateQso(req.Qso, req.PotaActivationId, qrzSvc, authSvc, dbContext, httpContext, ct);
+                    var result = await LogbookHandlers.CreateQso(req.Qso, req.PotaActivationId, qrzSvc, authSvc, dbContext, httpContext, eventsPublisher, ct);
 
                     return TypedResults.Created($"/api/v1/logbook/qso/{result.Id}", result);
                 }
@@ -85,11 +86,11 @@ public static class V1Endpoints
             .RequireAuthorization(Policies.AdminOnly)
             .WithName("QsoCreate");
 
-        builder.MapGet("{call?}", async (string? call, int? skip, int? take, string? sort, int? orderBy, string? begin, string? end, HrdDbContext dbContext) =>
-                TypedResults.Ok(await LogbookHandlers.GetLog(call, skip, take, sort, orderBy, begin, end, dbContext)))
+        builder.MapGet("{call?}", async (string? call, int? skip, int? take, string? sort, int? orderBy, string? begin, string? end, HrdDbContext dbContext, IAuthorizationService authSvc, IHttpContextAccessor httpContext) =>
+                TypedResults.Ok(await LogbookHandlers.GetLog(call, skip, take, sort, orderBy, begin, end, dbContext, authSvc, httpContext)))
             .WithName("Logbook");
 
-        builder.MapPost("upload", async Task<Results<BadRequest<string>, Ok<AdifImportResponse>>> ([FromForm] UploadAdifRequest request, IQrzService qrzSvc, HrdDbContext dbContext, CancellationToken ct) =>
+        builder.MapPost("upload", async Task<Results<BadRequest<string>, Ok<AdifImportResponse>>> ([FromForm] UploadAdifRequest request, IQrzService qrzSvc, HrdDbContext dbContext, ILogEventsPublisher eventsPublisher, CancellationToken ct) =>
             {
                 if (request.File is null || request.File.Length == 0)
                     return TypedResults.BadRequest("A non-empty .adif file is required");
@@ -100,7 +101,7 @@ public static class V1Endpoints
 
                 try
                 {
-                    return TypedResults.Ok(await LogbookHandlers.UploadAdif(request.File, request.ActivationId, qrzSvc, dbContext, ct));
+                    return TypedResults.Ok(await LogbookHandlers.UploadAdif(request.File, request.ActivationId, qrzSvc, dbContext, eventsPublisher, ct));
                 }
                 catch (ArgumentException ex)
                 {
