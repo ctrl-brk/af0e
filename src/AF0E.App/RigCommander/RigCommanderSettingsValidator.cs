@@ -81,13 +81,13 @@ public sealed class RigCommanderSettingsValidator : IValidateOptions<RigCommande
         {
             var forwarding = options.AdifUdp.Forwarding;
 
-            if (string.IsNullOrWhiteSpace(forwarding.EndpointUrl))
+            if (string.IsNullOrWhiteSpace(options.LogbookApiUrl))
             {
-                errors.Add("RigCommander:AdifUdp:Forwarding:EndpointUrl is required when forwarding is enabled.");
+                errors.Add("RigCommander:LogbookApiUrl is required when forwarding is enabled.");
             }
-            else if (!Uri.TryCreate(forwarding.EndpointUrl, UriKind.Absolute, out _))
+            else if (!Uri.TryCreate(options.LogbookApiUrl, UriKind.Absolute, out _))
             {
-                errors.Add("RigCommander:AdifUdp:Forwarding:EndpointUrl must be an absolute URI.");
+                errors.Add("RigCommander:LogbookApiUrl must be an absolute URI.");
             }
 
             if (forwarding.TimeoutSeconds <= 0)

@@ -1,10 +1,14 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Xml.Serialization;
+// ReSharper disable InconsistentNaming
+// ReSharper disable UnusedMember.Global
+// ReSharper disable UnusedAutoPropertyAccessor.Global
+// ReSharper disable ClassNeverInstantiated.Global
 
 namespace AF0E.Common.Qrz;
 
 [XmlRoot("QRZDatabase", Namespace = "http://xmldata.qrz.com")]
-public class QrzDatabase
+public sealed class QrzDatabase
 {
     [XmlAttribute("version")]
     public string? Version { get; set; }
@@ -16,7 +20,7 @@ public class QrzDatabase
 
 [SuppressMessage("Naming", "CA1707:Identifiers should not contain underscores")]
 [SuppressMessage("ReSharper", "IdentifierTypo")]
-public class QrzCallsign
+public sealed class QrzCallsign
 {
     public string call { get; set; } = null!;
     public string? aliases { get; set; }
@@ -35,7 +39,7 @@ public class QrzCallsign
     public decimal lat { get; set; }
     public decimal lon { get; set; }
     public string? grid { get; set; }
-    public string? county { get; set; } //USA
+    public string? county { get; set; } //USA only
     public uint fips { get; set; } //FIPS county identifier (USA)
     public string? land { get; set; } //DXCC country name of the callsign
     public string? efdate { get; set; } //license effective date (USA)
@@ -82,7 +86,7 @@ public class QrzCallsign
     public string? user { get; set; } //User who manages this callsign on QRZ
 }
 
-public class QrzSession
+public sealed class QrzSession
 {
     public string? Key { get; set; }
     public uint Count { get; set; }

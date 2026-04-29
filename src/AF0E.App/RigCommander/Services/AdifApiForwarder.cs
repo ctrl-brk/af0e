@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Threading.Channels;
 using RigCommander.Abstractions;
@@ -17,13 +18,17 @@ public sealed record AdifForwardingItem(
     // ReSharper restore NotAccessedPositionalProperty.Global
     IReadOnlyDictionary<string, string> Fields);
 
+[SuppressMessage("Design", "CA1054:URI-like parameters should not be strings")]
 public sealed class AdifApiForwarder(
+    string logbookApiUrl,
     AdifForwardingSettings settings,
     ILogger<AdifApiForwarder> logger,
     IScriptActivityLog? activityLog = null,
     ActivationIdStore? activationIdStore = null)
     : IDisposable
 {
+    private const string ForwardingEndpointPath = "logbook/qso";
+
     private readonly Channel<AdifForwardingItem> _channel = Channel.CreateBounded<AdifForwardingItem>(new BoundedChannelOptions(settings.QueueCapacity)
     {
         SingleReader = true,
@@ -36,7 +41,7 @@ public sealed class AdifApiForwarder(
         Timeout = TimeSpan.FromSeconds(settings.TimeoutSeconds)
     };
 
-    private readonly Uri _endpointUri = new(settings.EndpointUrl!, UriKind.Absolute);
+    private readonly Uri _endpointUri = BuildEndpointUri(logbookApiUrl);
 
     private CancellationTokenSource? _workerCts;
     private bool _started;
@@ -88,7 +93,7 @@ public sealed class AdifApiForwarder(
     {
         if (TryGetBlockingProcess(out var processName))
         {
-            activityLog?.LogDebug($"[ADIF UDP] Skipped API forward: '{processName}' is running.");
+            activityLog?.LogWarning($"[ADIF UDP] LOG: Skipped API forward: '{processName}' is running.");
             return;
         }
 
@@ -109,7 +114,7 @@ public sealed class AdifApiForwarder(
 
                 if (response.IsSuccessStatusCode)
                 {
-                    activityLog?.LogInformation($"[ADIF UDP] LOG: Call: {payload.Qso.Call}, Band: {payload.Qso.Band}, Mode: {payload.Qso.Mode}, Grid: {payload.Qso.Grid}, Cmt: {payload.Qso.Comment}");
+                    activityLog?.LogInformation($"[ADIF UDP] LOG: {payload.Qso.Call}, Freq: {payload.Qso.Freq}, Band: {payload.Qso.Band}, Mode: {payload.Qso.Mode}, Grid: {payload.Qso.Grid}, Cmt: {payload.Qso.Comment}");
                     return;
                 }
 
@@ -186,5 +191,17 @@ public sealed class AdifApiForwarder(
 
         _workerCts?.Dispose();
         _httpClient.Dispose();
+    }
+
+    private static Uri BuildEndpointUri(string logbookApiUrl)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(logbookApiUrl);
+
+        var baseUri = new Uri(logbookApiUrl, UriKind.Absolute);
+
+        if (!baseUri.AbsolutePath.EndsWith('/'))
+            baseUri = new Uri(baseUri.AbsoluteUri + "/");
+
+        return new Uri(baseUri, ForwardingEndpointPath);
     }
 }

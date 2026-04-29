@@ -67,6 +67,11 @@ public static class HrdLogExtensions
             log.ColGridsquare ??= qrzResult.grid;
             log.ColCqz ??= qrzResult.cqzone;
             log.ColItuz ??= qrzResult.ituzone;
+            log.ColDxcc ??= qrzResult.dxcc.ToString();
+            log.ColHrdcountryno ??= qrzResult.dxcc.ToString();
+            log.ColEmail ??= qrzResult.email;
+            log.ColLat ??= (double)qrzResult.lat;
+            log.ColLon ??= (double)qrzResult.lon;
         }
     }
 

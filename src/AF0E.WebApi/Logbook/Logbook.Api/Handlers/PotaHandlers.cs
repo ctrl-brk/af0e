@@ -3,7 +3,6 @@ using AF0E.DB;
 using AF0E.DB.Models;
 using AF0E.Services.Pota;
 using AF0E.Services.Pota.Models;
-using AF0E.Services.Qrz;
 using Logbook.Api.Models;
 using Logbook.Api.Requests;
 using Logbook.Api.Responses;
