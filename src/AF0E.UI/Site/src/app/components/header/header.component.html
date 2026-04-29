@@ -1,4 +1,7 @@
-<header [style.justify-content]="isLessThan1000px() ? 'space-between' : 'space-evenly'">
+<header [style.justify-content]="isLessThan1000px() ? 'space-between' : 'space-evenly'"
+        [class.status-in-progress]="_activationStatusSvc.status() === 'in-progress' && !nearMidnight()"
+        [class.status-qualified]="_activationStatusSvc.status() === 'qualified'"
+        [class.status-urgent]="_activationStatusSvc.status() === 'in-progress' && nearMidnight()">
   <div>
     @if (isLessThan1000px()) {
       <p-button severity="secondary" (click)="popupMenu.toggle($event)" icon="pi pi-bars" />

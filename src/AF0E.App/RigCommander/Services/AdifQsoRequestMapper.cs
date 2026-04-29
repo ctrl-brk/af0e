@@ -49,10 +49,10 @@ public static class AdifQsoRequestMapper
         payload.Qso.MyGrid = FirstNonEmpty(fields, "MY_GRIDSQUARE");
         payload.Qso.Comment = FirstNonEmpty(fields, "COMMENT");
         if (TryParseDouble(fields, "FREQ", out var freqMhz))
-            payload.Qso.Freq = freqMhz;
+            payload.Qso.Freq = freqMhz < 1000 ? freqMhz * 1000000 : freqMhz; //we need to convert MHz to Hz for the API
 
         if (TryParseDouble(fields, "FREQ_RX", out var freqRxMhz))
-            payload.Qso.FreqRx = freqRxMhz;
+            payload.Qso.FreqRx = freqRxMhz < 1000 ? freqRxMhz * 1000000 : freqRxMhz;
 
         error = string.Empty;
         return true;

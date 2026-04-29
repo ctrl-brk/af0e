@@ -14,6 +14,7 @@ partial class MainForm
     {
         if (disposing)
         {
+            _activationIdValidationService?.Dispose();
             _trayShell?.Dispose();
             components?.Dispose();
         }
@@ -41,7 +42,9 @@ partial class MainForm
         _exitButton = new System.Windows.Forms.Button();
         _activationIdLabel = new System.Windows.Forms.Label();
         _activationIdTextBox = new System.Windows.Forms.TextBox();
+        _setActivationIdButton = new System.Windows.Forms.Button();
         _clearActivationIdButton = new System.Windows.Forms.Button();
+        _activationInfoLabel = new System.Windows.Forms.Label();
         ((System.ComponentModel.ISupportInitialize)_splitContainer).BeginInit();
         _splitContainer.Panel1.SuspendLayout();
         _splitContainer.Panel2.SuspendLayout();
@@ -70,14 +73,26 @@ partial class MainForm
         _activationIdTextBox.Name = "_activationIdTextBox";
         _activationIdTextBox.Size = new System.Drawing.Size(110, 23);
         _activationIdTextBox.TabIndex = 3;
-        _clearActivationIdButton.Location = new System.Drawing.Point(216, 100);
+        _setActivationIdButton.Location = new System.Drawing.Point(216, 100);
+        _setActivationIdButton.Name = "_setActivationIdButton";
+        _setActivationIdButton.Size = new System.Drawing.Size(50, 23);
+        _setActivationIdButton.TabIndex = 4;
+        _setActivationIdButton.Text = "Set";
+        _setActivationIdButton.UseVisualStyleBackColor = true;
+        _clearActivationIdButton.Location = new System.Drawing.Point(272, 100);
         _clearActivationIdButton.Name = "_clearActivationIdButton";
         _clearActivationIdButton.Size = new System.Drawing.Size(50, 23);
-        _clearActivationIdButton.TabIndex = 4;
+        _clearActivationIdButton.TabIndex = 5;
         _clearActivationIdButton.Text = "Clear";
         _clearActivationIdButton.UseVisualStyleBackColor = true;
+        _activationInfoLabel.AutoEllipsis = true;
+        _activationInfoLabel.Location = new System.Drawing.Point(100, 126);
+        _activationInfoLabel.Name = "_activationInfoLabel";
+        _activationInfoLabel.Size = new System.Drawing.Size(222, 24);
+        _activationInfoLabel.TabIndex = 6;
+        _activationInfoLabel.Text = " ";
         _splitContainer.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right));
-        _splitContainer.Location = new System.Drawing.Point(20, 135);
+        _splitContainer.Location = new System.Drawing.Point(20, 154);
         _splitContainer.Name = "_splitContainer";
         _splitContainer.Orientation = System.Windows.Forms.Orientation.Horizontal;
         _splitContainer.Panel1.Controls.Add(_scriptActivityLabel);
@@ -86,7 +101,7 @@ partial class MainForm
         _splitContainer.Panel2.Controls.Add(_errorsLabel);
         _splitContainer.Panel2.Controls.Add(_clearLogButton);
         _splitContainer.Panel2.Controls.Add(_logBox);
-        _splitContainer.Size = new System.Drawing.Size(504, 245);
+        _splitContainer.Size = new System.Drawing.Size(504, 226);
         _splitContainer.SplitterDistance = 130;
         _splitContainer.TabIndex = 5;
         _scriptActivityLabel.AutoSize = true;
@@ -176,7 +191,9 @@ partial class MainForm
         Controls.Add(_splitContainer);
         Controls.Add(_activationIdLabel);
         Controls.Add(_activationIdTextBox);
+        Controls.Add(_setActivationIdButton);
         Controls.Add(_clearActivationIdButton);
+        Controls.Add(_activationInfoLabel);
         Controls.Add(_runAtStartupCheckBox);
         Controls.Add(_hideButton);
         Controls.Add(_exitButton);
@@ -212,5 +229,7 @@ partial class MainForm
     private Button _exitButton;
     private Label _activationIdLabel;
     private TextBox _activationIdTextBox;
+    private Button _setActivationIdButton;
     private Button _clearActivationIdButton;
+    private Label _activationInfoLabel;
 }

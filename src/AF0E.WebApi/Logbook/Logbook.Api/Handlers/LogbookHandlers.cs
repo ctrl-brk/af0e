@@ -89,6 +89,56 @@ public static class LogbookHandlers
         return qso;
     }
 
+    public static async Task<QsoDetails> CreateQso(QsoDetails qso, int? activationId, IQrzService qrzSvc,
+        IAuthorizationService authSvc, HrdDbContext dbContext, IHttpContextAccessor httpContext, ILogEventsPublisher eventsPublisher, CancellationToken ct)
+    {
+        QrzResponse? qrz = null;
+
+        QsoDetailsValidator.ValidateAndThrow(qso);
+
+        PotaActivation? activation = null;
+        if (activationId is not null)
+        {
+            activation = await dbContext.PotaActivations
+                             .Include(p => p.Park)
+                             .SingleOrDefaultAsync(x => x.ActivationId == activationId.Value, ct)
+                         ?? throw new ArgumentException("Invalid activation ID", nameof(activationId));
+        }
+
+        //not necessary now, but if other users added...
+        //var isAdmin = await AuthHelper.HasPolicyAsync(Policies.AdminOnly, authSvc, httpContext);
+
+        qso.Band = NormalizeBand(qso.Band)!;
+        var log = qso.ToHrdLog(includeAdminFields: true /*isAdmin*/);
+        log.ColQsoComplete = "Y";
+
+        if (string.IsNullOrEmpty(log.ColName) || activationId is not null)
+        {
+            qrz = await QrzHandlers.Lookup(log.ColCall, qrzSvc, ct);
+            log.UpdateFromQrzLookup(qrz);
+        }
+
+        if (activation is not null)
+            AddActivationComment(log, activation.Park);
+
+        dbContext.Log.Add(log);
+        await dbContext.SaveChangesAsync(ct);
+
+        if (activationId is not null)
+            await PotaHandlers.AddActivationQso(activationId.Value, log, qrz, dbContext, ct);
+
+        await eventsPublisher.PublishAsync(new LogChangedEvent(
+            Operation: "created",
+            LogId: log.ColPrimaryKey,
+            ActivationId: activationId,
+            Call: log.ColCall,
+            Source: ResolveSource(httpContext.HttpContext),
+            OccurredUtc: DateTime.UtcNow,
+            Version: CreateEventVersion()), ct);
+
+        return (await GetQsoDetails(log.ColPrimaryKey, dbContext, authSvc, httpContext))!;
+    }
+
     public static async Task<QsoDetails?> UpdateQsoDetails(QsoDetails qso, HrdDbContext dbContext, IAuthorizationService authSvc, IHttpContextAccessor httpContext, ILogEventsPublisher eventsPublisher)
     {
         QsoDetailsValidator.ValidateAndThrow(qso);
@@ -117,43 +167,6 @@ public static class LogbookHandlers
             Version: CreateEventVersion()));
 
         return await GetQsoDetails(log.ColPrimaryKey, dbContext, authSvc, httpContext);
-    }
-
-    public static async Task<QsoDetails> CreateQso(QsoDetails qso, int? activationId, IQrzService qrzSvc,
-        IAuthorizationService authSvc, HrdDbContext dbContext, IHttpContextAccessor httpContext, ILogEventsPublisher eventsPublisher, CancellationToken ct)
-    {
-        QrzResponse? qrz = null;
-
-        QsoDetailsValidator.ValidateAndThrow(qso);
-
-        //not necessary now, but if other users added...
-        //var isAdmin = await AuthHelper.HasPolicyAsync(Policies.AdminOnly, authSvc, httpContext);
-
-        qso.Band = NormalizeBand(qso.Band)!;
-        var log = qso.ToHrdLog(includeAdminFields: true /*isAdmin*/);
-
-        if (string.IsNullOrEmpty(log.ColName) || activationId is not null)
-        {
-            qrz = await QrzHandlers.Lookup(log.ColCall, qrzSvc, ct);
-            log.UpdateFromQrzLookup(qrz);
-        }
-
-        dbContext.Log.Add(log);
-        await dbContext.SaveChangesAsync(ct);
-
-        if (activationId is not null)
-            await PotaHandlers.AddActivationQso(activationId.Value, log, qrz, dbContext, ct);
-
-        await eventsPublisher.PublishAsync(new LogChangedEvent(
-            Operation: "created",
-            LogId: log.ColPrimaryKey,
-            ActivationId: activationId,
-            Call: log.ColCall,
-            Source: ResolveSource(httpContext.HttpContext),
-            OccurredUtc: DateTime.UtcNow,
-            Version: CreateEventVersion()), ct);
-
-        return (await GetQsoDetails(log.ColPrimaryKey, dbContext, authSvc, httpContext))!;
     }
 
     public static async Task<AdifImportResponse> UploadAdif(IFormFile file, int? activationId, IQrzService qrzSvc, HrdDbContext dbContext, ILogEventsPublisher eventsPublisher, CancellationToken ct)
@@ -415,20 +428,14 @@ public static class LogbookHandlers
         if (activation is null)
             return true;
 
-        var cmt = log.ColComment;
-        if (cmt is null || !cmt.StartsWith("POTA activation", StringComparison.OrdinalIgnoreCase))
-        {
-            log.ColComment = $"POTA activation {activation.Park.ParkNum} ({Utils.AbbreviateParkName(activation.Park.ParkName)})";
-            if (cmt != null)
-                log.ColComment += $". {cmt}";
-        }
-
         log.ColMyGridsquare = activation.Grid;
         log.ColMyCnty = activation.County;
         log.ColMyState = activation.State;
         log.ColMyCity = activation.City;
         log.ColMyLat = (double)activation.Lat;
         log.ColMyLon = (double)activation.Long;
+
+        AddActivationComment(log, activation.Park);
 
         return true;
     }
@@ -454,6 +461,17 @@ public static class LogbookHandlers
         }
 
         return ret;
+    }
+
+    private static void AddActivationComment(HrdLog log, PotaPark park)
+    {
+        var cmt = log.ColComment;
+        if (cmt is not null && cmt.StartsWith("POTA activation", StringComparison.OrdinalIgnoreCase))
+            return;
+
+        log.ColComment = $"POTA activation {park.ParkNum} ({Utils.AbbreviateParkName(park.ParkName)})";
+        if (cmt != null)
+            log.ColComment += $". {cmt}";
     }
 
     private static string CreateLogDedupKey(HrdLog log) => CreateLogDedupKey(log.ColCall, log.ColTimeOn!.Value, log.ColBand, log.ColMode);

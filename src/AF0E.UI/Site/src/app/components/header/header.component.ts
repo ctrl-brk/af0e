@@ -1,4 +1,4 @@
-import {Component, DestroyRef, inject, model, OnInit, output, signal, ViewEncapsulation} from '@angular/core';
+import {Component, DestroyRef, inject, model, OnDestroy, OnInit, output, signal, ViewEncapsulation} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {AutoCompleteCompleteEvent, AutoCompleteModule, AutoCompleteSelectEvent} from 'primeng/autocomplete';
 import {FloatLabelModule} from 'primeng/floatlabel';
@@ -15,6 +15,7 @@ import {MenuModule} from 'primeng/menu';
 import {filter} from 'rxjs';
 import {TieredMenu} from 'primeng/tieredmenu';
 import {AppAuthService} from '../../services/auth.service';
+import {ActivationStatusService} from '../../services/activation-status.service';
 
 // noinspection JSIgnoredPromiseFromCall
 @Component({
@@ -32,7 +33,7 @@ import {AppAuthService} from '../../services/auth.service';
     TieredMenu,
   ],
 })
-export class HeaderComponent implements OnInit {
+export class HeaderComponent implements OnInit, OnDestroy {
   private _router = inject(Router);
   private _responsive = inject(BreakpointObserver);
   private _destroyRef = inject(DestroyRef);
@@ -40,6 +41,9 @@ export class HeaderComponent implements OnInit {
   private _log = inject(LogService);
   private _logbookSvc = inject(LogbookService);
   private _authSvc = inject(AppAuthService);
+  protected _activationStatusSvc = inject(ActivationStatusService);
+  protected nearMidnight = signal(false);
+  private _clockInterval?: ReturnType<typeof setInterval>;
   searchCall = model(''); // model for two-way binding with autocomplete
   callsFound = signal<any[]>([]);
   isLessThan1000px = signal(false);
@@ -48,6 +52,8 @@ export class HeaderComponent implements OnInit {
   searchTitle = signal('');
 
   ngOnInit(): void {
+    this.tickClock();
+    this._clockInterval = setInterval(() => this.tickClock(), 10_000); // check every 10s is enough
     const routerSub = this._router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe((event) => {
@@ -75,6 +81,15 @@ export class HeaderComponent implements OnInit {
 
     this._destroyRef.onDestroy(() => routerSub.unsubscribe());
     this._destroyRef.onDestroy(() => authSub.unsubscribe());
+  }
+
+  ngOnDestroy() {
+    clearInterval(this._clockInterval);
+  }
+
+  private tickClock() {
+    const now = new Date();
+    this.nearMidnight.set(now.getUTCHours() === 23 && now.getUTCMinutes() >= 55);
   }
 
   search(event: AutoCompleteCompleteEvent) {

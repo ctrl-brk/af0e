@@ -12,8 +12,9 @@ public sealed class HrdLog
     {
         ColAge = ColAIndex = ColAntAz = ColAntEl = ColCqz = ColDistance = ColForceInit = ColFreqRx = ColDistance = 0;
         ColHeading = ColKIndex = ColLat = ColMyLat = ColLon = ColMyLon = ColMaxBursts = ColNrBursts = ColNrPings = 0;
-        ColQsoRandom = ColRxPwr = ColSfi = ColSrx = ColStx = ColSwl = ColTenTen = ColForceInit = 0;
-        ColTxPwr = 0;
+        ColQsoRandom = ColRxPwr = ColSfi = ColSrx = ColStx = ColSwl = ColTenTen = ColForceInit = ColTxPwr = 0;
+        ColEqslQslRcvd = ColEqslQslSent = ColLotwQslRcvd = ColLotwQslSent = "N";
+
     }
 
     public int ColPrimaryKey { get; set; }

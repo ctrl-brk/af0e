@@ -1,8 +1,14 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 using AF0E.DB.Models;
+// ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
 
 namespace Logbook.Api.Models;
 
+[SuppressMessage("Usage", "CA2227:Collection properties should be read only")]
+[SuppressMessage("Design", "CA1002:Do not expose generic lists")]
+[SuppressMessage("ReSharper", "InconsistentNaming")]
+[SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
 public sealed class QsoDetails
 {
     // ReSharper disable once UnusedMember.Global
@@ -115,11 +121,6 @@ public sealed class QsoDetails
             ColCqz = N(CqZone, 0),
             ColItuz = ItuZone,
             ColDxcc = Dxcc?.ToString(),
-            ColEqslQslRcvd = "N",
-            ColEqslQslSent = "N",
-            ColForceInit = null,
-            ColLotwQslRcvd = "N",
-            ColLotwQslSent = "N",
             ColMyCity = N(MyCity),
             ColMyCnty = N(MyCounty),
             ColMyState = N(MyState),
@@ -133,9 +134,6 @@ public sealed class QsoDetails
             ColQslRcvd = N(QslRcvd, "N"),
             ColQslrdate = QslRcvdDate,
             ColQslRcvdVia = N(QslRcvdVia, "D"),
-            ColQsoRandom = null,
-            ColRxPwr = 0,
-            ColSwl = 1,
             SiteComment = N(SiteComment),
             ColComment = includeAdminFields ? N(Comment) : null
         };

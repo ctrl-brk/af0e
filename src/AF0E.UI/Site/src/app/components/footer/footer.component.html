@@ -1,3 +1,4 @@
 <footer>
   <p>&copy; {{ getYear() }} AFØE. All Rights Reserved.</p>
+  <span class="utc-clock" [class.near-midnight]="nearMidnight()">{{ utcTime() }}</span>
 </footer>

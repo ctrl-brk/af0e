@@ -25,10 +25,10 @@
 
   <ng-template pTemplate="body" let-qso>
     <tr (click)="onQsoSelect(qso)">
-      <td>{{ qso.date | date:'yy-MM-dd HH:mm' }}</td>
-      <td>{{ qso.call }}</td>
-      <td>{{ qso.band }}</td>
-      <td><p-tag [value]="qso.mode|qsoMode" [severity]="qso.mode|modeSeverity" /></td>
+      <td class="time">{{ qso.date | date:'yy-MM-dd HH:mm' }}</td>
+      <td class="call">{{ qso.call }}</td>
+      <td class="band">{{ qso.band }}</td>
+      <td class="mode"><p-tag [value]="qso.mode|qsoMode" [severity]="qso.mode|modeSeverity" /></td>
       <td>
         @if (qso.p2p.length > 0) {
           @for (p of qso.p2p; track p; let i = $index) {
