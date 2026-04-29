@@ -1,19 +1,26 @@
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using RigCommander.Abstractions;
 using RigCommander.Presentation;
 using RigCommander.Services;
 
 namespace RigCommander;
 
+[SuppressMessage("ReSharper", "AsyncVoidEventHandlerMethod")]
 public sealed partial class MainForm : Form
 {
     private readonly MainFormPresenter _presenter;
     private readonly IHostShutdownService? _hostShutdownService;
     private readonly NotifyIconTrayShell? _trayShell;
     private readonly ActivationIdStore? _activationIdStore;
+    private readonly ActivationIdValidationService? _activationIdValidationService;
 
     private bool _allowClose;
     private bool _suppressStartupToggle;
+    private bool _isApplyingActivationId;
+    private int? _appliedActivationId;
+    private string? _appliedActivationDisplayText;
 
     // ReSharper disable ConvertToAutoProperty
     public RichTextBox LogBox => _logBox;
@@ -85,6 +92,9 @@ public sealed partial class MainForm : Form
     {
         _hostShutdownService = hostShutdownService;
         _activationIdStore = activationIdStore;
+        _activationIdValidationService = isDesignTime || !settings.AdifUdp.Forwarding.Enabled
+            ? null
+            : new ActivationIdValidationService(settings.LogbookApiUrl!, settings.AdifUdp.Forwarding);
         _presenter = new MainFormPresenter(settings, startupRegistration);
 
         InitializeComponent();
@@ -116,18 +126,28 @@ public sealed partial class MainForm : Form
 
         _activationIdLabel.Enabled = state.ActivationIdInputEnabled;
         _activationIdTextBox.Enabled = state.ActivationIdInputEnabled;
+        _setActivationIdButton.Enabled = state.ActivationIdInputEnabled;
         _clearActivationIdButton.Enabled = state.ActivationIdInputEnabled;
 
         if (!state.ActivationIdInputEnabled)
         {
+            _appliedActivationId = null;
+            _appliedActivationDisplayText = null;
             _activationIdStore?.Set(null);
             _activationIdTextBox.Text = string.Empty;
             _activationIdTextBox.BackColor = SystemColors.Control;
+            _setActivationIdButton.Enabled = false;
+            _clearActivationIdButton.Enabled = false;
+            UpdateActivationInfoLabel();
+            return;
         }
 
+        _appliedActivationId = _activationIdStore?.Get();
+        _activationIdTextBox.Text = _appliedActivationId?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
         _activationIdTextBox.TextChanged += ActivationIdTextBox_TextChanged;
+        _setActivationIdButton.Click += SetActivationIdButton_Click;
         _clearActivationIdButton.Click += ClearActivationIdButton_Click;
-        UpdateActivationIdStateFromText();
+        UpdateActivationIdInputState();
     }
 
     private void MainForm_Shown(object? sender, EventArgs e)
@@ -136,7 +156,7 @@ public sealed partial class MainForm : Form
             return;
 
         WindowState = FormWindowState.Minimized;
-        _trayShell?.HideToTray(showBalloon: false);
+        _trayShell?.HideToTray(true);
     }
 
     private void MainForm_Resize(object? sender, EventArgs e)
@@ -181,14 +201,17 @@ public sealed partial class MainForm : Form
     {
         _trayShell?.HideToTray();
     }
+
     private async void ExitButton_Click(object? sender, EventArgs e)
     {
         await ExitApplicationAsync();
     }
+
     private void ClearScriptLogButton_Click(object? sender, EventArgs e)
     {
         ScriptLogBox.Clear();
     }
+
     private void ClearLogButton_Click(object? sender, EventArgs e)
     {
         LogBox.Clear();
@@ -196,40 +219,146 @@ public sealed partial class MainForm : Form
 
     private void ActivationIdTextBox_TextChanged(object? sender, EventArgs e)
     {
-        UpdateActivationIdStateFromText();
+        UpdateActivationIdInputState();
     }
 
-    private void ClearActivationIdButton_Click(object? sender, EventArgs e)
+    private async void SetActivationIdButton_Click(object? sender, EventArgs e)
     {
-        _activationIdTextBox.Text = string.Empty;
-    }
-
-    private void UpdateActivationIdStateFromText()
-    {
-        if (!_activationIdTextBox.Enabled)
-        {
-            _activationIdStore?.Set(null);
-            _activationIdTextBox.BackColor = SystemColors.Control;
+        if (!_activationIdTextBox.Enabled || _isApplyingActivationId)
             return;
-        }
 
         var raw = _activationIdTextBox.Text.Trim();
 
         if (string.IsNullOrWhiteSpace(raw))
         {
-            _activationIdStore?.Set(null);
-            _activationIdTextBox.BackColor = SystemColors.Window;
+            ApplyActivation(null);
             return;
         }
 
-        if (int.TryParse(raw, out var parsed) && parsed > 0)
+        if (!TryParseActivationId(raw, out var activationId))
         {
-            _activationIdStore?.Set(parsed);
+            _activationIdTextBox.BackColor = Color.MistyRose;
+            MessageBox.Show(this, "ActivationId must be a positive integer.", "Invalid ActivationId", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            UpdateActivationIdInputState();
+            return;
+        }
+
+        if (_activationIdValidationService is null)
+        {
+            MessageBox.Show(this, "Activation validation is unavailable because the Logbook API endpoint is not configured.", "ActivationId Validation Unavailable", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        try
+        {
+            _isApplyingActivationId = true;
+            UseWaitCursor = true;
+            UpdateActivationIdInputState();
+
+            var validation = await _activationIdValidationService.ValidateAsync(activationId);
+
+            if (validation is null)
+            {
+                _activationIdTextBox.BackColor = Color.MistyRose;
+                MessageBox.Show(this, $"Invalid ActivationId {activationId}", "Activation Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            ApplyActivation(validation.Id, validation.ParkNum, validation.ParkName);
+        }
+        catch (Exception ex)
+        {
+            _activationIdTextBox.BackColor = Color.MistyRose;
+            MessageBox.Show(this, $"Could not load Activation from Logbook API.{Environment.NewLine}{Environment.NewLine}{ex.Message}", "ActivationId Lookup Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        finally
+        {
+            _isApplyingActivationId = false;
+            UseWaitCursor = false;
+            UpdateActivationIdInputState();
+        }
+    }
+
+    private void ClearActivationIdButton_Click(object? sender, EventArgs e)
+    {
+        if (!_activationIdTextBox.Enabled || _isApplyingActivationId)
+            return;
+
+        ApplyActivation(null);
+    }
+
+    private void ApplyActivation(int? activationId, string? parkNum = null, string? parkName = null)
+    {
+        _activationIdStore?.Set(activationId);
+        _appliedActivationId = activationId;
+        _appliedActivationDisplayText = activationId is null
+            ? null
+            : BuildActivationDisplayText(parkNum, parkName);
+        _activationIdTextBox.Text = activationId?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
+        UpdateActivationInfoLabel();
+        UpdateActivationIdInputState();
+    }
+
+    private void UpdateActivationInfoLabel()
+    {
+        var hasActivationInfo = !string.IsNullOrWhiteSpace(_appliedActivationDisplayText);
+        _activationInfoLabel.Text = hasActivationInfo ? _appliedActivationDisplayText : " ";
+        _activationInfoLabel.ForeColor = hasActivationInfo ? SystemColors.ControlText : SystemColors.GrayText;
+    }
+
+    private void UpdateActivationIdInputState()
+    {
+        var inputEnabled = _activationIdTextBox.Enabled;
+
+        if (!inputEnabled)
+        {
+            _activationIdTextBox.BackColor = SystemColors.Control;
+            _setActivationIdButton.Enabled = false;
+            _clearActivationIdButton.Enabled = false;
+            return;
+        }
+
+        var raw = _activationIdTextBox.Text.Trim();
+        var parsedActivationId = TryParseActivationId(raw, out var parsedValue)
+            ? parsedValue
+            : (int?)null;
+        var canParse = string.IsNullOrWhiteSpace(raw) || parsedActivationId.HasValue;
+        var hasPendingChange = !string.IsNullOrWhiteSpace(raw)
+            ? !canParse || parsedActivationId != _appliedActivationId
+            : _appliedActivationId.HasValue;
+
+        _setActivationIdButton.Enabled = !_isApplyingActivationId && hasPendingChange && canParse;
+        _clearActivationIdButton.Enabled = !_isApplyingActivationId && (_appliedActivationId.HasValue || raw.Length > 0);
+
+        if (_isApplyingActivationId)
+        {
+            _activationIdTextBox.BackColor = Color.LemonChiffon;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(raw))
+        {
             _activationIdTextBox.BackColor = SystemColors.Window;
             return;
         }
 
-        _activationIdStore?.Set(null);
-        _activationIdTextBox.BackColor = Color.MistyRose;
+        _activationIdTextBox.BackColor = canParse && !hasPendingChange
+            ? SystemColors.Window
+            : canParse
+                ? Color.LemonChiffon
+                : Color.MistyRose;
+    }
+
+    private static bool TryParseActivationId(string raw, out int activationId)
+        => int.TryParse(raw, NumberStyles.None, CultureInfo.InvariantCulture, out activationId) && activationId > 0;
+
+    private static string BuildActivationDisplayText(string? parkNum, string? parkName)
+    {
+        if (string.IsNullOrWhiteSpace(parkNum))
+            return string.IsNullOrWhiteSpace(parkName) ? string.Empty : parkName.Trim();
+
+        return string.IsNullOrWhiteSpace(parkName)
+            ? parkNum.Trim()
+            : $"{parkNum.Trim()} - {parkName.Trim()}";
     }
 }

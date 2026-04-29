@@ -28,7 +28,7 @@ public sealed class NotifyIconTrayShell : ITrayShell
         _trayIcon.DoubleClick += TrayIcon_DoubleClick;
     }
 
-    public void HideToTray(bool showBalloon = true)
+    public void HideToTray(bool showBalloon = false)
     {
         _owner.Hide();
         _owner.ShowInTaskbar = false;

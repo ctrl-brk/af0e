@@ -5,7 +5,11 @@
   table {
     tr td {
       cursor: pointer;
-      white-space: nowrap
+      white-space: nowrap;
+      &.time {width: 3rem;}
+      &.call {width: 12rem;}
+      &.band {width: 2rem;}
+      &.mode {width: 3rem;}
     }
     .p-tag-label {
       width: 2.5rem;

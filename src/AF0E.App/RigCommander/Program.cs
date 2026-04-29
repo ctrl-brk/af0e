@@ -25,8 +25,20 @@ try
 {
     ApplicationConfiguration.Initialize();
 
-    var richTextBoxSink = new RichTextBoxSink();
-    var scriptActivityLog = new RichTextBoxActivityLog();
+    // Enforce single instance
+    const string mutexName = "RigCommander_SingleInstance";
+    var instanceMutex = new Mutex(false, mutexName, out var createdNew);
+
+    if (!createdNew)
+    {
+        MessageBox.Show("RigCommander is already running.", "Multiple Instances Not Allowed", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        Environment.Exit(0);
+    }
+
+    try
+    {
+        var richTextBoxSink = new RichTextBoxSink();
+        var scriptActivityLog = new RichTextBoxActivityLog();
 
     var builder = WebApplication.CreateBuilder(args);
 
@@ -118,6 +130,7 @@ try
         {
 #pragma warning disable CA2000
             adifApiForwarder = new AdifApiForwarder(
+                settings.LogbookApiUrl!,
                 settings.AdifUdp.Forwarding,
                 app.Services.GetRequiredService<ILogger<AdifApiForwarder>>(),
                 scriptActivityLog,
@@ -204,6 +217,11 @@ try
     finally
     {
         richTextBoxSink.WarningOrErrorEmitted -= OnWarningOrErrorLogged;
+    }
+    }
+    finally
+    {
+        instanceMutex.Dispose();
     }
 }
 catch (Exception ex)

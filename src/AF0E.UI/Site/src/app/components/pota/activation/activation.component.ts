@@ -40,11 +40,11 @@ import {DatePicker} from 'primeng/datepicker';
 import {NotificationMessageModel, NotificationMessageSeverity} from '../../../shared/notification-message.model';
 import {QsoEditMode} from '../../../shared/qso-edit-mode.enum';
 import {ConfirmPopup} from 'primeng/confirmpopup';
-import {Toast} from 'primeng/toast';
 import {ConfirmationService} from 'primeng/api';
 import {AdifImportResponseModel} from '../../../models/adif-import-response.model';
 import {LogUpdatesService} from '../../../services/log-updates.service';
 import {QsoDetailModel} from '../../../models/qso-detail.model';
+import {ActivationStatusService} from '../../../services/activation-status.service';
 
 @Component({
   templateUrl: './activation.component.html',
@@ -74,7 +74,6 @@ import {QsoDetailModel} from '../../../models/qso-detail.model';
     DatePicker,
     ReactiveFormsModule,
     ConfirmPopup,
-    Toast,
   ],
   providers: [
     ConfirmationService
@@ -88,6 +87,7 @@ export class PotaActivationComponent implements OnInit {
   private _potaSvc = inject(PotaService);
   private _logbookSvc = inject(LogbookService);
   private _logUpdatesSvc = inject(LogUpdatesService);
+  private _activationStatusSvc = inject(ActivationStatusService);
   private _infraSvc= inject(InfraService);
   private _potaAppSvc= inject(PotaAppService);
   private _ntfSvc= inject(NotificationService);
@@ -156,21 +156,20 @@ export class PotaActivationComponent implements OnInit {
 
     this._logUpdatesSvc.ensureConnected().catch(err => this._log.error('Activation realtime connection failed', err));
     const updatesSub = this._logUpdatesSvc.changed$.subscribe(evt => {
-      if (evt.operation !== 'created' && evt.operation !== 'updated' && evt.operation !== 'imported')
-        return;
 
       if (evt.activationId !== this.activationId())
         return;
-
-      if (evt.operation === 'updated')
+      //there's also 'imported', but we don't need it here
+      if (evt.operation === 'updated') //rare case, OK to reload the log (small most of the time)
         this.loadActivationLog(this.activationId());
-      else
-        this.loadQso(evt.logId!);
+      else if (evt.operation === 'created')
+        this.loadNewQso(evt.logId!);
     });
 
     this._destroyRef.onDestroy(() => {
       sub.unsubscribe();
       updatesSub.unsubscribe();
+      this._activationStatusSvc.clear();
     });
   }
 
@@ -182,6 +181,7 @@ export class PotaActivationComponent implements OnInit {
         this.qsoStats.cw = r.cwCount;
         this.qsoStats.digi = r.digiCount;
         this.qsoStats.phone = r.phoneCount;
+        this._activationStatusSvc.set(r.count);
         if (!r.endDate)
           setTimeout(() => this.activationInfo()?.refresh(), 100);
       },
@@ -198,11 +198,23 @@ export class PotaActivationComponent implements OnInit {
     });
   }
 
-  private loadQso(logId: number) {
+  private loadNewQso(logId: number) {
     this._logbookSvc.getQso(logId).subscribe({
       next: (q: QsoDetailModel) => {
         const aqm = QsoDetailsToActivationQsoModel(q);
         this.logEntries.set([aqm, ...this.logEntries()]);
+
+        if (q.mode === 'CW')
+          this.qsoStats.cw++;
+        if (q.mode.startsWith('FT'))
+          this.qsoStats.digi++;
+        else
+          this.qsoStats.phone++;
+
+        this.qsoStats.total++;
+        this._activationStatusSvc.set(this.logEntries().length);
+
+        this.activationInfo()?.refresh();
       },
       error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
     });
@@ -219,20 +231,10 @@ export class PotaActivationComponent implements OnInit {
     this.qsoEditVisible.set(true);
   }
 
-  protected onQsoSaved(qso: any) {
+  protected onQsoSaved() {
     if (this.logId() > 0)
       this.qsoEditVisible.set(false);
-
-    this.loadActivationLog(this.activationId());
-
-    if (qso.mode === 'CW')
-      this.qsoStats.cw++;
-    else
-      this.qsoStats.phone++;
-
-    this.qsoStats.total++;
-
-    this.activationInfo()?.refresh();
+    //the qso gets added from the signalr subscription
   }
 
   protected onQsoSelected(logId: number) {
@@ -332,6 +334,7 @@ export class PotaActivationComponent implements OnInit {
     const input = event.target as HTMLInputElement;
     if (!input.files?.length) return;
     const file = input.files[0];
+
     this._logbookSvc.uploadAdif(this.activationId(), file).subscribe({
       next: (r: AdifImportResponseModel) => {
         const severity = r.skipped.length > 0 ? NotificationMessageSeverity.Warn : NotificationMessageSeverity.Success;
@@ -343,7 +346,9 @@ export class PotaActivationComponent implements OnInit {
         this._ntfSvc.addMessage(new NotificationMessageModel(severity, title, `Total:${r.received} Accepted:${r.accepted} Skipped:${r.skipped.length} Qrz:${r.qrz}`, true));
         this.onActivationChange(this.activationId());
       },
-      error: (e) => Utils.showErrorMessage(e, this._ntfSvc, this._log)
+      error: (e) => {
+        Utils.showErrorMessage(e, this._ntfSvc, this._log);
+      }
     });
     input.value = '';
   }

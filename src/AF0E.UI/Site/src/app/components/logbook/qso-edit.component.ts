@@ -1,5 +1,6 @@
 import {
   Component,
+  computed,
   effect,
   ElementRef,
   inject,
@@ -106,9 +107,6 @@ export class QsoEditComponent implements OnInit {
   isEditMode = false;
   protected imgUrl = signal('');
   protected cwCallLabel = signal('???');
-  protected cwExchLabel = signal('');
-  protected cwExch2Label = signal('');
-  private altCwExch = '';
   protected cwSending = signal(false);
   protected cqSending = signal(false);
   protected cwSpeed = signal(22);
@@ -122,20 +120,26 @@ export class QsoEditComponent implements OnInit {
   protected qslOptions = QSL_OPTIONS;
   protected qslViaOptions = QSL_VIA_OPTIONS;
 
+  protected f3CwMsg = signal<{def: string, alt: string, ctl: string, f6: string}>({def: '', alt: '', ctl: '', f6: ''});
+  protected f1Title = 'cq POTA de AFØE AFØE k';
+  protected f2Title = 'r 73 ee\nr 73 de AFØE [alt]';
+  protected f3Title = computed(() => {return `${this.f3CwMsg().def.replaceAll('|', '')} k\n${this.f3CwMsg().alt.replaceAll('|', '')} k [alt]\n${this.f3CwMsg().ctl.replaceAll('|', '')} k [ctl]\n${this.f3CwMsg().f6.replaceAll('|', '')} k [F6]`});
+  protected f8Title = '?\nAGN? [alt]';
+
   constructor() {
     this.initializeForm();
 
-    const callSignal = toSignal(this.qsoForm.get('call')!.valueChanges);
+    const callSignal = toSignal<string>(this.qsoForm.get('call')!.valueChanges);
     const freqSignal = toSignal(this.qsoForm.get('freq')!.valueChanges);
-    const modeSignal = toSignal(this.qsoForm.get('mode')!.valueChanges);
-    const rstSentSignal = toSignal(this.qsoForm.get('rstSent')!.valueChanges);
-    const stateSignal = toSignal(this.qsoForm.get('state')!.valueChanges);
-    const nameSignal = toSignal(this.qsoForm.get('name_fmt')!.valueChanges);
+    const modeSignal = toSignal<string>(this.qsoForm.get('mode')!.valueChanges);
+    const rstSentSignal = toSignal<string>(this.qsoForm.get('rstSent')!.valueChanges);
+    const stateSignal = toSignal<string>(this.qsoForm.get('state')!.valueChanges);
+    const nameSignal = toSignal<string>(this.qsoForm.get('name_fmt')!.valueChanges);
     const filterSignal = toSignal(this.qsoForm.get('radioFilter')!.valueChanges);
 
     effect(() => {
       const call = callSignal();
-      this.cwCallLabel.set(call ? call : '???');
+      this.cwCallLabel.set(call ? call.toUpperCase() : '???');
     });
 
     effect(() => {
@@ -145,7 +149,7 @@ export class QsoEditComponent implements OnInit {
     });
 
     effect(() => {
-      this.setExchangeText(rstSentSignal(), stateSignal(), nameSignal());
+      this.setExchangeText(rstSentSignal()!, stateSignal()!, nameSignal()!);
     });
 
     effect(() => {
@@ -284,17 +288,25 @@ export class QsoEditComponent implements OnInit {
     let greet = Utils.getTimeOfDay(state) + Utils.extractNameOrNickname(name);
     const rst = rstSent ? rstSent.replaceAll('9', 'n') : '5nn';
 
+    const cwText = {...untracked(() => this.f3CwMsg())};
+
     if (this.editMode() === QsoEditMode.PotaHunting) {
-      this.cwExchLabel.set(`R TU ${rst} C|O`);
-      this.cwExch2Label.set(`R TU ${rst} ${rst} C|O C|O`);
-      this.altCwExch = `R ${greet} UR ${rst} C|O`;
+      cwText.def = `R TU ${rst} C|O`;
+      cwText.alt = `R ${greet} UR ${rst} C|O`;
+      cwText.ctl = `R TU ${rst} ${rst} C|O C|O`;
+      cwText.f6 = '';
+
+      this.f3CwMsg.set(cwText);
     }
     else if (this.editMode() === QsoEditMode.PotaActivating) {
       const call = this.cwCallLabel() ? this.cwCallLabel() : '';
 
-      this.cwExchLabel.set(`${call} TU ${rst} C|O`);
-      this.cwExch2Label.set(`${call} TU ${rst} ${rst} C|O C|O`);
-      this.altCwExch = `${call} ${greet} UR ${rst} C|O`;
+      cwText.def = `${call} TU ${rst} C|O`;
+      cwText.alt = `${call} ${greet} UR ${rst} C|O`;
+      cwText.ctl = `${call} TU ${rst} ${rst} C|O C|O`;
+      cwText.f6 = `TU ${rst} C|O`;
+
+      this.f3CwMsg.set(cwText);
     }
   }
 
@@ -396,7 +408,7 @@ export class QsoEditComponent implements OnInit {
   protected onRstSentInput() {
     const mode = this.qsoForm.get('mode')?.value as string;
     const rst: string = this.qsoForm.get('rstSent')?.value || '';
-    const targetLength = mode === 'CW' ? 3 : 2;
+    const targetLength = (mode === 'CW' || mode.startsWith('FT')) ? 3 : 2;
     if (rst.length === targetLength) {
       const el = this._rstRcvdInput()?.nativeElement;
       if (el) { el.focus(); el.select(); }
@@ -682,13 +694,13 @@ export class QsoEditComponent implements OnInit {
 
   private createQso(formValue: any, activationId: number, emitSaved: boolean) {
     this._lbSvc.createQso(activationId > 0 ? activationId : null, formValue).subscribe({
-      next: () => {
+      next: (q) => {
         if (this.potaActivation()) {
           this.initializeNewQso(true);
           this.setCallFocus(false);
         }
         if (emitSaved)
-          this.saved.emit(formValue);
+          this.saved.emit(q);
       },
       error: e => { Utils.showErrorMessage(e, this._ntfSvc, this._log); }
     });
@@ -825,19 +837,21 @@ export class QsoEditComponent implements OnInit {
         handled = true;
         $event.preventDefault();
         if ($event.altKey)
-          this.sendCw('73 de AF0E');
+          this.sendCw('R 73 de AF0E');
         else
-          this.sendCw('73 E|E');
+          this.sendCw('R 73 E|E');
         break;
       case 'F3':
         handled = true;
         $event.preventDefault();
+        if (this.cwCallLabel() === '???') break;
+
         if ($event.altKey)
-          this.sendCw(this.altCwExch, true);
+          this.sendCw(this.f3CwMsg().alt, true);
         else if ($event.ctrlKey)
-          this.sendCw(this.cwExch2Label(), true)
+          this.sendCw(this.f3CwMsg().ctl, true)
         else
-          this.sendCw(this.cwExchLabel(), true)
+          this.sendCw(this.f3CwMsg().def, true)
         break;
       case 'F4':
         handled = true;
@@ -852,6 +866,12 @@ export class QsoEditComponent implements OnInit {
         $event.preventDefault();
         if (this.cwCallLabel() !== '???')
           this.sendCw(this.cwCallLabel()?.replaceAll('/', '//'));
+        break;
+      case 'F6':
+        handled = true;
+        $event.preventDefault();
+        if (this.f3CwMsg().f6 !== '' && this.cwCallLabel() !== '???')
+          this.sendCw(this.f3CwMsg().f6, true);
         break;
       case 'F8':
         handled = true;

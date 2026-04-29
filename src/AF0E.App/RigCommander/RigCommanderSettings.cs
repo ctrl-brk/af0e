@@ -8,9 +8,11 @@ using RigCommander.Abstractions;
 
 namespace RigCommander;
 
+[SuppressMessage("Design", "CA1056:URI-like properties should not be strings")]
 public sealed class RigCommanderSettings
 {
     public string? ActiveProfile { get; set; }
+    public string? LogbookApiUrl { get; init; }
     public string? ListenPort { get; init; }
     public int StatusDelayMs { get; init; } = 1000;
     public List<RadioProfileSettings> Profiles { get; init; } = [];
@@ -40,11 +42,9 @@ public sealed class AdifUdpSettings
     public AdifForwardingSettings Forwarding { get; init; } = new();
 }
 
-[SuppressMessage("Design", "CA1056:URI-like properties should not be strings")]
 public sealed class AdifForwardingSettings
 {
     public bool Enabled { get; init; }
-    public string? EndpointUrl { get; init; }
     public int TimeoutSeconds { get; init; } = 10;
     public int QueueCapacity { get; init; } = 200;
     public int MaxRetries { get; init; } = 3;
@@ -52,7 +52,8 @@ public sealed class AdifForwardingSettings
     public string? ApiKey { get; init; }
     public string ApiKeyHeaderName { get; init; } = "X-Api-Key";
 #pragma warning disable CA1002 // Do not expose generic lists
-    public List<string> SkipWhenProcessRunning { get; init; } = ["HRDLogbook", "HRD Logbook"];
+    // ReSharper disable once CollectionNeverUpdated.Global
+    public List<string> SkipWhenProcessRunning { get; init; } = [];
 #pragma warning restore CA1002
 }
 
