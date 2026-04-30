@@ -120,7 +120,7 @@ public sealed class QsoDetails
             ColGridsquare = N(Grid),
             ColCqz = N(CqZone, 0),
             ColItuz = ItuZone,
-            ColDxcc = Dxcc?.ToString(),
+            ColDxcc = Dxcc == null ? "0" : Dxcc.ToString(),
             ColMyCity = N(MyCity),
             ColMyCnty = N(MyCounty),
             ColMyState = N(MyState),

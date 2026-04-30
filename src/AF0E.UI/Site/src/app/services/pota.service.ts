@@ -112,8 +112,10 @@ export class PotaService {
   public getPark(parkNum: string): Observable<PotaParkModel> {
     return this._http.get(Configuration.potaUrl(`park/${parkNum}`)).pipe(
       map((x: PotaParkModel) => {
+        if (x)
           x.parkDesc = `${x.parkNum} - ${x.parkName}`;
-          return x;
+
+        return x;
         })
     );
   }

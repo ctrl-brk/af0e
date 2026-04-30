@@ -1,4 +1,16 @@
-import {Component, computed, effect, inject, model, OnDestroy, OnInit, signal, ViewEncapsulation} from '@angular/core';
+import {
+  Component,
+  computed,
+  DestroyRef,
+  effect,
+  inject,
+  model,
+  OnDestroy,
+  OnInit,
+  signal,
+  ViewEncapsulation
+} from '@angular/core';
+import {Title} from '@angular/platform-browser';
 import {Utils} from '../../../shared/utils';
 import {PotaService} from '../../../services/pota.service';
 import {InfraService} from '../../../services/infra.service';
@@ -19,6 +31,7 @@ import {ParkHuntingStatsComponent} from '../park/stats/park-hunting-stats.compon
 import {Badge} from 'primeng/badge';
 import {PotaAppService} from '../../../services/pota-app.service';
 import {QsoEditMode} from '../../../shared/qso-edit-mode.enum';
+import {defaultTitle} from '../../../shared/constants';
 
 @Component({
   templateUrl: './pota-spots.component.html',
@@ -43,6 +56,8 @@ import {QsoEditMode} from '../../../shared/qso-edit-mode.enum';
   ]
 })
 export class PotaSpotsComponent implements OnInit, OnDestroy {
+  private _titleSvc = inject(Title);
+  private _destroyRef = inject(DestroyRef);
   private _potaSvc = inject(PotaService);
   private _ntfSvc= inject(NotificationService);
   private _infraSvc= inject(InfraService);
@@ -124,6 +139,8 @@ export class PotaSpotsComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this._titleSvc.setTitle('AFØE - POTA | Spots');
+
     this._infraSvc.getConfig().subscribe({
       next: (r: any) => {
         this.rigCommanderConfig.set(r);
@@ -135,6 +152,10 @@ export class PotaSpotsComponent implements OnInit, OnDestroy {
     });
 
     this.refreshSpots();
+
+    this._destroyRef.onDestroy(() => {
+      this._titleSvc.setTitle(defaultTitle);
+    });
   }
 
   protected onDupsChange(checked: boolean) {

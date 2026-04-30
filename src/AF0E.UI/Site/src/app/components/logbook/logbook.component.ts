@@ -1,4 +1,5 @@
 import {Component, DestroyRef, inject, model, OnInit, signal, ViewEncapsulation} from '@angular/core';
+import {Title} from '@angular/platform-browser';
 import {ActivatedRoute} from '@angular/router';
 import {TableLazyLoadEvent, TableModule} from 'primeng/table';
 import {LogbookService} from '../../services/logbook.service';
@@ -23,6 +24,7 @@ import {AppAuthService} from '../../services/auth.service';
 import {QsoEditComponent} from './qso-edit.component';
 import {QsoEditMode} from '../../shared/qso-edit-mode.enum';
 import {LogUpdatesService} from '../../services/log-updates.service';
+import {defaultTitle} from '../../shared/constants';
 
 @Component({
   selector: 'app-logbook',
@@ -47,6 +49,7 @@ import {LogUpdatesService} from '../../services/log-updates.service';
   ],
 })
 export class LogbookComponent implements OnInit {
+  private _titleSvc = inject(Title);
   private _activatedRoute = inject(ActivatedRoute)
   private _destroyRef = inject(DestroyRef);
   protected _authSvc = inject(AppAuthService);
@@ -72,6 +75,7 @@ export class LogbookComponent implements OnInit {
   protected qsoEditMode = QsoEditMode.Add;
 
   ngOnInit() {
+    this._titleSvc.setTitle('AFØE - Logbook');
 
     const now = new Date();
     this.qsoMinDate.set(new Date(2009, 4));
@@ -101,6 +105,7 @@ export class LogbookComponent implements OnInit {
     });
 
     this._destroyRef.onDestroy(() => {
+      this._titleSvc.setTitle(defaultTitle);
       sub.unsubscribe();
       updatesSub.unsubscribe();
     });

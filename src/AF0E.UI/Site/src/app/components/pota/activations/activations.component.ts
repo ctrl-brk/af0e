@@ -1,4 +1,5 @@
-import {Component, inject, model, OnInit, signal, ViewEncapsulation} from '@angular/core';
+import {Component, DestroyRef, inject, model, OnInit, signal, ViewEncapsulation} from '@angular/core';
+import {Title} from '@angular/platform-browser';
 import {form, FormField} from '@angular/forms/signals';
 import {FloatLabelModule} from 'primeng/floatlabel';
 import {InputText} from 'primeng/inputtext';
@@ -18,6 +19,7 @@ import {Tooltip} from 'primeng/tooltip';
 import {MapboxService} from '../../../services/mapbox.service';
 import {activationSchema, initialActivationData, NewActivationFormData} from './new-activation-form-data';
 import {NotificationMessageModel, NotificationMessageSeverity} from '../../../shared/notification-message.model';
+import {defaultTitle} from '../../../shared/constants';
 
 @Component({
   templateUrl: './activations.component.html',
@@ -36,7 +38,9 @@ import {NotificationMessageModel, NotificationMessageSeverity} from '../../../sh
   ],
 })
 export class PotaActivationsComponent implements OnInit {
+  private _titleSvc = inject(Title);
   private _router = inject(Router);
+  private _destroyRef = inject(DestroyRef);
   private _potaSvc = inject(PotaService);
   private _mapboxSvc = inject(MapboxService);
   private _ntfSvc= inject(NotificationService);
@@ -49,11 +53,17 @@ export class PotaActivationsComponent implements OnInit {
   protected newActivationForm = form(this.newActivationModel, activationSchema)
 
   ngOnInit(): void {
+    this._titleSvc.setTitle('AFØE - POTA | Activations');
+
     this._potaSvc.getActivations().subscribe({
       next: (r: PotaActivationModel[]) => {
         this.activations.set(r);
       },
       error: e=> Utils.showErrorMessage(e, this._ntfSvc, this._log),
+    });
+
+    this._destroyRef.onDestroy(() => {
+      this._titleSvc.setTitle(defaultTitle);
     });
   }
 

@@ -376,7 +376,7 @@ public static class LogbookHandlers
             ColGridsquare = NormalizeUpper(record["GRIDSQUARE"]),
             ColCqz = ParseDouble(record["CQZ"], 0),
             ColItuz = ParseDouble(record["ITUZ"], 0),
-            ColDxcc = NormalizeIntString(record["DXCC"]),
+            ColDxcc = NormalizeIntString(record["DXCC"], "0"),
             ColComment = NormalizeText(record["COMMENT"]),
             ColNotes = NormalizeText(record["NOTES"]),
             ColMyCity = NormalizeText(record["MY_CITY"]),
@@ -558,10 +558,10 @@ public static class LogbookHandlers
         };
     }
 
-    private static string? NormalizeIntString(string? value)
+    private static string? NormalizeIntString(string? value, string? defaultValue = null)
     {
         if (string.IsNullOrWhiteSpace(value))
-            return null;
+            return defaultValue;
 
         return int.TryParse(value.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed) ? parsed.ToString(CultureInfo.InvariantCulture) : null;
     }

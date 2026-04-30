@@ -9,6 +9,7 @@ import {
   viewChild,
   ViewEncapsulation
 } from '@angular/core';
+import {Title} from '@angular/platform-browser';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {activationSchema, PotaActivationModel} from '../../../models/pota-activation.model';
 import {PotaService} from '../../../services/pota.service';
@@ -45,6 +46,7 @@ import {AdifImportResponseModel} from '../../../models/adif-import-response.mode
 import {LogUpdatesService} from '../../../services/log-updates.service';
 import {QsoDetailModel} from '../../../models/qso-detail.model';
 import {ActivationStatusService} from '../../../services/activation-status.service';
+import {defaultTitle} from '../../../shared/constants';
 
 @Component({
   templateUrl: './activation.component.html',
@@ -80,6 +82,7 @@ import {ActivationStatusService} from '../../../services/activation-status.servi
   ]
 })
 export class PotaActivationComponent implements OnInit {
+  private _titleSvc = inject(Title);
   private _router = inject(Router);
   private _activatedRoute = inject(ActivatedRoute)
   private _destroyRef = inject(DestroyRef);
@@ -137,6 +140,7 @@ export class PotaActivationComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this._titleSvc.setTitle('AFØE - POTA | Activation');
     const sub = this._activatedRoute.paramMap.subscribe({
       next: (x) => {
         this.activationId.set(parseInt(x.get('id')!));
@@ -167,6 +171,7 @@ export class PotaActivationComponent implements OnInit {
     });
 
     this._destroyRef.onDestroy(() => {
+      this._titleSvc.setTitle(defaultTitle);
       sub.unsubscribe();
       updatesSub.unsubscribe();
       this._activationStatusSvc.clear();
@@ -181,9 +186,8 @@ export class PotaActivationComponent implements OnInit {
         this.qsoStats.cw = r.cwCount;
         this.qsoStats.digi = r.digiCount;
         this.qsoStats.phone = r.phoneCount;
-        this._activationStatusSvc.set(r.count);
         if (!r.endDate)
-          setTimeout(() => this.activationInfo()?.refresh(), 100);
+          this._activationStatusSvc.set(r.count);
       },
       error: e=> Utils.showErrorMessage(e, this._ntfSvc, this._log),
     });

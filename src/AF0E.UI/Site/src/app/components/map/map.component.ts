@@ -1,4 +1,5 @@
 import {Component, DestroyRef, inject, OnInit, ViewEncapsulation} from '@angular/core';
+import {Title} from '@angular/platform-browser';
 import {FormsModule} from '@angular/forms';
 import * as mapbox from 'mapbox-gl';
 import {environment} from "../../../environments/environment";
@@ -13,6 +14,7 @@ import {Checkbox} from 'primeng/checkbox';
 import {AutoComplete} from 'primeng/autocomplete';
 import {PotaParkModel} from '../../models/pota-park.model';
 import {BreakpointObserver} from '@angular/cdk/layout';
+import {defaultTitle} from '../../shared/constants';
 
 @Component({
   templateUrl: './map.component.html',
@@ -27,6 +29,7 @@ import {BreakpointObserver} from '@angular/cdk/layout';
   ]
 })
 export class MapComponent implements OnInit {
+  private _titleSvc = inject(Title);
   private _destroyRef = inject(DestroyRef);
   private _responsive = inject(BreakpointObserver);
   private _potaSvc = inject(PotaService);
@@ -62,10 +65,16 @@ export class MapComponent implements OnInit {
   isLessThan1000px = false;
 
   ngOnInit(): void {
+    this._titleSvc.setTitle('AFØE - POTA | US Parks Map');
+
     this.setupMap();
     this.setResponsive();
     const sub = this._colorChanges$.pipe(debounceTime(500)).subscribe(() => this.changePointColor());
-    this._destroyRef.onDestroy(() => sub.unsubscribe());
+
+    this._destroyRef.onDestroy(() => {
+      this._titleSvc.setTitle(defaultTitle);
+      sub.unsubscribe();
+    });
   }
 
   private setResponsive(): void {
