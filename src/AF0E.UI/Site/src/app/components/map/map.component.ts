@@ -15,6 +15,8 @@ import {AutoComplete} from 'primeng/autocomplete';
 import {PotaParkModel} from '../../models/pota-park.model';
 import {BreakpointObserver} from '@angular/cdk/layout';
 import {defaultTitle} from '../../shared/constants';
+import {Popover} from 'primeng/popover';
+import {Slider} from 'primeng/slider';
 
 @Component({
   templateUrl: './map.component.html',
@@ -26,6 +28,8 @@ import {defaultTitle} from '../../shared/constants';
     FormsModule,
     Checkbox,
     AutoComplete,
+    Popover,
+    Slider,
   ]
 })
 export class MapComponent implements OnInit {
@@ -59,6 +63,7 @@ export class MapComponent implements OnInit {
     fourth: '#1E90ff',
     default: '#f4a460',
   };
+  protected thresholds = { t1: 10, t2: 20, t3: 50, t4: 100 };
   protected showActivations = false;
   protected searchName:string | undefined;
   protected parksFound: PotaParkModel[] = [];
@@ -342,17 +347,23 @@ export class MapComponent implements OnInit {
   }
 
   private changePointColor() {
+    const paint = this.getCirclePaintProperty();
     // @ts-ignore
-    this.map.setPaintProperty('na-parks-dynamic-layer', 'circle-color', this.getCirclePaintProperty());
+    this.map.setPaintProperty('na-parks-dynamic-layer', 'circle-color', paint);
+    // @ts-ignore
+    this.map.setPaintProperty('activated-parks-layer', 'circle-color', paint);
+    // @ts-ignore
+    this.map.setPaintProperty('highlight-layer', 'circle-color', paint);
   }
 
   private getCirclePaintProperty() {
+    const { t1, t2, t3, t4 } = this.thresholds;
     return [
       'case',
-      ['<=', ['get', 'totalActivationCount'], 10], this.pointColors.first, // <= 10
-      ['all', ['>', ['get', 'totalActivationCount'], 10], ['<=', ['get', 'totalActivationCount'], 20]], this.pointColors.second,
-      ['all', ['>', ['get', 'totalActivationCount'], 20], ['<=', ['get', 'totalActivationCount'], 50]], this.pointColors.third,
-      ['all', ['>', ['get', 'totalActivationCount'], 50], ['<=', ['get', 'totalActivationCount'], 100]], this.pointColors.fourth,
+      ['<=', ['get', 'totalActivationCount'], t1], this.pointColors.first,
+      ['all', ['>', ['get', 'totalActivationCount'], t1], ['<=', ['get', 'totalActivationCount'], t2]], this.pointColors.second,
+      ['all', ['>', ['get', 'totalActivationCount'], t2], ['<=', ['get', 'totalActivationCount'], t3]], this.pointColors.third,
+      ['all', ['>', ['get', 'totalActivationCount'], t3], ['<=', ['get', 'totalActivationCount'], t4]], this.pointColors.fourth,
       this.pointColors.default,
     ];
   }
@@ -379,6 +390,10 @@ export class MapComponent implements OnInit {
   }
 
   onColorSelected() {
+    this._colorChanges$.next();
+  }
+
+  onThresholdChanged() {
     this._colorChanges$.next();
   }
 
