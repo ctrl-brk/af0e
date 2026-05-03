@@ -58,6 +58,10 @@ export class LogbookService {
     return this._http.put(`${this._svcUrl}/qso`, qso);
   }
 
+  public deleteQso(id: number): Observable<any> {
+    return this._http.delete(`${this._svcUrl}/qso/${id}`);
+  }
+
   public uploadAdif(activationId: number, file: File): Observable<AdifImportResponseModel> {
     const formData = new FormData();
     formData.append('file', file);

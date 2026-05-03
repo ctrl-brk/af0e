@@ -169,6 +169,22 @@ public static class LogbookHandlers
         return await GetQsoDetails(log.ColPrimaryKey, dbContext, authSvc, httpContext);
     }
 
+    public static async Task DeleteQso(int id, HrdDbContext dbContext, CancellationToken ct)
+    {
+        var log = dbContext.Log.AsTracking().SingleOrDefault(x => x.ColPrimaryKey == id);
+
+        if (log == null)
+            return;
+
+        // Remove dependent contacts first (FK to HrdLog uses ClientSetNull).
+        await dbContext.PotaContacts
+            .Where(x => x.LogId == log.ColPrimaryKey)
+            .ExecuteDeleteAsync(ct);
+
+        dbContext.Log.Remove(log);
+        await dbContext.SaveChangesAsync(ct);
+    }
+
     public static async Task<AdifImportResponse> UploadAdif(IFormFile file, int? activationId, IQrzService qrzSvc, HrdDbContext dbContext, ILogEventsPublisher eventsPublisher, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(file);

@@ -86,6 +86,22 @@ public static class V1Endpoints
             .RequireAuthorization(Policies.AdminOnly)
             .WithName("QsoCreate");
 
+        builder.MapDelete("qso/{id:int}", async Task<Results<BadRequest<string>, NoContent>> (int id, HrdDbContext dbContext, CancellationToken ct) =>
+            {
+                try
+                {
+                    await LogbookHandlers.DeleteQso(id, dbContext, ct);
+
+                    return TypedResults.NoContent();
+                }
+                catch (ArgumentException ex)
+                {
+                    return TypedResults.BadRequest(ex.Message);
+                }
+            })
+            .RequireAuthorization(Policies.AdminOnly)
+            .WithName("QsoDelete");
+
         builder.MapGet("{call?}", async (string? call, int? skip, int? take, string? sort, int? orderBy, string? begin, string? end, HrdDbContext dbContext, IAuthorizationService authSvc, IHttpContextAccessor httpContext) =>
                 TypedResults.Ok(await LogbookHandlers.GetLog(call, skip, take, sort, orderBy, begin, end, dbContext, authSvc, httpContext)))
             .WithName("Logbook");

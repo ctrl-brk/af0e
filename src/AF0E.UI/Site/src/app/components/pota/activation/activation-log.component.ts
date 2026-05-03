@@ -35,7 +35,7 @@ export class PotaActivationLogComponent {
   qsoSelected = output<any>();
 
   onQsoSelect(qso: ActivationQsoModel) {
-    if (this._authSvc.hasRole('Admin')) {
+    if (this._authSvc.isAdmin) {
       this.qsoSelected.emit(qso.logId);
       return;
     }

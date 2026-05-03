@@ -4,7 +4,7 @@
     <div class="card-main">
       <h3>
         <a href="https://pota.app/#/park/{{activation()!.parkNum}}">{{activation()!.parkNum}} - {{activation()!.parkName}}</a>
-        @if (_authSvc.hasRole('Admin')) {
+        @if (_authSvc.isAdmin) {
           <p-confirmpopup />
           &nbsp;&nbsp;<p-button severity="info" icon="pi pi-pencil" size="small" title="Edit" outlined="true" (onClick)="editActivationVisible.set(true)" />
           &nbsp;<p-button severity="warn" icon="pi pi-clone" size="small" title="Clone" outlined="true" (onClick)="cloneDlgVisible.set(true)" />
@@ -33,7 +33,7 @@
     </div>
     <div class="card-actions">
       <div class="card-actions-row">
-        @if (_authSvc.hasRole('Admin')) {
+        @if (_authSvc.isAdmin) {
           <p-checkbox inputId="rigControl" [(ngModel)]="rigControl" [binary]="true" />
           <label for="rigControl">Rig</label>&nbsp;
           <p-checkbox inputId="keyerControl" [(ngModel)]="keyerControl" [binary]="true" />
@@ -43,7 +43,7 @@
         }
         <p-button severity="secondary" label="ADIF" icon="pi pi-download" (onClick)="onExportAdif()" />
       </div>
-      @if (_authSvc.hasRole('Admin')) {
+      @if (_authSvc.isAdmin) {
         <div class="last-call">
           @if (lastQso()) {
             {{lastQso()!.call}} | {{lastQso()!.date | date:'HH:mm'}} | {{lastQso()!.band}} {{lastQso()!.mode}}
@@ -77,7 +77,7 @@
   </p-tabpanels>
 </p-tabs>
 
-@if (_authSvc.hasRole('Admin')) {
+@if (_authSvc.isAdmin) {
   <p-dialog [header]="qsoDlgHeader()" [modal]="true" [(visible)]="qsoEditVisible" [style]="{width:'64rem'}" [focusOnShow]="false">
     @if (qsoEditVisible()) {
       <app-qso-edit

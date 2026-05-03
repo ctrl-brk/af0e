@@ -10,6 +10,8 @@ export class AppAuthService {
   private auth = inject(AuthService);
   private currentClaims = signal<any>(null);
 
+  get isAdmin(): boolean { return this.hasRole('Admin'); }
+
   constructor() {
     // Keep claims in sync
     this.auth.idTokenClaims$.subscribe(claims => {
