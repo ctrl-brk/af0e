@@ -86,6 +86,22 @@ public static class V1Endpoints
             .RequireAuthorization(Policies.AdminOnly)
             .WithName("QsoCreate");
 
+        builder.MapDelete("qso/{id:int}", async Task<Results<BadRequest<string>, NoContent>> (int id, HrdDbContext dbContext, CancellationToken ct) =>
+            {
+                try
+                {
+                    await LogbookHandlers.DeleteQso(id, dbContext, ct);
+
+                    return TypedResults.NoContent();
+                }
+                catch (ArgumentException ex)
+                {
+                    return TypedResults.BadRequest(ex.Message);
+                }
+            })
+            .RequireAuthorization(Policies.AdminOnly)
+            .WithName("QsoDelete");
+
         builder.MapGet("{call?}", async (string? call, int? skip, int? take, string? sort, int? orderBy, string? begin, string? end, HrdDbContext dbContext, IAuthorizationService authSvc, IHttpContextAccessor httpContext) =>
                 TypedResults.Ok(await LogbookHandlers.GetLog(call, skip, take, sort, orderBy, begin, end, dbContext, authSvc, httpContext)))
             .WithName("Logbook");
@@ -165,12 +181,27 @@ public static class V1Endpoints
             .RequireAuthorization(Policies.AdminOnly)
             .WithName("UpdateActivation");
 
+        builder.MapPost("activations/copy", async Task<Results<BadRequest<string>, Created<int>>> (CopyActivationRequest req, HrdDbContext dbContext) =>
+            {
+                try
+                {
+                    var newId = await PotaHandlers.CopyActivation(req, dbContext);
+                    return TypedResults.Created($"/api/v1/pota/activations/{newId}", newId);
+                }
+                catch (ArgumentException e)
+                {
+                    return TypedResults.BadRequest(e.Message);
+                }
+            })
+            .RequireAuthorization(Policies.AdminOnly)
+            .WithName("CopyActivation");
+
         builder.MapPost("activations/clone", async Task<Results<BadRequest<string>, Created<int>>> (CloneActivationRequest req, HrdDbContext dbContext) =>
             {
                 try
                 {
-                    var clonedId = await PotaHandlers.CloneActivation(req, dbContext);
-                    return TypedResults.Created($"/api/v1/pota/activations/{clonedId}", clonedId);
+                    var newId = await PotaHandlers.CloneActivation(req, dbContext);
+                    return TypedResults.Created($"/api/v1/pota/activations/{newId}", newId);
                 }
                 catch (ArgumentException e)
                 {

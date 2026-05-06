@@ -4,11 +4,13 @@
 }
 
 p-fieldset {
-  margin-right:5px;
+  margin-right: 5px;
+
   fieldset.circle-color {
     padding-top: 8px;
     padding-bottom: 12px;
   }
+
   fieldset.map-style {
     padding-bottom: 0;
     width: 8.75rem;
@@ -21,17 +23,53 @@ p-fieldset {
       }
     }
   }
+
   fieldset.options {
     padding-top: 8px;
     padding-bottom: 16px;
   }
+
   fieldset.search {
     padding-bottom: 7px;
   }
-  .p-fieldset-legend-label {font-weight: normal}
+
+  .p-fieldset-legend-label { font-weight: normal; }
 }
 
+.color-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
 
+.thresh-label {
+  font-size: 0.75rem;
+  cursor: pointer;
+  color: var(--p-primary-color);
+  text-decoration: underline dotted;
+  white-space: nowrap;
+  margin-right: 0.4rem;
+  user-select: none;
+
+  &:hover {
+    color: var(--p-primary-600);
+  }
+}
+
+.thresh-popover {
+  padding: 0.5rem 0.25rem;
+  min-width: 10rem;
+
+  .thresh-value {
+    font-size: 0.85rem;
+    margin-bottom: 0.75rem;
+    text-align: center;
+  }
+
+  .thresh-slider {
+    width: 9rem;
+  }
+}
 
 #parks-map {
   margin-top: 5px;
@@ -53,7 +91,7 @@ p-fieldset {
     a {
       margin-right: 8px;
     }
-  };
+  }
 }
 
 .map-popup-na {

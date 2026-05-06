@@ -38,6 +38,8 @@ public static class HrdLogExtensions
             log.ColMyCqZone = qso.MyCqZone;
             log.ColMyItuZone = qso.MyItuZone;
             log.ColMyGridsquare = N(qso.MyGrid);
+            log.ColStationCallsign = N(qso.StationCallsign);
+            log.ColOperator = N(qso.OperatorCallsign);
             log.ColQslSent = N(qso.QslSent, "N");
             log.ColQslsdate = qso.QslSentDate;
             log.ColQslSentVia = N(qso.QslSentVia);
@@ -67,7 +69,7 @@ public static class HrdLogExtensions
             log.ColGridsquare ??= qrzResult.grid;
             log.ColCqz ??= qrzResult.cqzone;
             log.ColItuz ??= qrzResult.ituzone;
-            log.ColDxcc ??= qrzResult.dxcc.ToString();
+            if (log.ColDxcc is null or "0")  log.ColDxcc = qrzResult.dxcc.ToString();
             log.ColHrdcountryno ??= qrzResult.dxcc.ToString();
             log.ColEmail ??= qrzResult.email;
             log.ColLat ??= (double)qrzResult.lat;

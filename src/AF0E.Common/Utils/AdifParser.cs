@@ -67,5 +67,5 @@ public static class AdifParser
 
 public sealed record AdifRecord(IReadOnlyDictionary<string, string> Fields)
 {
-    public string? this[string fieldName] => Fields.TryGetValue(fieldName, out var value) ? value : null;
+    public string? this[string fieldName] => Fields.GetValueOrDefault(fieldName);
 }

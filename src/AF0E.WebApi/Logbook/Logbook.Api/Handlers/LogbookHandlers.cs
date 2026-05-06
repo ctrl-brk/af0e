@@ -103,6 +103,9 @@ public static class LogbookHandlers
                              .Include(p => p.Park)
                              .SingleOrDefaultAsync(x => x.ActivationId == activationId.Value, ct)
                          ?? throw new ArgumentException("Invalid activation ID", nameof(activationId));
+
+            qso.StationCallsign ??= activation.StationCallsign;
+            qso.OperatorCallsign ??= activation.OperatorCallsign;
         }
 
         //not necessary now, but if other users added...
@@ -167,6 +170,22 @@ public static class LogbookHandlers
             Version: CreateEventVersion()));
 
         return await GetQsoDetails(log.ColPrimaryKey, dbContext, authSvc, httpContext);
+    }
+
+    public static async Task DeleteQso(int id, HrdDbContext dbContext, CancellationToken ct)
+    {
+        var log = dbContext.Log.AsTracking().SingleOrDefault(x => x.ColPrimaryKey == id);
+
+        if (log == null)
+            return;
+
+        // Remove dependent contacts first (FK to HrdLog uses ClientSetNull).
+        await dbContext.PotaContacts
+            .Where(x => x.LogId == log.ColPrimaryKey)
+            .ExecuteDeleteAsync(ct);
+
+        dbContext.Log.Remove(log);
+        await dbContext.SaveChangesAsync(ct);
     }
 
     public static async Task<AdifImportResponse> UploadAdif(IFormFile file, int? activationId, IQrzService qrzSvc, HrdDbContext dbContext, ILogEventsPublisher eventsPublisher, CancellationToken ct)
@@ -376,7 +395,7 @@ public static class LogbookHandlers
             ColGridsquare = NormalizeUpper(record["GRIDSQUARE"]),
             ColCqz = ParseDouble(record["CQZ"], 0),
             ColItuz = ParseDouble(record["ITUZ"], 0),
-            ColDxcc = NormalizeIntString(record["DXCC"]),
+            ColDxcc = NormalizeIntString(record["DXCC"], "0"),
             ColComment = NormalizeText(record["COMMENT"]),
             ColNotes = NormalizeText(record["NOTES"]),
             ColMyCity = NormalizeText(record["MY_CITY"]),
@@ -401,8 +420,8 @@ public static class LogbookHandlers
             ColLotwQslsdate = ParseAdifDate(record["LOTW_QSLSDATE"]),
             ColLotwQslRcvd = NormalizeQslStatus(record["LOTW_QSL_RCVD"]),
             ColLotwQslrdate = ParseAdifDate(record["LOTW_QSLRDATE"]),
-            ColOperator = NormalizeUpper(record["OPERATOR"]),
-            ColStationCallsign = NormalizeUpper(record["STATION_CALLSIGN"]),
+            ColOperator = NormalizeUpper(record["OPERATOR"], "AF0E"),
+            ColStationCallsign = NormalizeUpper(record["STATION_CALLSIGN"], "AF0E"),
             ColOwnerCallsign = NormalizeUpper(record["OWNER_CALLSIGN"]),
             ColContestId = NormalizeText(record["CONTEST_ID"]),
             ColPropMode = NormalizeUpper(record["PROP_MODE"]),
@@ -558,10 +577,10 @@ public static class LogbookHandlers
         };
     }
 
-    private static string? NormalizeIntString(string? value)
+    private static string? NormalizeIntString(string? value, string? defaultValue = null)
     {
         if (string.IsNullOrWhiteSpace(value))
-            return null;
+            return defaultValue;
 
         return int.TryParse(value.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed) ? parsed.ToString(CultureInfo.InvariantCulture) : null;
     }

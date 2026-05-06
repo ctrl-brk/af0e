@@ -92,7 +92,7 @@ public class HrdDbContext(string connectionString, QueryTrackingBehavior trackin
 
             entity.Property(e => e.ActivationId).ValueGeneratedOnAdd();
             entity.Property(e => e.Grid).HasMaxLength(10).IsUnicode(false);
-            entity.Property(e => e.County).HasMaxLength(100);
+            entity.Property(e => e.City).HasMaxLength(100);
             entity.Property(e => e.County).HasMaxLength(200);
             entity.Property(e => e.State).HasMaxLength(2).IsFixedLength().IsUnicode(false);
             entity.Property(e => e.StartDate).HasColumnType("datetime");
@@ -102,6 +102,9 @@ public class HrdDbContext(string connectionString, QueryTrackingBehavior trackin
             entity.Property(e => e.LogSubmittedDate).HasColumnType("datetime");
             entity.Property(e => e.Comments).IsUnicode(false);
             entity.Property(e => e.SiteComments).IsUnicode(false);
+            entity.Property(e => e.Status).HasMaxLength(1).IsUnicode(false);
+            entity.Property(e => e.StationCallsign).HasMaxLength(32).IsUnicode(false);
+            entity.Property(e => e.OperatorCallsign).HasMaxLength(32).IsUnicode(false);
 
             entity.HasOne(d => d.Park).WithMany(p => p.PotaActivations)
                 .HasForeignKey(d => d.ParkId)

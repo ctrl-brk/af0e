@@ -17,6 +17,8 @@ public sealed class PotaActivationDetails(PotaActivation activation)
     public string Grid { get; set; } = activation.Grid;
     public decimal Lat { get; set; } = activation.Lat;
     public decimal Long { get; set; } = activation.Long;
+    public string StationCallsign { get; set; } = activation.StationCallsign;
+    public string OperatorCallsign { get; set; } = activation.OperatorCallsign;
     public string Status { get; set; } = activation.Status.ToString();
     public int Count { get; set; } = activation.PotaContacts.Count;
     public int CwCount { get; set; } = activation.PotaContacts.Count(c => c.Log.ColMode == "CW");

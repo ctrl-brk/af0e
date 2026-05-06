@@ -24,6 +24,8 @@ public sealed class PotaActivationQsoSummary(PotaContact contact)
     public string? RstRcvd { get; set; } = contact.Log.ColRstRcvd;
     public string? RstSent { get; set; } = contact.Log.ColRstSent;
     public string? State { get; set; } = contact.Log.ColState;
+    public string? StationCallsign { get; set; } = contact.Log.ColStationCallsign;
+    public string? OperatorCallsign { get; set; } = contact.Log.ColOperator;
 #pragma warning disable CA1819 // Properties should not return arrays
     public string[] p2p { get; set; } = [.. contact.Log.PotaHunting.Select(p => p.Park.ParkNum)];
     public string? SatName { get; set; } = contact.Log.ColSatName;

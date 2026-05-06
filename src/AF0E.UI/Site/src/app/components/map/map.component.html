@@ -2,11 +2,50 @@
 <div class="controls">
   @if (!isLessThan1000px) {
     <p-fieldset legend="Total activations" styleClass="circle-color">
-      <p-color-picker [(ngModel)]="pointColors.first" (onChange)="onColorSelected()" /> ≤10
-      <p-color-picker [(ngModel)]="pointColors.second" (onChange)="onColorSelected()"/> 11-20
-      <p-color-picker [(ngModel)]="pointColors.third" (onChange)="onColorSelected()"/> 21-50
-      <p-color-picker [(ngModel)]="pointColors.fourth" (onChange)="onColorSelected()"/> 51-100
-      <p-color-picker [(ngModel)]="pointColors.default" (onChange)="onColorSelected()"/> &gt;100
+      <div class="color-row">
+        <p-color-picker [(ngModel)]="pointColors.first" (onChange)="onColorSelected()" />
+        <span class="thresh-label" (click)="op1.toggle($event)">≤{{thresholds.t1}}</span>
+
+        <p-color-picker [(ngModel)]="pointColors.second" (onChange)="onColorSelected()" />
+        <span class="thresh-label" (click)="op2.toggle($event)">{{thresholds.t1+1}}&ndash;{{thresholds.t2}}</span>
+
+        <p-color-picker [(ngModel)]="pointColors.third" (onChange)="onColorSelected()" />
+        <span class="thresh-label" (click)="op3.toggle($event)">{{thresholds.t2+1}}&ndash;{{thresholds.t3}}</span>
+
+        <p-color-picker [(ngModel)]="pointColors.fourth" (onChange)="onColorSelected()" />
+        <span class="thresh-label" (click)="op4.toggle($event)">{{thresholds.t3+1}}&ndash;{{thresholds.t4}}</span>
+
+        <p-color-picker [(ngModel)]="pointColors.default" (onChange)="onColorSelected()" />
+        <span class="thresh-label" (click)="op4.toggle($event)">&gt;{{thresholds.t4}}</span>
+      </div>
+
+      <p-popover #op1>
+        <div class="thresh-popover">
+          <div class="thresh-value">Upper limit: <b>{{thresholds.t1}}</b></div>
+          <p-slider [(ngModel)]="thresholds.t1" [min]="1" [max]="thresholds.t2 - 1" (onChange)="onThresholdChanged()" styleClass="thresh-slider" />
+        </div>
+      </p-popover>
+
+      <p-popover #op2>
+        <div class="thresh-popover">
+          <div class="thresh-value">Upper limit: <b>{{thresholds.t2}}</b></div>
+          <p-slider [(ngModel)]="thresholds.t2" [min]="thresholds.t1 + 1" [max]="thresholds.t3 - 1" (onChange)="onThresholdChanged()" styleClass="thresh-slider" />
+        </div>
+      </p-popover>
+
+      <p-popover #op3>
+        <div class="thresh-popover">
+          <div class="thresh-value">Upper limit: <b>{{thresholds.t3}}</b></div>
+          <p-slider [(ngModel)]="thresholds.t3" [min]="thresholds.t2 + 1" [max]="thresholds.t4 - 1" (onChange)="onThresholdChanged()" styleClass="thresh-slider" />
+        </div>
+      </p-popover>
+
+      <p-popover #op4>
+        <div class="thresh-popover">
+          <div class="thresh-value">Starts at: <b>{{thresholds.t4 + 1}}</b></div>
+          <p-slider [(ngModel)]="thresholds.t4" [min]="thresholds.t3 + 1" [max]="500" (onChange)="onThresholdChanged()" styleClass="thresh-slider" />
+        </div>
+      </p-popover>
     </p-fieldset>
   }
   <p-fieldset legend="Map style"  styleClass="map-style">

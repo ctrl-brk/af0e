@@ -9,6 +9,7 @@ import {
   viewChild,
   ViewEncapsulation
 } from '@angular/core';
+import {Title} from '@angular/platform-browser';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {activationSchema, PotaActivationModel} from '../../../models/pota-activation.model';
 import {PotaService} from '../../../services/pota.service';
@@ -45,6 +46,7 @@ import {AdifImportResponseModel} from '../../../models/adif-import-response.mode
 import {LogUpdatesService} from '../../../services/log-updates.service';
 import {QsoDetailModel} from '../../../models/qso-detail.model';
 import {ActivationStatusService} from '../../../services/activation-status.service';
+import {defaultTitle} from '../../../shared/constants';
 
 @Component({
   templateUrl: './activation.component.html',
@@ -80,6 +82,7 @@ import {ActivationStatusService} from '../../../services/activation-status.servi
   ]
 })
 export class PotaActivationComponent implements OnInit {
+  private _titleSvc = inject(Title);
   private _router = inject(Router);
   private _activatedRoute = inject(ActivatedRoute)
   private _destroyRef = inject(DestroyRef);
@@ -113,8 +116,8 @@ export class PotaActivationComponent implements OnInit {
   protected qsoStats = {total: 1, cw: 0, digi: 0, phone: 0};
   protected activationForm = form(this.activation, activationSchema)
   protected qsoEditMode = QsoEditMode.View;
-  protected cloneDlgVisible = signal(false);
-  protected cloneParkNum = signal('');
+  protected copyDlgVisible = signal(false);
+  protected copyParkNum = signal('');
 
   protected qsoRate = computed(() => {
     const entries = this.logEntries();
@@ -137,6 +140,7 @@ export class PotaActivationComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this._titleSvc.setTitle('AFØE - POTA | Activation');
     const sub = this._activatedRoute.paramMap.subscribe({
       next: (x) => {
         this.activationId.set(parseInt(x.get('id')!));
@@ -167,6 +171,7 @@ export class PotaActivationComponent implements OnInit {
     });
 
     this._destroyRef.onDestroy(() => {
+      this._titleSvc.setTitle(defaultTitle);
       sub.unsubscribe();
       updatesSub.unsubscribe();
       this._activationStatusSvc.clear();
@@ -181,9 +186,8 @@ export class PotaActivationComponent implements OnInit {
         this.qsoStats.cw = r.cwCount;
         this.qsoStats.digi = r.digiCount;
         this.qsoStats.phone = r.phoneCount;
-        this._activationStatusSvc.set(r.count);
         if (!r.endDate)
-          setTimeout(() => this.activationInfo()?.refresh(), 100);
+          this._activationStatusSvc.set(r.count);
       },
       error: e=> Utils.showErrorMessage(e, this._ntfSvc, this._log),
     });
@@ -206,7 +210,7 @@ export class PotaActivationComponent implements OnInit {
 
         if (q.mode === 'CW')
           this.qsoStats.cw++;
-        if (q.mode.startsWith('FT'))
+        else if (q.mode.startsWith('FT'))
           this.qsoStats.digi++;
         else
           this.qsoStats.phone++;
@@ -241,6 +245,10 @@ export class PotaActivationComponent implements OnInit {
     this.logId.set(logId);
     this.qsoEditMode = QsoEditMode.Edit
     this.qsoEditVisible.set(true);
+  }
+
+  protected onQsoDeleted() {
+    this.loadActivationLog(this.activationId());
   }
 
   protected onSaveActivation() {
@@ -319,11 +327,20 @@ export class PotaActivationComponent implements OnInit {
     window.open(`https://www.google.com/maps?q=${lat},${lon}`, '_blank');
   }
 
-  protected onCloneActivation() {
-    this._potaSvc.cloneActivation(this.activationId(), this.cloneParkNum()).subscribe({
+  protected onCopyActivation() {
+    this._potaSvc.copyActivation(this.activationId(), this.copyParkNum()).subscribe({
       next: (id: number) => {
-        this.cloneDlgVisible.set(false);
-        this.cloneParkNum.set('');
+        this.copyDlgVisible.set(false);
+        this.copyParkNum.set('');
+        this._router.navigate(['/pota/activations', id]);
+      },
+      error: (e) => Utils.showErrorMessage(e, this._ntfSvc, this._log)
+    });
+  }
+
+  protected onCloneActivation() {
+    this._potaSvc.cloneActivation(this.activationId()).subscribe({
+      next: (id: number) => {
         this._router.navigate(['/pota/activations', id]);
       },
       error: (e) => Utils.showErrorMessage(e, this._ntfSvc, this._log)
@@ -433,13 +450,13 @@ export class PotaActivationComponent implements OnInit {
       rec += field('MY_SIG', 'POTA');
       rec += field('MY_SIG_INFO', activation.parkNum);
       if (activation.state) rec += field('MY_STATE', qso.myState);
-      rec += field('OPERATOR', 'AF0E');
+      rec += field('OPERATOR', qso.operatorCallsign ?? Utils.getMyEffectiveCall(qso.date));
       rec += field('QSLMSG', `POTA ${activation.parkNum}`);
       rec += field('QSO_DATE', qsoDate);
       rec += field('RST_RCVD', qso.rstRcvd);
       rec += field('RST_SENT', qso.rstSent);
       rec += field('STATE', qso.state);
-      rec += field('STATION_CALLSIGN', 'AF0E');
+      rec += field('STATION_CALLSIGN', qso.stationCallsign ?? Utils.getMyEffectiveCall(qso.date));
       rec += field('TIME_ON', timeOn);
       /* if (qso.p2p?.length) {
         const p2pStr = qso.p2p.join(',');

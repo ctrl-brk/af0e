@@ -19,13 +19,15 @@ public static class UpdateActivationValidator
         if (req.Id is <= 0)
             errors.Add("Incorrect ActivationId");
 
-        ActivationValidationRules.ValidateParkNumber(errors, req.ParkNum);
+        ValidationRules.ValidateParkNumber(errors, req.ParkNum);
 
-        ActivationValidationRules.ValidateGrid(errors, req.Grid);
-        ActivationValidationRules.ValidateCounty(errors, req.County);
-        ActivationValidationRules.ValidateState(errors, req.State);
-        ActivationValidationRules.ValidateLatitude(errors, req.Lat);
-        ActivationValidationRules.ValidateLongitude(errors, req.Long);
+        ValidationRules.ValidateGrid(errors, req.Grid);
+        ValidationRules.ValidateCounty(errors, req.County);
+        ValidationRules.ValidateState(errors, req.State);
+        ValidationRules.ValidateLatitude(errors, req.Lat);
+        ValidationRules.ValidateLongitude(errors, req.Long);
+        ValidationRules.ValidateCallSign(errors, req.StationCallsign);
+        ValidationRules.ValidateCallSign(errors, req.OperatorCallsign);
 
         return errors;
     }

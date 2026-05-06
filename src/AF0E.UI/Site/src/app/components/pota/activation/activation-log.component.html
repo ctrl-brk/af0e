@@ -1,6 +1,9 @@
+<p-contextMenu #cm [model]="cmItems"></p-contextMenu>
 <p-table
   [value]="logEntries()"
   dataKey="logId"
+  [contextMenu]="_authSvc.isAdmin ? cm : null"
+  [(contextMenuSelection)]="selectedQso"
   sortField="date"
   [sortOrder]="-1"
   [paginator]="true"
@@ -24,7 +27,7 @@
   </ng-template>
 
   <ng-template pTemplate="body" let-qso>
-    <tr (click)="onQsoSelect(qso)">
+    <tr (click)="onQsoSelect(qso)" [pContextMenuRow]="qso">
       <td class="time">{{ qso.date | date:'yy-MM-dd HH:mm' }}</td>
       <td class="call">{{ qso.call }}</td>
       <td class="band">{{ qso.band }}</td>
@@ -41,7 +44,7 @@
   </ng-template>
 </p-table>
 
-<p-dialog header="{{myCallsign()}} confirms the following QSO" [modal]="true" [(visible)]="qsoDetailsVisible" [style]="{ width: '25rem' }">
+<p-dialog header="{{myCallsign()}} confirms" [modal]="true" [(visible)]="qsoDetailsVisible" [style]="{ width: '25rem' }">
   <app-qso [logId]="selectedId()" />
   <div class="qsl">
     <p-button label="Close" severity="secondary" (click)="qsoDetailsVisible.set(false)" />

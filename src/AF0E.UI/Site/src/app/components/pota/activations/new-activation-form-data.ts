@@ -8,6 +8,8 @@ export interface NewActivationFormData {
   state: string;
   lat: string;
   lon: string;
+  stationCallsign: string;
+  operatorCallsign: string;
   startDate?: Date;
 }
 
@@ -18,6 +20,8 @@ export const initialActivationData: NewActivationFormData = {
   state: '',
   lat: '',
   lon: '',
+  stationCallsign: 'AF0E',
+  operatorCallsign: 'AF0E',
 }
 
 export const activationSchema = schema<NewActivationFormData>((root) => {
@@ -34,4 +38,6 @@ export const activationSchema = schema<NewActivationFormData>((root) => {
   maxLength(root.state, 2, {message: 'State must be 2 characters long'});
   required(root.lat, {message: 'Latitude is required'});
   required(root.lon, {message: 'Longitude is required'});
+  required(root.stationCallsign, {message: 'Callsign is required'});
+  required(root.operatorCallsign, {message: 'Operator is required'});
 });

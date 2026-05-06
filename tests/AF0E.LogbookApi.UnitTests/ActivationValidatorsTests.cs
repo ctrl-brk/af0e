@@ -19,6 +19,8 @@ public class ActivationValidatorsTests
             State: "MN",
             Lat: 44.98m,
             Lon: -93.26m,
+            StationCallsign: "N0CAL",
+            OperatorCallsign: "N0OP",
             StartDate: DateTime.UtcNow);
 
         var act = () => NewActivationValidator.ValidateAndThrow(req);
@@ -37,13 +39,15 @@ public class ActivationValidatorsTests
             State: "MN",
             Lat: 44.98m,
             Lon: -93.26m,
+            StationCallsign: "N0CAL",
+            OperatorCallsign: "N0OP",
             StartDate: DateTime.UtcNow);
 
         var act = () => NewActivationValidator.ValidateAndThrow(req);
 
         var ex = act.Should().Throw<ArgumentException>().Which;
         ex.ParamName.Should().Be("req");
-        ex.Message.Should().Contain("ParkNum must be two letters, a dash, and 4-5 digits");
+        ex.Message.Should().Contain("Park number must be two letters, a dash, and 4-5 digits (e.g., US-1234)");
     }
 
     [Fact]
@@ -57,6 +61,8 @@ public class ActivationValidatorsTests
             State: "MIN",
             Lat: 44.98m,
             Long: -93.26m,
+            StationCallsign: "N0CAL",
+            OperatorCallsign: "N0OP",
             StartDate: DateTime.UtcNow,
             EndDate: null,
             LogSubmittedDate: null,
@@ -81,6 +87,8 @@ public class ActivationValidatorsTests
             State: "MN",
             Lat: 44.98m,
             Long: -93.26m,
+            StationCallsign: "N0CAL",
+            OperatorCallsign: "N0OP",
             StartDate: DateTime.UtcNow,
             EndDate: null,
             LogSubmittedDate: null,
@@ -95,23 +103,22 @@ public class ActivationValidatorsTests
     [Fact]
     public void CloneActivationValidator_BlankParkNumber_ThrowsArgumentException()
     {
-        var req = new CloneActivationRequest(activationId: 7, ParkNumber: " ");
+        var req = new CopyActivationRequest(ActivationId: 7, ParkNumber: " ");
 
-        var act = () => CloneActivationValidator.ValidateAndThrow(req);
+        var act = () => CopyActivationValidator.ValidateAndThrow(req);
 
         var ex = act.Should().Throw<ArgumentException>().Which;
         ex.ParamName.Should().Be("req");
-        ex.Message.Should().Contain("ParkNum is required");
+        ex.Message.Should().Contain("Park number is required");
     }
 
     [Fact]
     public void CloneActivationValidator_ValidRequest_DoesNotThrow()
     {
-        var req = new CloneActivationRequest(activationId: 7, ParkNumber: "US-2345");
+        var req = new CopyActivationRequest(ActivationId: 7, ParkNumber: "US-2345");
 
-        var act = () => CloneActivationValidator.ValidateAndThrow(req);
+        var act = () => CopyActivationValidator.ValidateAndThrow(req);
 
         act.Should().NotThrow();
     }
 }
-

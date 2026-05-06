@@ -1,15 +1,19 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 
 namespace AF0E.Common.Pota;
 
-public class PotaLogResponse
+public sealed record PotaLogResponse
 {
     public int Count { get; init; }
     public ICollection<PotaLogEntry> Entries { get; init; } = null!;
 }
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
-public class PotaLogEntry
+[SuppressMessage("ReSharper", "UnusedMember.Global")]
+[SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
+[SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
+public sealed record PotaLogEntry
 {
     public long QsoId { get; set; }
     public int UserId { get; set; }

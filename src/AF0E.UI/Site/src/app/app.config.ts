@@ -37,6 +37,11 @@ export const appConfig: ApplicationConfig = {
             httpMethod: 'PUT',
           },
           {
+            // QSO delete operation - require authentication
+            uri: '/api/v1/logbook/qso/*',
+            httpMethod: 'DELETE',
+          },
+          {
             // ADIF upload - require authentication
             uri: '/api/v1/logbook/upload',
             httpMethod: 'POST',

@@ -1,6 +1,9 @@
+<p-contextMenu #cm [model]="cmItems"></p-contextMenu>
 <p-table
   [value]="logEntries()"
   dataKey="id"
+  [contextMenu]="_authSvc.isAdmin ? cm : null"
+  [(contextMenuSelection)]="selectedQso"
   sortField="date"
   [sortOrder]="-1"
   [paginator]="true"
@@ -13,8 +16,8 @@
   [loading]="loading()"
   (onLazyLoad)="onLazyLoad($event)"
   [scrollable]="true"
-  class="tbl-log"
   scrollHeight="calc(100vh - 13.8rem)"
+  class="tbl-log"
   stripedRows>
 
   <ng-template pTemplate="caption">
@@ -34,7 +37,7 @@
         <label for="daterange">{{dateRangeTitle()}}</label>
       </p-floatlabel>
       <p-button severity="secondary" icon="pi pi-search" (onClick)="onDateRangeSearch()" />
-      @if (_authSvc.hasRole('Admin')) {
+      @if (_authSvc.isAdmin) {
         <div style="flex: 1;"></div>
         <p-button severity="primary" label="Add QSO" icon="pi pi-plus" (onClick)="onAddQso()" />
       }
@@ -47,7 +50,7 @@
       <th>Call</th>
       <th>Band</th>
       <th>Mode</th>
-      @if (_authSvc.hasRole('Admin')) {
+      @if (_authSvc.isAdmin) {
         <th>Comment</th>
       }
       <th title="POTA activation">POTA</th>
@@ -56,12 +59,12 @@
   </ng-template>
 
   <ng-template pTemplate="body" let-qso>
-    <tr (click)="onQsoSelect(qso)">
+    <tr (click)="onQsoSelect(qso)" [pContextMenuRow]="qso">
       <td>{{ qso.date | date:'yy-MM-dd HH:mm' }}</td>
       <td>{{ qso.call }}</td>
       <td>{{ qso.band }}</td>
       <td><p-tag [value]="qso.mode|qsoMode" [severity]="qso.mode|modeSeverity" /></td>
-      @if (_authSvc.hasRole('Admin')) {
+      @if (_authSvc.isAdmin) {
         <td>{{ qso.comment }}</td>
       }
       <td>
@@ -74,9 +77,7 @@
   </ng-template>
 </p-table>
 
-<p-scrollTop />
-
-<p-dialog header="{{myCallsign()}} confirms the following QSO" [modal]="true" [(visible)]="qsoDetailsVisible" [style]="{ width: '25rem' }">
+<p-dialog header="{{myCallsign()}} confirms" [modal]="true" [(visible)]="qsoDetailsVisible" [style]="{ width: '25rem' }">
   @if (qsoDetailsVisible()) {
     <app-qso [logId]="selectedId()" />
   }
