@@ -41,6 +41,8 @@ public sealed class QsoDetails
         MyCqZone = log.ColMyCqZone;
         MyItuZone = log.ColMyItuZone;
         MyGrid = log.ColMyGridsquare;
+        StationCallsign = log.ColStationCallsign;
+        OperatorCallsign = log.ColOperator;
         QslSent = log.ColQslSent;
         QslSentDate = log.ColQslsdate;
         QslSentVia = log.ColQslSentVia;
@@ -82,6 +84,8 @@ public sealed class QsoDetails
     public double? MyCqZone { get; set; }
     public double? MyItuZone { get; set; }
     public string? MyGrid { get; set; }
+    public string? StationCallsign { get; set; }
+    public string? OperatorCallsign { get; set; }
     public string? QslSent { get; set; }
     public DateTime? QslSentDate { get; set; }
     public string? QslSentVia { get; set; }
@@ -128,6 +132,8 @@ public sealed class QsoDetails
             ColMyCqZone = MyCqZone,
             ColMyItuZone = MyItuZone,
             ColMyGridsquare = N(MyGrid),
+            ColStationCallsign = N(StationCallsign, "AF0E"),
+            ColOperator = N(OperatorCallsign, "AF0E"),
             ColQslSent = N(QslSent, "N"),
             ColQslsdate = QslSentDate,
             ColQslSentVia = N(QslSentVia, "D"),

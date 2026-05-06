@@ -17,7 +17,11 @@ public sealed class AdifUdpBroadcastListener(
     AdifApiForwarder? apiForwarder = null) : IDisposable
 {
     private const uint WsjtxMagic = 0xADBCCBDA;
+    private const int DuplicateCacheMaxEntries = 512;
+    private static readonly TimeSpan _duplicateWindow = TimeSpan.FromSeconds(20);
+
     private readonly UdpClient _udpClient = CreateUdpClient(settings);
+    private readonly Dictionary<string, DateTime> _recentRecordFingerprints = new(StringComparer.OrdinalIgnoreCase);
     private bool _started;
 
     public Task StartAsync(CancellationToken cancellationToken)
@@ -77,7 +81,6 @@ public sealed class AdifUdpBroadcastListener(
         }
 
         var records = AdifParser.Parse(adifPayload);
-        activityLog?.LogDebug($"[ADIF UDP] {sourceDescription}: {FormatPayloadForActivity(adifPayload)}");
 
         if (records.Count == 0)
         {
@@ -87,19 +90,45 @@ public sealed class AdifUdpBroadcastListener(
             return;
         }
 
-        activityLog?.LogDebug($"[ADIF UDP] Parsed {records.Count} record(s) from {remoteEndPoint}");
+        var nowUtc = DateTime.UtcNow;
+        var uniqueIndexes = new List<int>(records.Count);
+        var duplicateCount = 0;
 
         for (var index = 0; index < records.Count; index++)
         {
             var record = records[index];
+
+            //WSJT-X sometimes sends duplicate notifications
+            if (TryBuildRecordFingerprint(record.Fields, out var fingerprint) && IsDuplicateWithinWindow(fingerprint, nowUtc))
+            {
+                duplicateCount++;
+                continue;
+            }
+
+            uniqueIndexes.Add(index);
+        }
+
+        if (uniqueIndexes.Count == 0)
+        {
+            activityLog?.LogDebug($"[ADIF UDP] Ignored duplicate packet from {remoteEndPoint} ({duplicateCount} duplicate record(s)).");
+            return;
+        }
+
+        activityLog?.LogDebug($"[ADIF UDP] {sourceDescription}: {FormatPayloadForActivity(adifPayload)}");
+        activityLog?.LogDebug($"[ADIF UDP] Parsed {uniqueIndexes.Count} record(s) from {remoteEndPoint}");
+
+        for (var i = 0; i < uniqueIndexes.Count; i++)
+        {
+            var record = records[uniqueIndexes[i]];
+
             activityLog?.LogDebug(
-                $"[ADIF UDP] #{index + 1} call={record["CALL"] ?? "-"}, band={record["BAND"] ?? "-"}, mode={record["MODE"] ?? "-"}, submode={record["SUBMODE"] ?? "-"}");
+                $"[ADIF UDP] #{i + 1} call={record["CALL"] ?? "-"}, band={record["BAND"] ?? "-"}, mode={record["MODE"] ?? "-"}, submode={record["SUBMODE"] ?? "-"}");
 
             if (apiForwarder is null)
                 continue;
 
             var forwardItem = new AdifForwardingItem(
-                DateTime.UtcNow,
+                nowUtc,
                 sourceDescription,
                 remoteEndPoint.ToString(),
                 adifPayload,
@@ -107,6 +136,9 @@ public sealed class AdifUdpBroadcastListener(
 
             _ = apiForwarder.TryEnqueue(forwardItem);
         }
+
+        if (duplicateCount > 0)
+            activityLog?.LogDebug($"[ADIF UDP] Ignored {duplicateCount} duplicate record(s) from {remoteEndPoint}.");
     }
 
     private static string FormatPayloadForActivity(string payload)
@@ -284,4 +316,97 @@ public sealed class AdifUdpBroadcastListener(
     {
         _udpClient.Dispose();
     }
+
+    private bool IsDuplicateWithinWindow(string fingerprint, DateTime nowUtc)
+    {
+        PruneDuplicateCache(nowUtc);
+
+        if (_recentRecordFingerprints.TryGetValue(fingerprint, out var lastSeenUtc))
+        {
+            if (nowUtc - lastSeenUtc <= _duplicateWindow)
+                return true;
+        }
+
+        _recentRecordFingerprints[fingerprint] = nowUtc;
+        return false;
+    }
+
+    private void PruneDuplicateCache(DateTime nowUtc)
+    {
+        if (_recentRecordFingerprints.Count == 0)
+            return;
+
+        var cutoffUtc = nowUtc - _duplicateWindow;
+        var expiredKeys = _recentRecordFingerprints
+            .Where(kvp => kvp.Value < cutoffUtc)
+            .Select(kvp => kvp.Key)
+            .ToArray();
+
+        foreach (var key in expiredKeys)
+            _recentRecordFingerprints.Remove(key);
+
+        if (_recentRecordFingerprints.Count <= DuplicateCacheMaxEntries)
+            return;
+
+        var overflowKeys = _recentRecordFingerprints
+            .OrderBy(kvp => kvp.Value)
+            .Take(_recentRecordFingerprints.Count - DuplicateCacheMaxEntries)
+            .Select(kvp => kvp.Key)
+            .ToArray();
+
+        foreach (var key in overflowKeys)
+            _recentRecordFingerprints.Remove(key);
+    }
+
+    private static bool TryBuildRecordFingerprint(IReadOnlyDictionary<string, string> fields, out string fingerprint)
+    {
+        fingerprint = string.Empty;
+
+        if (!TryGetNormalizedField(fields, "CALL", out var call)
+            || !TryGetNormalizedField(fields, "QSO_DATE", out var qsoDate)
+            || !TryGetNormalizedAdifTime(fields, "TIME_ON", out var timeOn)
+            || !TryGetNormalizedField(fields, "BAND", out var band))
+        {
+            return false;
+        }
+
+        var mode = GetNormalizedField(fields, "SUBMODE")
+                   ?? GetNormalizedField(fields, "MODE")
+                   ?? "-";
+
+        fingerprint = $"{call}|{qsoDate}|{timeOn}|{band}|{mode}";
+        return true;
+    }
+
+    private static bool TryGetNormalizedAdifTime(IReadOnlyDictionary<string, string> fields, string key, out string value)
+    {
+        value = string.Empty;
+
+        if (!fields.TryGetValue(key, out var raw) || string.IsNullOrWhiteSpace(raw))
+            return false;
+
+        var digits = new string(raw.Where(char.IsDigit).ToArray());
+        if (digits.Length < 4)
+            return false;
+
+        // ADIF times may be HHMM or HHMMSS; normalize to HHMMSS for stable dedupe keys.
+        value = digits.Length >= 6 ? digits[..6] : digits[..4] + "00";
+        return true;
+    }
+
+    private static bool TryGetNormalizedField(IReadOnlyDictionary<string, string> fields, string key, out string value)
+    {
+        value = string.Empty;
+
+        if (!fields.TryGetValue(key, out var raw) || string.IsNullOrWhiteSpace(raw))
+            return false;
+
+        value = raw.Trim().ToUpperInvariant();
+        return value.Length > 0;
+    }
+
+    private static string? GetNormalizedField(IReadOnlyDictionary<string, string> fields, string key)
+        => fields.TryGetValue(key, out var raw) && !string.IsNullOrWhiteSpace(raw)
+            ? raw.Trim().ToUpperInvariant()
+            : null;
 }

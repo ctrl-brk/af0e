@@ -103,6 +103,9 @@ public static class LogbookHandlers
                              .Include(p => p.Park)
                              .SingleOrDefaultAsync(x => x.ActivationId == activationId.Value, ct)
                          ?? throw new ArgumentException("Invalid activation ID", nameof(activationId));
+
+            qso.StationCallsign ??= activation.StationCallsign;
+            qso.OperatorCallsign ??= activation.OperatorCallsign;
         }
 
         //not necessary now, but if other users added...
@@ -417,8 +420,8 @@ public static class LogbookHandlers
             ColLotwQslsdate = ParseAdifDate(record["LOTW_QSLSDATE"]),
             ColLotwQslRcvd = NormalizeQslStatus(record["LOTW_QSL_RCVD"]),
             ColLotwQslrdate = ParseAdifDate(record["LOTW_QSLRDATE"]),
-            ColOperator = NormalizeUpper(record["OPERATOR"]),
-            ColStationCallsign = NormalizeUpper(record["STATION_CALLSIGN"]),
+            ColOperator = NormalizeUpper(record["OPERATOR"], "AF0E"),
+            ColStationCallsign = NormalizeUpper(record["STATION_CALLSIGN"], "AF0E"),
             ColOwnerCallsign = NormalizeUpper(record["OWNER_CALLSIGN"]),
             ColContestId = NormalizeText(record["CONTEST_ID"]),
             ColPropMode = NormalizeUpper(record["PROP_MODE"]),

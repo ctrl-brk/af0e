@@ -7,7 +7,8 @@
         @if (_authSvc.isAdmin) {
           <p-confirmpopup />
           &nbsp;&nbsp;<p-button severity="info" icon="pi pi-pencil" size="small" title="Edit" outlined="true" (onClick)="editActivationVisible.set(true)" />
-          &nbsp;<p-button severity="warn" icon="pi pi-clone" size="small" title="Clone" outlined="true" (onClick)="cloneDlgVisible.set(true)" />
+          &nbsp;<p-button severity="warn" icon="pi pi-copy" size="small" title="Copy with contacts (n-fer)" outlined="true" (onClick)="copyDlgVisible.set(true)" />
+          &nbsp;<p-button severity="warn" icon="pi pi-clone" size="small" title="New activation, same location" outlined="true" (onClick)="onCloneActivation()" />
           &nbsp;<p-button severity="success" icon="pi pi-upload" size="small" title="Merge ADIF" outlined="true" (onClick)="adifFileInput.click()" />
           <input #adifFileInput type="file" accept=".adi,.adif" style="display:none" (change)="onMergeAdifFileSelected($event)" />
           &nbsp;<p-button severity="danger" icon="pi pi-trash" size="small" title="Delete" outlined="true" (onClick)="onConfirmDelete($event)" />
@@ -64,7 +65,7 @@
     <p-tabpanel value="log">
       <div class="log-container">
         <div>
-          <app-activation-log [logEntries]="logEntries()" (qsoSelected)="onQsoSelected($event)"></app-activation-log>
+          <app-activation-log [logEntries]="logEntries()" (qsoSelected)="onQsoSelected($event)" (qsoDeleted)="onQsoDeleted()"></app-activation-log>
         </div>
         <div>
           <app-activation-info [activation]="activation()"></app-activation-info>
@@ -150,6 +151,16 @@
         </p-floatlabel>
 
         <p-floatlabel class="field">
+          <input id="station" pInputText [formField]="activationForm.stationCallsign" />
+          <label for="station">Station</label>
+        </p-floatlabel>
+
+        <p-floatlabel class="field">
+          <input id="operator" pInputText [formField]="activationForm.operatorCallsign" />
+          <label for="operator">Operator</label>
+        </p-floatlabel>
+
+        <p-floatlabel class="field">
           <p-datePicker
             [(ngModel)]="activation().startDate"
             inputId="startDate"
@@ -214,14 +225,14 @@
     </p-dialog>
   }
 
-  <p-dialog [modal]="true" [showHeader]="false" [(visible)]="cloneDlgVisible" [focusOnShow]="true" [style]="{ width: '20rem' }">
+  <p-dialog [modal]="true" [showHeader]="false" [(visible)]="copyDlgVisible" [focusOnShow]="true" [style]="{ width: '20rem' }">
     <div style="padding-top: 1rem">
       <p-floatlabel variant="on">
-        <input pInputText id="parkNum" style="width:100%; margin-top: 0.5rem;" [(ngModel)]="cloneParkNum" />
+        <input pInputText id="parkNum" style="width:100%; margin-top: 0.5rem;" [(ngModel)]="copyParkNum" />
         <label for="parkNum">Park</label>
       </p-floatlabel>
       <div style="display:flex; justify-content:flex-end; margin-top:0.5rem;">
-        <p-button label="Clone" icon="pi pi-clone" (onClick)="onCloneActivation()" [disabled]="!cloneParkNum()" />
+        <p-button label="Copy" icon="pi pi-copy" title="Copy with contacts (n-fer)" (onClick)="onCopyActivation()" [disabled]="!copyParkNum()" />
       </div>
     </div>
   </p-dialog>

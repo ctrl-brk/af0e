@@ -8,7 +8,6 @@ import {NotificationService} from '../../../shared/notification.service';
 import {LogService} from '../../../shared/log.service';
 import {Card} from 'primeng/card';
 import {DatePipe} from '@angular/common';
-import {ScrollTop} from 'primeng/scrolltop';
 import {ModeSeverityPipe, QsoModePipe} from '../../../shared/pipes';
 import {Tag} from 'primeng/tag';
 import {HttpClient} from '@angular/common/http';
@@ -22,7 +21,6 @@ import {defaultTitle} from '../../../shared/constants';
     TableModule,
     Card,
     DatePipe,
-    ScrollTop,
     ModeSeverityPipe,
     QsoModePipe,
     Tag,

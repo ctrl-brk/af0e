@@ -9,5 +9,7 @@ public sealed record NewActivationRequest(
     string State,
     decimal Lat,
     decimal Lon,
-    DateTime? StartDate
+    DateTime? StartDate,
+    string StationCallsign,
+    string OperatorCallsign
 );

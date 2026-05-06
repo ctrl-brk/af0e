@@ -244,6 +244,8 @@ export class QsoEditComponent implements OnInit {
       myCqZone: [defaults.myCqZone, Validators.pattern(/^[0-9]{1,2}$/)],
       myItuZone: [defaults.myItuZone, Validators.pattern(/^[0-9]{1,2}$/)],
       myGrid: [defaults.myGrid, Validators.pattern(/^[A-R]{2}[0-9]{2}([A-X]{2})?$/i)],
+      stationCallsign: [defaults.stationCallsign, [Validators.required, callSignValidator()]],
+      operatorCallsign: [defaults.operatorCallsign, [Validators.required, callSignValidator()]],
       qslSent: [defaults.qslSent],
       qslSentDate: [defaults.qslSentDate],
       qslSentVia: [defaults.qslSentVia],
@@ -677,6 +679,8 @@ export class QsoEditComponent implements OnInit {
       state: this.potaActivation()!.state,
       lat: this.potaActivation()!.lat ? this.potaActivation()!.lat!.toString() : '',
       lon: this.potaActivation()!.long ? this.potaActivation()!.long!.toString() : '',
+      stationCallsign: this.potaActivation()!.stationCallsign,
+      operatorCallsign: this.potaActivation()!.operatorCallsign,
       startDate: formValue.date
     };
 
@@ -753,6 +757,8 @@ export class QsoEditComponent implements OnInit {
       myCqZone: '4',
       myItuZone: '7',
       myGrid:  this.potaActivation() ? this.potaActivation()!.grid : 'DM79lw',
+      stationCallsign: this.potaActivation() ? this.potaActivation()!.stationCallsign : 'AF0E',
+      operatorCallsign: this.potaActivation() ? this.potaActivation()!.operatorCallsign : 'AF0E',
       qslSent: 'N',
       qslSentDate: null,
       qslSentVia: null,
@@ -814,10 +820,6 @@ export class QsoEditComponent implements OnInit {
       return `Maximum length is ${limit} characters.`;
     }
     return 'Invalid value';
-  }
-
-  protected onContainerClick(event: MouseEvent) {
-    (event.currentTarget as HTMLElement).focus();
   }
 
   protected onKeyDown($event: KeyboardEvent) {

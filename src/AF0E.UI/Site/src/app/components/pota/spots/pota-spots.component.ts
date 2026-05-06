@@ -17,7 +17,6 @@ import {InfraService} from '../../../services/infra.service';
 import {NotificationService} from '../../../shared/notification.service';
 import {LogService} from '../../../shared/log.service';
 import {PotaActivityStatsModel} from '../../../models/pota-activity-stats.model';
-import {ScrollTop} from 'primeng/scrolltop';
 import {TableModule} from 'primeng/table';
 import {Tag} from 'primeng/tag';
 import {ModeSeverityPipe, QsoModePipe, TimeAgoPipe} from '../../../shared/pipes';
@@ -38,7 +37,6 @@ import {defaultTitle} from '../../../shared/constants';
   styleUrl: './pota-spots.component.scss',
   encapsulation: ViewEncapsulation.None,
   imports: [
-    ScrollTop,
     TableModule,
     Tag,
     QsoModePipe,

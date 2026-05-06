@@ -16,8 +16,8 @@
   [loading]="loading()"
   (onLazyLoad)="onLazyLoad($event)"
   [scrollable]="true"
-  class="tbl-log"
   scrollHeight="calc(100vh - 13.8rem)"
+  class="tbl-log"
   stripedRows>
 
   <ng-template pTemplate="caption">
@@ -77,9 +77,7 @@
   </ng-template>
 </p-table>
 
-<p-scrollTop />
-
-<p-dialog header="{{myCallsign()}} confirms the following QSO" [modal]="true" [(visible)]="qsoDetailsVisible" [style]="{ width: '25rem' }">
+<p-dialog header="{{myCallsign()}} confirms" [modal]="true" [(visible)]="qsoDetailsVisible" [style]="{ width: '25rem' }">
   @if (qsoDetailsVisible()) {
     <app-qso [logId]="selectedId()" />
   }

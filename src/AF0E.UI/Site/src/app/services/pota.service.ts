@@ -78,8 +78,18 @@ export class PotaService {
     return this._http.put(Configuration.potaUrl(`activations`), activation);
   }
 
-  public cloneActivation(activationId: number, parkNumber: string): Observable<number>  {
-    return this._http.post(Configuration.potaUrl(`activations/clone`), {activationId, parkNumber});
+  /**
+   * Creates a copy of the activation with a new park number (n-fer).
+   */
+  public copyActivation(activationId: number, parkNumber: string): Observable<number>  {
+    return this._http.post(Configuration.potaUrl(`activations/copy`), {activationId, parkNumber});
+  }
+
+  /**
+   * Starts a new activation with the same park and location as the existing activation.
+   */
+  public cloneActivation(activationId: number): Observable<number>  {
+    return this._http.post(Configuration.potaUrl(`activations/clone`), {activationId});
   }
 
   public deleteActivation(activationId: number): Observable<any>  {

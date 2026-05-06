@@ -181,12 +181,27 @@ public static class V1Endpoints
             .RequireAuthorization(Policies.AdminOnly)
             .WithName("UpdateActivation");
 
+        builder.MapPost("activations/copy", async Task<Results<BadRequest<string>, Created<int>>> (CopyActivationRequest req, HrdDbContext dbContext) =>
+            {
+                try
+                {
+                    var newId = await PotaHandlers.CopyActivation(req, dbContext);
+                    return TypedResults.Created($"/api/v1/pota/activations/{newId}", newId);
+                }
+                catch (ArgumentException e)
+                {
+                    return TypedResults.BadRequest(e.Message);
+                }
+            })
+            .RequireAuthorization(Policies.AdminOnly)
+            .WithName("CopyActivation");
+
         builder.MapPost("activations/clone", async Task<Results<BadRequest<string>, Created<int>>> (CloneActivationRequest req, HrdDbContext dbContext) =>
             {
                 try
                 {
-                    var clonedId = await PotaHandlers.CloneActivation(req, dbContext);
-                    return TypedResults.Created($"/api/v1/pota/activations/{clonedId}", clonedId);
+                    var newId = await PotaHandlers.CloneActivation(req, dbContext);
+                    return TypedResults.Created($"/api/v1/pota/activations/{newId}", newId);
                 }
                 catch (ArgumentException e)
                 {

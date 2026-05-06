@@ -3,8 +3,6 @@ namespace AF0E.DB.Models;
 
 using System.Reflection;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 public sealed class HrdLog
 {
@@ -24,7 +22,7 @@ public sealed class HrdLog
         ColDxcc = "0";
     }
 
-    public int ColPrimaryKey { get; set; }
+public int ColPrimaryKey { get; set; }
     public string? ColAddress { get; set; }
     public double? ColAge { get; set; }
     public double? ColAIndex { get; set; }

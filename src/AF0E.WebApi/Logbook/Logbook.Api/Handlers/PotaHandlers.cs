@@ -68,6 +68,8 @@ public static partial class PotaHandlers
             State = req.State,
             Lat = req.Lat,
             Long = req.Lon,
+            StationCallsign = req.StationCallsign,
+            OperatorCallsign = req.OperatorCallsign,
             StartDate = req.StartDate ?? DateTime.UtcNow,
             Status = 'P'
         };
@@ -94,6 +96,8 @@ public static partial class PotaHandlers
         activation.Long = req.Long;
         activation.StartDate = req.StartDate;
         activation.EndDate = req.EndDate;
+        activation.StationCallsign = req.StationCallsign;
+        activation.OperatorCallsign = req.OperatorCallsign;
         activation.LogSubmittedDate = req.LogSubmittedDate;
         activation.SiteComments = req.SiteComments;
         activation.Status = req.Status.Length > 0 ? req.Status[0] : activation.Status;
@@ -101,11 +105,14 @@ public static partial class PotaHandlers
         await dbContext.SaveChangesAsync();
     }
 
-    public static async Task<int> CloneActivation(CloneActivationRequest req, HrdDbContext dbContext)
+    /// <summary>
+    /// Creates a copy of the activation with a new park number (n-fer).
+    /// </summary>
+    public static async Task<int> CopyActivation(CopyActivationRequest req, HrdDbContext dbContext)
     {
-        CloneActivationValidator.ValidateAndThrow(req);
+        CopyActivationValidator.ValidateAndThrow(req);
 
-        var sourceActivation = await dbContext.PotaActivations.FirstOrDefaultAsync(x => x.ActivationId == req.activationId)
+        var sourceActivation = await dbContext.PotaActivations.FirstOrDefaultAsync(x => x.ActivationId == req.ActivationId)
             ?? throw new ArgumentException("Invalid activation ID");
 
         var park = await dbContext.PotaParks.FirstOrDefaultAsync(x => x.ParkNum == req.ParkNumber)
@@ -127,6 +134,8 @@ public static partial class PotaHandlers
             Long = sourceActivation.Long,
             StartDate = sourceActivation.StartDate,
             EndDate = sourceActivation.EndDate,
+            StationCallsign = sourceActivation.StationCallsign,
+            OperatorCallsign = sourceActivation.OperatorCallsign,
             LogSubmittedDate = sourceActivation.LogSubmittedDate,
             SiteComments = sourceActivation.SiteComments,
             Status = sourceActivation.Status
@@ -152,6 +161,34 @@ public static partial class PotaHandlers
         }
 
         await tx.CommitAsync();
+
+        return clone.ActivationId;
+    }
+
+    /// <summary>
+    /// Starts a new activation with the same park and location as the existing activation.
+    /// </summary>
+    public static async Task<int> CloneActivation(CloneActivationRequest req, HrdDbContext dbContext)
+    {
+        var sourceActivation = await dbContext.PotaActivations.Include(p => p.Park).FirstOrDefaultAsync(x => x.ActivationId == req.ActivationId)
+            ?? throw new ArgumentException("Invalid activation ID");
+
+        var clone = new PotaActivation
+        {
+            ParkId = sourceActivation.ParkId,
+            Grid = sourceActivation.Grid,
+            County = sourceActivation.County,
+            State = sourceActivation.State,
+            Lat = sourceActivation.Lat,
+            Long = sourceActivation.Long,
+            StartDate = DateTime.UtcNow,
+            StationCallsign = sourceActivation.StationCallsign,
+            OperatorCallsign = sourceActivation.OperatorCallsign,
+            Status = 'P'
+        };
+
+        dbContext.PotaActivations.Add(clone);
+        await dbContext.SaveChangesAsync();
 
         return clone.ActivationId;
     }

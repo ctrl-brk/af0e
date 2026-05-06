@@ -22,8 +22,8 @@
     <tr class="bottom">
       <th pSortableColumn="startDate">Start <p-sortIcon field="startDate" /></th>
       <th>End</th>
-      <th>Number</th>
-      <th>Name</th>
+      <th pSortableColumn="parkNum">Number <p-sortIcon field="parkNum" /></th>
+      <th pSortableColumn="parkName">Name <p-sortIcon field="parkName" /></th>
       <th pSortableColumn="state">State  <p-sortIcon field="state" /></th>
       <th>CW</th>
       <th>Digi</th>
@@ -44,8 +44,6 @@
     </tr>
   </ng-template>
 </p-table>
-
-<p-scrollTop />
 
 @if (_authSvc.isAdmin) {
 <p-dialog header="New activation" [modal]="true" [(visible)]="addActivationVisible" [style]="{ width: '40rem' }" [focusOnShow]="true">
@@ -84,6 +82,16 @@
     <p-floatlabel class="field">
       <input id="state" pInputText [formField]="newActivationForm.state" />
       <label for="state">State</label>
+    </p-floatlabel>
+
+    <p-floatlabel class="field">
+      <input id="station" pInputText [formField]="newActivationForm.stationCallsign" />
+      <label for="station">Station</label>
+    </p-floatlabel>
+
+    <p-floatlabel class="field">
+      <input id="operator" pInputText [formField]="newActivationForm.operatorCallsign" />
+      <label for="operator">Operator</label>
     </p-floatlabel>
 
     <div class="form-actions">

@@ -4,6 +4,8 @@ export interface QsoSummaryModel {
   call: string;
   mode: string;
   band: string;
+  stationCallsign: string;
+  operatorCallsign: string;
   comment: string;
   grid: string;
   satName: string;

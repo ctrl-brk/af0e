@@ -8,7 +8,6 @@ import {LogService} from '../../../../shared/log.service';
 import {Card} from 'primeng/card';
 import {DatePipe} from '@angular/common';
 import {PotaParkModel} from '../../../../models/pota-park.model';
-import {ScrollTop} from 'primeng/scrolltop';
 import {GridPipe, ModeSeverityPipe, QsoModePipe} from '../../../../shared/pipes';
 import {Tag} from 'primeng/tag';
 import {GridMapDirective} from '../../../../shared/directives/grid-map.directive';
@@ -22,7 +21,6 @@ import {GridMapDirective} from '../../../../shared/directives/grid-map.directive
     TableModule,
     Card,
     DatePipe,
-    ScrollTop,
     ModeSeverityPipe,
     QsoModePipe,
     Tag,

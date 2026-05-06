@@ -5,7 +5,6 @@ import {FloatLabelModule} from 'primeng/floatlabel';
 import {InputText} from 'primeng/inputtext';
 import {ButtonModule} from 'primeng/button';
 import {DatePipe} from '@angular/common';
-import {ScrollTop} from 'primeng/scrolltop';
 import {TableModule} from 'primeng/table';
 import {PotaActivationModel} from '../../../models/pota-activation.model';
 import {PotaService} from '../../../services/pota.service';
@@ -30,7 +29,6 @@ import {defaultTitle} from '../../../shared/constants';
     DatePipe,
     FloatLabelModule,
     InputText,
-    ScrollTop,
     TableModule,
     Dialog,
     FormField,
@@ -69,6 +67,19 @@ export class PotaActivationsComponent implements OnInit {
 
   onActivationSelect(act: PotaActivationModel) {
     this._router.navigate(['/pota/activations', act.id]);
+  }
+
+  protected onAddActivation() {
+    this.addActivationVisible.set(true);
+  }
+
+  protected onSaveNewActivation() {
+    this._potaSvc.createActivation(this.newActivationModel()).subscribe({
+      next: (id: number) => {
+        this._router.navigate(['/pota/activations', id]);
+      },
+      error: (e) => Utils.showErrorMessage(e, this._ntfSvc, this._log)
+    });
   }
 
   protected onCalculateLocation(): void {
@@ -114,18 +125,5 @@ export class PotaActivationsComponent implements OnInit {
     const lon = this.newActivationForm.lon().value();
     if (!lat || !lon) return;
     window.open(`https://www.google.com/maps?q=${lat},${lon}`, '_blank');
-  }
-
-  protected onAddActivation() {
-    this.addActivationVisible.set(true);
-  }
-
-  protected onSaveNewActivation() {
-    this._potaSvc.createActivation(this.newActivationModel()).subscribe({
-      next: (id: number) => {
-        this._router.navigate(['/pota/activations', id]);
-      },
-      error: (e) => Utils.showErrorMessage(e, this._ntfSvc, this._log)
-    });
   }
 }

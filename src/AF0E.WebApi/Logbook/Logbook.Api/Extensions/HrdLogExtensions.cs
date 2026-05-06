@@ -38,6 +38,8 @@ public static class HrdLogExtensions
             log.ColMyCqZone = qso.MyCqZone;
             log.ColMyItuZone = qso.MyItuZone;
             log.ColMyGridsquare = N(qso.MyGrid);
+            log.ColStationCallsign = N(qso.StationCallsign);
+            log.ColOperator = N(qso.OperatorCallsign);
             log.ColQslSent = N(qso.QslSent, "N");
             log.ColQslsdate = qso.QslSentDate;
             log.ColQslSentVia = N(qso.QslSentVia);

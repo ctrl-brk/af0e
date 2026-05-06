@@ -17,7 +17,6 @@ import {DialogModule} from 'primeng/dialog';
 import {QsoComponent} from '../qso/qso.component';
 import {TooltipModule} from 'primeng/tooltip';
 import {Button} from 'primeng/button';
-import {ScrollTop} from 'primeng/scrolltop';
 import {ModeSeverityPipe, QsoModePipe} from '../../shared/pipes';
 import {DatePipe} from '@angular/common';
 import {AppAuthService} from '../../services/auth.service';
@@ -41,7 +40,6 @@ import {MenuItem} from 'primeng/api';
     FloatLabelModule,
     FormsModule,
     QsoComponent,
-    ScrollTop,
     TableModule,
     TagModule,
     TooltipModule,
@@ -181,12 +179,11 @@ export class LogbookComponent implements OnInit {
       return;
     }
 
-    if (qso.date > new Date(Date.UTC(2011, 0, 6)))
-      this.myCallsign.set('AFØE');
-    else if (qso.date > new Date(2010, 10, 21))
-      this.myCallsign.set('K3OSO');
-    else
-      this.myCallsign.set('KDØHHE');
+    let call = qso.operatorCallsign ?? Utils.getMyEffectiveCall(qso.date);
+    if (qso.stationCallsign && qso.stationCallsign !== call)
+      call = `${call} @ ${qso.stationCallsign}`;
+
+    this.myCallsign.set(call);
 
     this.qsoDetailsVisible.set(true);
   }

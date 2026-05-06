@@ -19,13 +19,15 @@ public static class NewActivationValidator
         if (req.PrevDayActivationId is <= 0)
             errors.Add("Incorrect PrevDayActivationId");
 
-        ActivationValidationRules.ValidateParkNumber(errors, req.ParkNumber);
+        ValidationRules.ValidateParkNumber(errors, req.ParkNumber);
 
-        ActivationValidationRules.ValidateGrid(errors, req.Grid);
-        ActivationValidationRules.ValidateCounty(errors, req.County);
-        ActivationValidationRules.ValidateState(errors, req.State);
-        ActivationValidationRules.ValidateLatitude(errors, req.Lat);
-        ActivationValidationRules.ValidateLongitude(errors, req.Lon);
+        ValidationRules.ValidateGrid(errors, req.Grid);
+        ValidationRules.ValidateCounty(errors, req.County);
+        ValidationRules.ValidateState(errors, req.State);
+        ValidationRules.ValidateLatitude(errors, req.Lat);
+        ValidationRules.ValidateLongitude(errors, req.Lon);
+        ValidationRules.ValidateCallSign(errors, req.StationCallsign);
+        ValidationRules.ValidateCallSign(errors, req.OperatorCallsign);
 
         return errors;
     }
