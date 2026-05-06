@@ -10,6 +10,8 @@ public sealed class PotaActivationSummary(PotaActivation activation)
     public string ParkNum { get; set; } = activation.Park.ParkNum;
     public string ParkName { get; set; } = activation.Park.ParkName;
     public string State { get; set; } = activation.State;
+    public string StationCallsign { get; set; } = activation.StationCallsign;
+    public string OperatorCallsign { get; set; } = activation.OperatorCallsign;
     public int Count { get; set; } = activation.PotaContacts.Count;
     public int CwCount { get; set; } = activation.PotaContacts.Count(c => c.Log.ColMode == "CW");
     public int DigiCount { get; set; } = activation.PotaContacts.Count(c => c.Log.ColMode is "FT8" or "MFSK");

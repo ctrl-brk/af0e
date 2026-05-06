@@ -3,6 +3,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using System.Text.Json;
 using AF0E.DB;
 using AF0E.DB.Models;
@@ -184,6 +185,9 @@ internal sealed class HostedService(ILogger<HostedService> logger, IHostApplicat
 
         if (notFoundCalls.Count > 0)
         {
+            var dupCheck = "";
+            var sql = new StringBuilder();
+            var html = new StringBuilder("<!DOCTYPE html><html><head><title>POTA Hunting Not Found</title></head><body><h1>POTA Hunting Not Found</h1><table><tr><th>Call</th><th>Mode</th><th>Reference</th><th>P2P</th></tr>");
             var uniqueCalls = notFoundCalls.DistinctBy(x => x.StationCallsign).ToList();
             var calls = string.Join(',', uniqueCalls.Select(x => x.StationCallsign));
 
@@ -196,12 +200,22 @@ internal sealed class HostedService(ILogger<HostedService> logger, IHostApplicat
             Console.ForegroundColor = ConsoleColor.DarkYellow;
             foreach (var q in notFoundCalls)
             {
+                if (dupCheck != q.QsoDateTime.ToString("yyyyMMddHHmm") + q.StationCallsign)
+                {
+                    BuildInsertStatement(sql, q);
+                    dupCheck = q.QsoDateTime.ToString("yyyyMMddHHmm") + q.StationCallsign;
+                }
                 msg = $"    {q.QsoDateTime:yy-MM-dd HH:mm}   {q.StationCallsign}\t{q.Band}\t{q.Mode}\t{q.Reference}{(q.P2pMatch == 1 ? "\tP2P" : "")}";
+                html.AppendLine($"<tr><td><a href='https://www.af0e.com/logbook/{q.StationCallsign}' target='_blank'>{q.StationCallsign}</a></td><td>{q.Mode}</td><td>{q.Reference}</td><td>{(q.P2pMatch == 1 ? " P2P" : "")}</td></tr>");
 #if (!DEBUG)
                 logger.LogWarning(msg);
 #endif
                 Console.WriteLine(msg);
             }
+
+            html.AppendLine("</table></body></html>");
+            await File.WriteAllTextAsync(Path.Combine(AppContext.BaseDirectory, $"NotFound.sql"), sql.ToString(), ct);
+            await File.WriteAllTextAsync(Path.Combine(AppContext.BaseDirectory, $"NotFound.html"), html.ToString(), ct);
 
             logger.LogCallsNotFound(calls);
         }
@@ -257,6 +271,34 @@ internal sealed class HostedService(ILogger<HostedService> logger, IHostApplicat
             logger.LogNoNewQsos();
 
         return false;
+    }
+
+    private static void BuildInsertStatement(StringBuilder sql, PotaLogEntry qso)
+    {
+        var rst = "-31";
+
+        rst = qso.LoggedMode switch {
+            "CW" => "599",
+            "SSB" or "FM" or "USB" or "LSB" => "59",
+            _ => rst
+        };
+
+        var log = new HrdLog //that will initialize default values
+        {
+            ColCall = qso.StationCallsign,
+            ColTimeOn = qso.QsoDateTime,
+            ColBand = qso.Band.ToLowerInvariant(),
+            ColMode = qso.LoggedMode,
+            ColFreq = Helpers.BandToFreqHz(qso.Band, qso.Mode),
+            ColComment = "Added from pota feed",
+            ColRstRcvd = rst,
+            ColRstSent = rst,
+        };
+
+        sql.Append("-- ");
+        sql.AppendLine(qso.ToString());
+        sql.AppendLine(log.CreateInsertStatementWithLiterals());
+        sql.AppendLine();
     }
 
     private async Task DisplayNotLinkedQsos(DateTime startDate, DateTime endDate, CancellationToken ct)

@@ -200,7 +200,7 @@ public sealed class AdifApiForwarder(
         var baseUri = new Uri(logbookApiUrl, UriKind.Absolute);
 
         if (!baseUri.AbsolutePath.EndsWith('/'))
-            baseUri = new Uri(baseUri.AbsoluteUri + "/");
+            baseUri = new Uri($"{baseUri.AbsoluteUri}/");
 
         return new Uri(baseUri, ForwardingEndpointPath);
     }

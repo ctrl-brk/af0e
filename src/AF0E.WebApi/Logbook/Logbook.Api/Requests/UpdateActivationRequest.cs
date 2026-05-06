@@ -11,6 +11,8 @@ public sealed record UpdateActivationRequest(
     decimal Long,
     DateTime StartDate,
     DateTime? EndDate,
+    string StationCallsign,
+    string OperatorCallsign,
     DateTime? LogSubmittedDate,
     string Status,
     string? SiteComments

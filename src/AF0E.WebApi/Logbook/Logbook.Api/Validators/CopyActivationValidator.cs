@@ -2,9 +2,9 @@
 
 namespace Logbook.Api.Validators;
 
-public static class CloneActivationValidator
+public static class CopyActivationValidator
 {
-    public static void ValidateAndThrow(CloneActivationRequest req)
+    public static void ValidateAndThrow(CopyActivationRequest req)
     {
         var errors = Validate(req);
 
@@ -12,11 +12,11 @@ public static class CloneActivationValidator
             throw new ArgumentException(string.Join("; ", errors), nameof(req));
     }
 
-    private static List<string> Validate(CloneActivationRequest req)
+    private static List<string> Validate(CopyActivationRequest req)
     {
         var errors = new List<string>();
 
-        ActivationValidationRules.ValidateParkNumber(errors, req.ParkNumber);
+        ValidationRules.ValidateParkNumber(errors, req.ParkNumber);
 
         return errors;
     }

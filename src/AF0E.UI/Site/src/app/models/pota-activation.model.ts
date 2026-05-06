@@ -14,6 +14,8 @@ export interface PotaActivationModel {
   grid: string;
   lat: number;
   long: number;
+  stationCallsign: string;
+  operatorCallsign: string;
   count: number;
   cwCount: number;
   digiCount: number;
@@ -35,6 +37,8 @@ export const activationSchema = schema<PotaActivationModel>((root) => {
   maxLength(root.state, 2, {message: 'State must be 2 characters long'});
   required(root.lat, {message: 'Latitude is required'});
   required(root.long, {message: 'Longitude is required'});
+  required(root.stationCallsign, {message: 'Station is required'});
+  required(root.operatorCallsign, {message: 'Operator is required'});
   activationStatusValidator(root.status, {message: 'Status must be C or P'});
 });
 

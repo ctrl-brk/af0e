@@ -20,6 +20,8 @@ export interface ActivationQsoModel {
   rstRcvd: string | null;
   rstSent: string | null;
   mode: string | null;
+  stationCallsign: string | null;
+  operatorCallsign: string | null;
   p2p: string[];
   satName: string | null;
   state: string | null;
@@ -46,6 +48,8 @@ export function QsoDetailsToActivationQsoModel(q: QsoDetailModel): ActivationQso
     rstRcvd: null,
     rstSent: null,
     state: null,
+    stationCallsign: null,
+    operatorCallsign: null,
     logId: q.id,
     date: q.date,
     call: q.call,
