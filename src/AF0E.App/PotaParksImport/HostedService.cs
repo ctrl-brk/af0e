@@ -200,8 +200,3 @@ VALUES
         return countryCode.Length > 2 ? countryCode[..2] : countryCode;
     }
 }
-
-
-
-
-
