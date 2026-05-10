@@ -77,6 +77,9 @@ public sealed class RigCommanderSettingsValidator : IValidateOptions<RigCommande
         if (options.AdifUdp is { AcceptWsjtxFormat: false, AcceptRawAdif: false })
             errors.Add("RigCommander:AdifUdp must accept at least one format (AcceptWsjtxFormat or AcceptRawAdif).");
 
+        if (string.IsNullOrWhiteSpace(options.OfflineLog.FilePath))
+            errors.Add("RigCommander:OfflineLog:FilePath is required.");
+
         if (options.AdifUdp.Forwarding.Enabled)
         {
             var forwarding = options.AdifUdp.Forwarding;

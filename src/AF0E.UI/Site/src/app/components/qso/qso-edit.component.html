@@ -386,8 +386,8 @@
             }
             <p-button label="F3&middot;Exch" severity="info" (onClick)="sendCw(f3CwMsg().def, true)" [disabled]="cwCallLabel() === '???'" [title]="f3Title()" />
             <p-button label="x2" severity="info" size="small" class="x2-btn" (onClick)="sendCw(f3CwMsg().ctl, true)" [disabled]="cwCallLabel() === '???'" title="{{f3CwMsg().ctl}}" />
-            <p-button label="F4&middot;AFØE" severity="contrast" (onClick)="sendCw('AF|0|E')" />
-            <p-button label="F5&middot;{{cwCallLabel()}}" severity="warn" (onClick)="sendCw(cwCallLabel())" [disabled]="cwCallLabel() === '???'" />
+            <p-button label="F4&middot;{{stationInfo.stationCall.replace('0', 'Ø')}}" severity="contrast" (onClick)="sendCw(stationInfo.cwCall)" />
+            <p-button label="F5&middot;{{cwCallLabel().replace('0', 'Ø')}}" severity="warn" (onClick)="sendCw(cwCallLabel())" [disabled]="cwCallLabel() === '???'" />
             <p-button label="F8&middot;?" severity="secondary" (onClick)="sendCw('?')" title="{{f8Title}}" />
             <p-inputNumber [(ngModel)]="cwSpeed" [showButtons]="true" inputId="minmax-buttons" [min]="10" [max]="32" size="small" class="cw-speed" />
   <!--          <p-button label="Stop" severity="danger" class="stop-btn" (onClick)="stopCw()" [disabled]="!cwSending()" />-->

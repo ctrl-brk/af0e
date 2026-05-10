@@ -43,6 +43,10 @@ export class InfraService {
     );
   }
 
+  public saveAdif(adif: string): Observable<any> {
+    return this._http.post(`${this._infraUrl}/log/adif`, {adif});
+  }
+
   public getConfig(): Observable<any> {
     return this._http.get(`${this._infraUrl}/config`);
   }

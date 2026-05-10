@@ -38,7 +38,7 @@ public static class Utils
             { "State Park",                 "SP"  },
             { "State Historic Site",        "SHS" },
             { "National Forest",            "NF"  },
-            { "National Wildlife Refugee",  "NWR" },
+            { "National Wildlife Refuge",   "NWR" },
             { "National Recreational Area", "NRA" },
             { "National Monument",          "NM"  },
             { "National Historic Site",     "NHS" },

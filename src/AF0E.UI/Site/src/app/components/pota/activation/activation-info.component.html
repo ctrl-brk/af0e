@@ -1,5 +1,6 @@
 @if (!activation()?.endDate) {
 <div class="spot-history">
+  <div class="spots"><a href="/pota/spots?activationId={{activation()?.id}}&stationCall={{encodeURIComponent(activation()?.stationCallsign ?? '')}}" target="_blank">POTA Spots</a></div>
   <div class="spot-header">
     <h4>Spot History</h4>
     <a href="https://pskreporter.info/pskmap?callsign=AF0E" target="_blank" rel="noopener">

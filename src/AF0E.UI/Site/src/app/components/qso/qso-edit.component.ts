@@ -18,11 +18,10 @@ import {toSignal} from '@angular/core/rxjs-interop';
 import {NotificationService} from '../../shared/notification.service';
 import {LogService} from '../../shared/log.service';
 import {LogbookService} from '../../services/logbook.service';
-import {IdbService} from '../../services/idb.service';
 import {InfraService} from '../../services/infra.service';
 import {PotaService} from '../../services/pota.service';
 import {QrzService} from '../../services/qrz.service';
-import {QsoDetailModel} from '../../models/qso-detail.model';
+import {QsoDetailModel, qsoDetailToAdif} from '../../models/qso-detail.model';
 import {Utils} from '../../shared/utils';
 import {NotificationMessageModel, NotificationMessageSeverity} from '../../shared/notification-message.model';
 import {FloatLabelModule} from 'primeng/floatlabel';
@@ -78,7 +77,6 @@ import {QsoEditMode} from '../../shared/qso-edit-mode.enum';
 export class QsoEditComponent implements OnInit {
   private _fb = inject(FormBuilder);
   private _lbSvc = inject(LogbookService);
-  private _idbSvc = inject(IdbService);
   private _ntfSvc= inject(NotificationService);
   private _log = inject(LogService);
   private _potaSvc = inject(PotaService);
@@ -96,6 +94,9 @@ export class QsoEditComponent implements OnInit {
   rigControl = model(false);
   filtersEnabled = input(false);
   potaActivation = input<PotaActivationModel|null>(null);
+  //we might be hunting, but at the same time activating. Need the component to work in hunting mode, but add activationId when saving.
+  huntingFromActivationId = input(0);
+  huntingStationCall = input('');
 
   editModeChange = output<boolean>();
   saved = output<any>();
@@ -112,7 +113,7 @@ export class QsoEditComponent implements OnInit {
   protected cwSpeed = signal(22);
   protected callHistory = signal<GridTrackerLookupModel[]>([]);
   protected cwTextVisible = signal(false);
-  protected readonly QsoEditMode = QsoEditMode;
+  protected readonly QsoEditMode = QsoEditMode; //so we can use the enum value in html
 
   // Dropdown options
   protected modeOptions = MODE_OPTIONS;
@@ -120,10 +121,12 @@ export class QsoEditComponent implements OnInit {
   protected qslOptions = QSL_OPTIONS;
   protected qslViaOptions = QSL_VIA_OPTIONS;
 
+  protected stationInfo = {stationCall: "AF0E", cwCall: "AF|0|E", operatorCall: "AF0E"};
+
   protected f3CwMsg = signal<{def: string, alt: string, ctl: string, f6: string}>({def: '', alt: '', ctl: '', f6: ''});
-  protected f1Title = 'cq POTA de AFØE AFØE k';
+  protected f1Title = 'cq POTA de AF|Ø|E AFØE k';
   protected f2Title = 'r 73 ee\nr 73 de AFØE [alt]';
-  protected f3Title = computed(() => {return `${this.f3CwMsg().def.replaceAll('|', '')} k\n${this.f3CwMsg().alt.replaceAll('|', '')} k [alt]\n${this.f3CwMsg().ctl.replaceAll('|', '')} k [ctl]\n${this.f3CwMsg().f6.replaceAll('|', '')} k [F6]`});
+  protected f3Title = computed(() => {return `${this.f3CwMsg().def.replaceAll('|', '')} k\n${this.f3CwMsg().alt.replaceAll('|', '')} k [alt]\n${this.f3CwMsg().ctl.replaceAll('|', '')} k [ctl]\n${this.f3CwMsg().f6.replaceAll('|', '')} k [F6]`.replaceAll('0', 'Ø');});
   protected f8Title = '?\nAGN? [alt]';
 
   constructor() {
@@ -208,6 +211,17 @@ export class QsoEditComponent implements OnInit {
           Utils.showErrorMessage(e, this._ntfSvc, this._log);
         }
       });
+    });
+
+    effect(() => {
+      this.stationInfo = {stationCall: this.potaActivation()?.stationCallsign ?? this.huntingStationCall() ?? 'AF0E', cwCall: 'AF|0|E', operatorCall: this.potaActivation()?.operatorCallsign ?? 'AF0E'};
+      if (this.stationInfo.stationCall !== 'AF0E')
+        this.stationInfo.cwCall = this.stationInfo.stationCall.replace('/', '//');
+
+      const call = this.stationInfo.stationCall;
+      this.qsoForm.get('stationCallsign')?.setValue(call, {emitEvent: false});
+      this.f1Title = `cq POTA de ${call} ${call} k`.replaceAll('0', 'Ø');
+      this.f2Title = `r 73 ee\nr 73 de ${call} [alt]`.replaceAll('0', 'Ø');
     });
   }
 
@@ -533,7 +547,7 @@ export class QsoEditComponent implements OnInit {
   protected sendPotaCq(startCq: boolean) {
     if (!startCq && !this.cqSending()) return;
 
-    this.sendCw('CQ POTA DE AF0E AF0E K', false, false, 50, 5);
+    this.sendCw(`CQ POTA DE ${this.stationInfo.cwCall} ${this.stationInfo.cwCall} K`, false, false, 50, 5);
     this.cqSending.set(true);
   }
 
@@ -636,7 +650,7 @@ export class QsoEditComponent implements OnInit {
 
     if (this.isEditMode) {
       if (activationId > 0) {
-        this._idbSvc.saveQso(activationId, formValue).subscribe({
+        this._infraSvc.saveAdif(qsoDetailToAdif(formValue)).subscribe({
           error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
         });
       }
@@ -654,15 +668,20 @@ export class QsoEditComponent implements OnInit {
     let qsoCreated = false;
 
     if (activationId > 0) {
-      this._idbSvc.saveQso(activationId, formValue).subscribe({
+      this._infraSvc.saveAdif(qsoDetailToAdif(formValue)).subscribe({
         error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
       });
 
       qsoCreated = this.isNewActivationDay(formValue);
     }
 
-    if (!qsoCreated)
-      this.createQso(formValue, activationId, true);
+    if (qsoCreated)
+      return;
+
+    if (!activationId)
+      activationId = this.huntingFromActivationId();
+
+    this.createQso(formValue, activationId, true);
   }
 
   private isNewActivationDay(formValue: any): boolean {
@@ -679,8 +698,8 @@ export class QsoEditComponent implements OnInit {
       state: this.potaActivation()!.state,
       lat: this.potaActivation()!.lat ? this.potaActivation()!.lat!.toString() : '',
       lon: this.potaActivation()!.long ? this.potaActivation()!.long!.toString() : '',
-      stationCallsign: this.potaActivation()!.stationCallsign,
-      operatorCallsign: this.potaActivation()!.operatorCallsign,
+      stationCallsign: this.stationInfo.stationCall,
+      operatorCallsign: this.stationInfo.operatorCall,
       startDate: formValue.date
     };
 
@@ -757,8 +776,8 @@ export class QsoEditComponent implements OnInit {
       myCqZone: '4',
       myItuZone: '7',
       myGrid:  this.potaActivation() ? this.potaActivation()!.grid : 'DM79lw',
-      stationCallsign: this.potaActivation() ? this.potaActivation()!.stationCallsign : 'AF0E',
-      operatorCallsign: this.potaActivation() ? this.potaActivation()!.operatorCallsign : 'AF0E',
+      stationCallsign: this.stationInfo.stationCall,
+      operatorCallsign: this.stationInfo.operatorCall,
       qslSent: 'N',
       qslSentDate: null,
       qslSentVia: null,
@@ -839,7 +858,7 @@ export class QsoEditComponent implements OnInit {
         handled = true;
         $event.preventDefault();
         if ($event.altKey)
-          this.sendCw('R 73 de AF0E');
+          this.sendCw(`R 73 de ${this.stationInfo.cwCall}`);
         else
           this.sendCw('R 73 E|E');
         break;
@@ -859,9 +878,9 @@ export class QsoEditComponent implements OnInit {
         handled = true;
         $event.preventDefault();
         if ($event.altKey)
-          this.sendCw('DE AF0|E');
+          this.sendCw(`DE ${this.stationInfo.cwCall}`);
         else
-          this.sendCw('AF0|E');
+          this.sendCw(this.stationInfo.cwCall);
         break;
       case 'F5':
         handled = true;

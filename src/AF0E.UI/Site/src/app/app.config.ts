@@ -52,8 +52,13 @@ export const appConfig: ApplicationConfig = {
             httpMethod: 'POST',
           },
           {
-            // Update activation - require authentication
+            // Update activation, unlink qso - require authentication
             uri: '/api/v1/pota/activations',
+            httpMethod: 'PUT',
+          },
+          {
+            // Update activation, unlink qso - require authentication
+            uri: '/api/v1/pota/activations/*',
             httpMethod: 'PUT',
           },
           {

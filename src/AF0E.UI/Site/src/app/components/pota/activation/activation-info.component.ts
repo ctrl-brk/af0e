@@ -31,9 +31,11 @@ export class PotaActivationInfoComponent {
   public activation = input.required<PotaActivationModel>();
 
   public refresh() {
-    this._potaAppSvc.getSpotHistory(this.activation().parkNum).subscribe({
+    this._potaAppSvc.getSpotHistory(this.activation().stationCallsign, this.activation().parkNum).subscribe({
       next: r => this.spotHistory.set(r),
       error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
     })
   }
+
+  protected readonly encodeURIComponent = encodeURIComponent;
 }

@@ -3,7 +3,7 @@
   <div class="card-layout">
     <div class="card-main">
       <h3>
-        <a href="https://pota.app/#/park/{{activation()!.parkNum}}">{{activation()!.parkNum}} - {{activation()!.parkName}}</a>
+        <a href="https://pota.app/#/park/{{activation()!.parkNum}}">{{activation()?.stationCallsign !== 'AF0E' ? activation()?.stationCallsign + ' / ' : '' }}{{activation()?.parkNum}} - {{activation()?.parkName}}</a>
         @if (_authSvc.isAdmin) {
           <p-confirmpopup />
           &nbsp;&nbsp;<p-button severity="info" icon="pi pi-pencil" size="small" title="Edit" outlined="true" (onClick)="editActivationVisible.set(true)" />
@@ -65,7 +65,7 @@
     <p-tabpanel value="log">
       <div class="log-container">
         <div>
-          <app-activation-log [logEntries]="logEntries()" (qsoSelected)="onQsoSelected($event)" (qsoDeleted)="onQsoDeleted()"></app-activation-log>
+          <app-activation-log [activation]="activation()"  [logEntries]="logEntries()" (qsoSelected)="onQsoSelected($event)" (qsoDeleted)="onQsoDeleted()"></app-activation-log>
         </div>
         <div>
           <app-activation-info [activation]="activation()"></app-activation-info>
@@ -94,7 +94,7 @@
     }
   </p-dialog>
 
-  <p-dialog header="Add spot" [modal]="true" [(visible)]="spotDlgVisible" [style]="{width:'16rem'}" [focusOnShow]="true">
+  <p-dialog header="Spot {{activation()?.stationCallsign}}" [modal]="true" [(visible)]="spotDlgVisible" [style]="{width:'16rem'}" [focusOnShow]="true">
     @if (spotDlgVisible()) {
       <div style="margin-top: 1rem;">
         <p-floatlabel variant="on">

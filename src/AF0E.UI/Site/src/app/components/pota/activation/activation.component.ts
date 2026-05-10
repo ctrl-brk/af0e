@@ -23,12 +23,12 @@ import {Tag} from 'primeng/tag';
 import {Card} from 'primeng/card';
 import {Tab, TabList, TabPanel, TabPanels, Tabs} from 'primeng/tabs';
 import {PotaActivationLogComponent} from './activation-log.component';
-import {ActivationQsoModel, QsoDetailsToActivationQsoModel} from '../../../models/activation-qso.model';
+import {ActivationQsoModel, activationLogToAdif, QsoDetailsToActivationQsoModel} from '../../../models/activation-qso.model';
 import {PotaActivationMapComponent} from './activation-map.component';
 import {Button} from 'primeng/button';
 import {AppAuthService} from '../../../services/auth.service';
 import {Dialog} from 'primeng/dialog';
-import {QsoEditComponent} from '../../logbook/qso-edit.component';
+import {QsoEditComponent} from '../../qso/qso-edit.component';
 import {Checkbox} from 'primeng/checkbox';
 import {FloatLabelModule} from 'primeng/floatlabel';
 import {InputText} from 'primeng/inputtext';
@@ -290,7 +290,7 @@ export class PotaActivationComponent implements OnInit {
   }
 
   protected onSpot() {
-    this._potaAppSvc.addSpot('AF0E', this.activation().parkNum, this.spotFreq(), Utils.frequencyToMode(this.spotFreq()), this.spotComment()).subscribe({
+    this._potaAppSvc.addSpot(this.activation().stationCallsign, this.activation().parkNum, this.spotFreq(), Utils.frequencyToMode(this.spotFreq()), this.spotComment()).subscribe({
       next: () => this.spotDlgVisible.set(false),
       error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
     });
@@ -399,84 +399,12 @@ export class PotaActivationComponent implements OnInit {
     const entries = this.logEntries();
     if (!entries.length || !activation) return;
 
-    const field = (name: string, value: string | number | null | undefined): string => {
-      if (!value) return '';
-      if (typeof value === 'number') value = value.toString();
-      return `<${name}:${value.length}>${value}`;
-    };
-
-    const mapMode = (mode: string | null): string | null => {
-      if (!mode) return mode;
-      const m = mode.toUpperCase();
-      if (m === 'USB' || m === 'LSB') return 'SSB';
-      if (m === 'MFSK') return 'FT4';
-      return m;
-    };
-
-    const sd = activation.startDate;
-    const dateStr = `${sd.getFullYear()}-${String(sd.getMonth() + 1).padStart(2, '0')}-${String(sd.getDate()).padStart(2, '0')}`;
-
-    const header =
-      `ADIF for AF0E: POTA at ${activation.parkNum} ${activation.parkName} on ${dateStr}\n` +
-      `<ADIF_VER:5>3.1.5\n` +
-      `<PROGRAMID:8>AF0E.org\n` +
-      `<EOH>\n`;
-
-    const records = entries.map(qso => {
-      const d = new Date(qso.date);
-      const qsoDate =
-        `${d.getFullYear()}` +
-        `${String(d.getMonth() + 1).padStart(2, '0')}` +
-        `${String(d.getDate()).padStart(2, '0')}`;
-      const timeOn =
-        `${String(d.getHours()).padStart(2, '0')}` +
-        `${String(d.getMinutes()).padStart(2, '0')}` +
-        `${String(d.getSeconds()).padStart(2, '0')}`;
-
-      let rec = '';
-      rec += field('BAND', qso.band);
-      rec += field('CALL', qso.call);
-      rec += field('CQZ', qso.cqz);
-      rec += field('DXCC', qso.dxcc);
-      rec += field('FREQ', qso.freq ? (qso.freq / 1_000_000).toFixed(6) : null);
-      rec += field('GRIDSQUARE', qso.grid);
-      rec += field('ITUZ', qso.ituz);
-      rec += field('MODE', mapMode(qso.mode));
-      rec += field('MY_CITY', qso.myCity);
-      if (activation.county) rec += field('MY_CNTY', qso.myCnty);
-      rec += field('MY_COUNTRY', qso.myCountry);
-      if (activation.grid) rec += field('MY_GRIDSQUARE', qso.myGrid);
-      rec += field('MY_POTA_REF', activation.parkNum);
-      rec += field('MY_SIG', 'POTA');
-      rec += field('MY_SIG_INFO', activation.parkNum);
-      if (activation.state) rec += field('MY_STATE', qso.myState);
-      rec += field('OPERATOR', qso.operatorCallsign ?? Utils.getMyEffectiveCall(qso.date));
-      rec += field('QSLMSG', `POTA ${activation.parkNum}`);
-      rec += field('QSO_DATE', qsoDate);
-      rec += field('RST_RCVD', qso.rstRcvd);
-      rec += field('RST_SENT', qso.rstSent);
-      rec += field('STATE', qso.state);
-      rec += field('STATION_CALLSIGN', qso.stationCallsign ?? Utils.getMyEffectiveCall(qso.date));
-      rec += field('TIME_ON', timeOn);
-      /* if (qso.p2p?.length) {
-        const p2pStr = qso.p2p.join(',');
-        rec += field('SIG', 'POTA');
-        rec += field('SIG_INFO', p2pStr);
-        rec += field('POTA_REF', p2pStr);
-      }
-      if (qso.satName) {
-        rec += field('SAT_NAME', qso.satName);
-        rec += field('PROP_MODE', 'SAT');
-      } */
-      rec += '<EOR>\n';
-      return rec;
-    }).join('');
-
-    const blob = new Blob([header + records], {type: 'application/octet-stream'});
+    const { content, filename } = activationLogToAdif(entries, activation);
+    const blob = new Blob([content], {type: 'application/octet-stream'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${dateStr} ${activation.parkNum} (${Utils.abbreviateParkName(activation.parkName)}).adi`;
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
   }

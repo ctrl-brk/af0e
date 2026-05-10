@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using AF0E.DB;
+using AF0E.Services.DxCluster;
 using AF0E.Services.Pota;
 using AF0E.Services.Qrz;
 using Logbook.Api.Converters;
@@ -79,7 +80,10 @@ try
     builder.Services.AddSignalR();
     builder.Services.Configure<QrzSettings>(builder.Configuration.GetSection("QrzSettings"));
     builder.Services.Configure<ApiKeyAuthSettings>(builder.Configuration.GetSection("ApiKeyAuth"));
+    builder.Services.AddDxCluster(builder.Configuration.GetSection("DxCluster"));
     builder.Services.AddSingleton<IQrzService, QrzService>();
+    builder.Services.AddSingleton<IDxClusterEventsPublisher, SignalRDxClusterEventsPublisher>();
+    builder.Services.AddSingleton<DxClusterHubSessionManager>();
     builder.Services.AddScoped<ILogEventsPublisher, SignalRLogEventsPublisher>();
 
 //builder.Services.AddDbContext<HrdDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("HrdLog")));

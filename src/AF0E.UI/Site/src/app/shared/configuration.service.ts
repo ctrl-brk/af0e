@@ -10,6 +10,8 @@ export class Configuration {
   private static _notificationUrl = `${Configuration._apiUrl}/notification`;
   private static _hubRootUrl = Configuration._apiUrl.replace(/\/v\d+$/i, '');
   private static _logbookHubUrl = `${Configuration._hubRootUrl}/hubs/logbook`;
+  private static _dxClusterHubUrl = `${Configuration._hubRootUrl}/hubs/logbook`;
+  private static _dxClusterUrl = `${Configuration._apiUrl}/dxcluster`;
   public static infraUrl = environment.infraUrl;
   public static potaAppUrl = environment.potaAppUrl;
 
@@ -27,6 +29,10 @@ export class Configuration {
 
   public static gridtrackerUrl(url?: string): string {
     return url === undefined ? this._gridtrackerUrl : `${this._gridtrackerUrl}/${url}`;
+  }
+
+  public static dxClusterUrl(url?: string): string {
+    return url === undefined ? this._dxClusterUrl : `${this._dxClusterUrl}/${url}`;
   }
 
   public static potaUrl(url?: string): string {
@@ -47,5 +53,9 @@ export class Configuration {
 
   public static logbookHubUrl(): string {
     return this._logbookHubUrl;
+  }
+
+  public static dxClusterHubUrl(): string {
+    return this._dxClusterHubUrl;
   }
 }
