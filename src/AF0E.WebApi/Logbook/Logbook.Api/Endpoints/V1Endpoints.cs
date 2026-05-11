@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using AF0E.Common.Qrz;
 using AF0E.DB;
+using AF0E.Services.DxCluster;
 using AF0E.Services.Pota;
 using AF0E.Services.Qrz;
 using Logbook.Api.Handlers;
@@ -24,6 +25,7 @@ public static class V1Endpoints
         RegisterLogbookEndpoints(builder);
         RegisterPotaEndpoints(builder);
         RegisterGridTrackerEndpoints(builder);
+        RegisterDxClusterEndpoints(builder);
         RegisterQrzEndpoints(builder);
         RegisterToolsEndpoints(builder);
     }
@@ -211,6 +213,21 @@ public static class V1Endpoints
             .RequireAuthorization(Policies.AdminOnly)
             .WithName("CloneActivation");
 
+        builder.MapPut("activations/{activationId:int}/unlinkqso/{logId:int}", async Task<Results<BadRequest<string>, NoContent>> (int activationId, int logId, HrdDbContext dbContext) =>
+            {
+                try
+                {
+                    await PotaHandlers.UnlinkActivationQso(activationId, logId, dbContext);
+                    return TypedResults.NoContent();
+                }
+                catch (ArgumentException e)
+                {
+                    return TypedResults.BadRequest(e.Message);
+                }
+            })
+            .RequireAuthorization(Policies.AdminOnly)
+            .WithName("UnlinkActivationQso");
+
         builder.MapDelete("activations/{activationId:int}", async Task<Results<BadRequest<string>, NoContent>> (int activationId, HrdDbContext dbContext) =>
             {
                 try
@@ -288,6 +305,19 @@ public static class V1Endpoints
         builder.MapGet("pota/{parkNum}", async (string parkNum, HrdDbContext dbContext) =>
                 TypedResults.Ok(await GridTrackerHandlers.GetGridTrackerParkStats(parkNum, dbContext)))
             .WithName("GridtrackerParkStats");
+    }
+
+    private static void RegisterDxClusterEndpoints(IEndpointRouteBuilder v1Builder)
+    {
+        var builder = v1Builder.MapGroup("dxcluster").WithTags("DX Cluster");
+
+        builder.MapGet("spots", async (DateTimeOffset? since, [FromQuery(Name = "filter")] string? filterName, IDxClusterService dxClusterService, CancellationToken ct) =>
+                TypedResults.Ok(await DxClusterHandlers.GetSpots(since, filterName, dxClusterService, ct)))
+            .WithName("DxClusterSpots");
+
+        builder.MapGet("status", async (IDxClusterService dxClusterService, CancellationToken ct) =>
+                TypedResults.Ok(await DxClusterHandlers.GetStatus(dxClusterService, ct)))
+            .WithName("DxClusterStatus");
     }
 
     private static void RegisterQrzEndpoints(IEndpointRouteBuilder v1Builder)

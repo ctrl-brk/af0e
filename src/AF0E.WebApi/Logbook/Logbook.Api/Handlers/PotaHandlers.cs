@@ -193,6 +193,26 @@ public static partial class PotaHandlers
         return clone.ActivationId;
     }
 
+    public static async Task UnlinkActivationQso(int activationId, int logId, HrdDbContext dbContext)
+    {
+        if (activationId <= 0)
+            throw new ArgumentException("Invalid activation ID");
+
+        if (logId <= 0)
+            throw new ArgumentException("Invalid log ID");
+
+        var log = await dbContext.Log.AsTracking().FirstOrDefaultAsync(x => x.ColPrimaryKey == logId)
+                  ?? throw new ArgumentException("Invalid log ID");
+
+        var contact = await dbContext.PotaContacts.FirstOrDefaultAsync(x => x.ActivationId == activationId && x.LogId == logId)
+                      ?? throw new ArgumentException("No contact found for the given activation and log IDs");
+
+        log.ColComment = RemoveActivationComment(log.ColComment);
+
+        dbContext.PotaContacts.Remove(contact);
+        await dbContext.SaveChangesAsync();
+    }
+
     public static async Task DeleteActivation(int activationId, HrdDbContext dbContext)
     {
         if (activationId <= 0)
@@ -455,10 +475,31 @@ public static partial class PotaHandlers
         parkNum.Length > 0 && parkNum[0] >= '0' && parkNum[0] <= '9'
             ? $"US-{parkNum}"
             : parkNum;
+
+    private static string? RemoveActivationComment(string? comment)
+    {
+        if (string.IsNullOrWhiteSpace(comment))
+            return comment;
+
+        var cleaned = ActivationCommentRegex().Replace(comment, " ");
+        cleaned = CleanupWhitespaceRegex().Replace(cleaned, " ").Trim();
+        cleaned = TrimPunctuationRegex().Replace(cleaned, string.Empty).Trim();
+
+        return string.IsNullOrWhiteSpace(cleaned) ? null : cleaned;
+    }
 }
 
 static partial class PotaHandlers
 {
     [GeneratedRegex(@"\b[A-Z]{2}-\d{4,5}\b")]
     private static partial Regex PotaReferenceRegex();
+
+    [GeneratedRegex(@"(?:^|\s*[.;,-]?\s*)POTA activation [A-Z]{2}-\d{4,5} \([^)]*\)(?:\s*[.;,-]?\s*)?", RegexOptions.IgnoreCase)]
+    private static partial Regex ActivationCommentRegex();
+
+    [GeneratedRegex(@"\s{2,}")]
+    private static partial Regex CleanupWhitespaceRegex();
+
+    [GeneratedRegex(@"^[\s\.,;:-]+|[\s\.,;:-]+$")]
+    private static partial Regex TrimPunctuationRegex();
 }

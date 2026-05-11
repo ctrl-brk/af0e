@@ -47,6 +47,7 @@ public sealed class WinkeyerSerial : IDisposable
     private bool? _busy;
     private bool? _wait;
     private bool? _xoff;
+    private int _statusVersion;
 
     // Cached speed state
     private int? _speedPotRaw;
@@ -181,7 +182,7 @@ public sealed class WinkeyerSerial : IDisposable
             if (IsCycleCancelled(cycleToken, CancellationToken.None))
                 break;
 
-            var sendRetried = SendScriptBytesWithRetry(bytes);
+            var waitStatusVersion = SendScriptBytesWithRetry(bytes, out var sendRetried);
             retried |= sendRetried;
             sent++;
 
@@ -193,8 +194,11 @@ public sealed class WinkeyerSerial : IDisposable
             if (i >= repeat - 1)
                 continue;
 
-            if (!WaitUntilKeyerIsFree(cycleToken, CancellationToken.None))
+            if (!WaitUntilKeyerIsFree(cycleToken, waitStatusVersion, CancellationToken.None))
                 break;
+
+            _logger.LogDebug("[Winkeyer] Iteration {Iteration}/{Repeat} completed. Starting repeat delay of {DelaySeconds}s.",
+                sent, repeat, repeatDelaySeconds);
 
             if (!WaitForRepeatDelay(cycleToken, repeatDelaySeconds, CancellationToken.None))
                 break;
@@ -235,12 +239,12 @@ public sealed class WinkeyerSerial : IDisposable
         return $"{script}  ({string.Join(", ", details)})";
     }
 
-    private bool SendScriptBytesWithRetry(byte[] bytes)
+    private int SendScriptBytesWithRetry(byte[] bytes, out bool retried)
     {
         try
         {
-            SendScriptBytes(bytes);
-            return false;
+            retried = false;
+            return SendScriptBytes(bytes);
         }
         catch (Exception ex)
         {
@@ -251,17 +255,21 @@ public sealed class WinkeyerSerial : IDisposable
                 ForceDisconnect_NoLock();
             }
 
-            SendScriptBytes(bytes);
-            return true;
+            retried = true;
+            return SendScriptBytes(bytes);
         }
     }
 
-    private void SendScriptBytes(byte[] bytes)
+    private int SendScriptBytes(byte[] bytes)
     {
         lock (_lock)
         {
             Touch_NoLock();
             EnsureConnected_NoLock();
+
+            // Drop any pending status from the previous send cycle so the repeat loop
+            // waits for a fresh busy/free update generated after this write.
+            _port.DiscardInBuffer();
 
             if (!_hostOpen)
                 throw new InvalidOperationException("Winkeyer host is not open.");
@@ -274,16 +282,24 @@ public sealed class WinkeyerSerial : IDisposable
             _busy = true;
 
             Touch_NoLock();
+            _logger.LogDebug("[Winkeyer] Script bytes queued. Waiting for fresh status after version {StatusVersion}.", _statusVersion);
+            return _statusVersion;
         }
     }
 
-    private bool WaitUntilKeyerIsFree(int cycleToken, CancellationToken ct)
+    private bool WaitUntilKeyerIsFree(int cycleToken, int minimumStatusVersion, CancellationToken ct)
     {
+        var mustSeeBusyUntilUtc = DateTime.UtcNow.AddMilliseconds(250);
+        var waitStartedUtc = DateTime.UtcNow;
+        var sawActiveStateSinceSend = false;
+        var loggedGuardWindow = false;
+
         while (true)
         {
             if (IsCycleCancelled(cycleToken, ct))
                 return false;
 
+            bool hasFreshStatus;
             bool isKnown;
             bool isFree;
 
@@ -292,12 +308,54 @@ public sealed class WinkeyerSerial : IDisposable
                 Touch_NoLock();
                 EnsureConnected_NoLock();
                 WriteBytes_NoLock(0x15); // Get Status
+                hasFreshStatus = _statusVersion > minimumStatusVersion;
                 isKnown = _busy.HasValue || _wait.HasValue || _xoff.HasValue;
                 isFree = !(_busy ?? false) && !(_wait ?? false) && !(_xoff ?? false);
+
+                if (hasFreshStatus && isKnown && !isFree)
+                {
+                    if (!sawActiveStateSinceSend)
+                    {
+                        _logger.LogDebug(
+                            "[Winkeyer] First active status after send observed at {ElapsedMs} ms (busy={Busy}, wait={Wait}, xoff={Xoff}, version={StatusVersion}).",
+                            (DateTime.UtcNow - waitStartedUtc).TotalMilliseconds,
+                            _busy,
+                            _wait,
+                            _xoff,
+                            _statusVersion);
+                    }
+
+                    sawActiveStateSinceSend = true;
+                }
             }
 
-            if (isKnown && isFree)
-                return true;
+            if (hasFreshStatus && isKnown && isFree)
+            {
+                if (sawActiveStateSinceSend)
+                {
+                    _logger.LogDebug(
+                        "[Winkeyer] Fresh free status accepted after active state at {ElapsedMs} ms (version={StatusVersion}).",
+                        (DateTime.UtcNow - waitStartedUtc).TotalMilliseconds,
+                        _statusVersion);
+                    return true;
+                }
+
+                if (DateTime.UtcNow >= mustSeeBusyUntilUtc)
+                {
+                    _logger.LogDebug(
+                        "[Winkeyer] Fresh free status accepted after guard window at {ElapsedMs} ms without observing active state first (version={StatusVersion}).",
+                        (DateTime.UtcNow - waitStartedUtc).TotalMilliseconds,
+                        _statusVersion);
+                    return true;
+                }
+
+                if (!loggedGuardWindow)
+                {
+                    _logger.LogDebug(
+                        "[Winkeyer] Fresh free status arrived before active state; holding until guard window expires");
+                    loggedGuardWindow = true;
+                }
+            }
 
             Thread.Sleep(100);
         }
@@ -308,6 +366,7 @@ public sealed class WinkeyerSerial : IDisposable
         if (repeatDelaySeconds <= 0)
             return !IsCycleCancelled(cycleToken, ct);
 
+        var delayStartedUtc = DateTime.UtcNow;
         var remaining = TimeSpan.FromSeconds(repeatDelaySeconds);
 
         while (remaining > TimeSpan.Zero)
@@ -323,6 +382,7 @@ public sealed class WinkeyerSerial : IDisposable
             remaining -= slice;
         }
 
+        _logger.LogDebug("[Winkeyer] Repeat delay completed in {ElapsedMs} ms.", (DateTime.UtcNow - delayStartedUtc).TotalMilliseconds);
         return !IsCycleCancelled(cycleToken, ct);
     }
 
@@ -506,6 +566,7 @@ public sealed class WinkeyerSerial : IDisposable
         {
             // Unsolicited status byte: 11xxxxxx
             case 0b1100_0000:
+                _statusVersion++;
                 _wait = (b & (1 << 4)) != 0;
                 _busy = (b & (1 << 2)) != 0;
                 _xoff = (b & (1 << 0)) != 0;

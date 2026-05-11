@@ -10,6 +10,7 @@ import {
   signal,
   ViewEncapsulation
 } from '@angular/core';
+import {ActivatedRoute} from '@angular/router';
 import {Title} from '@angular/platform-browser';
 import {Utils} from '../../../shared/utils';
 import {PotaService} from '../../../services/pota.service';
@@ -25,7 +26,7 @@ import {Checkbox} from 'primeng/checkbox';
 import {FormsModule} from '@angular/forms';
 import {DatePipe, NgClass} from '@angular/common';
 import {Dialog} from 'primeng/dialog';
-import {QsoEditComponent} from '../../logbook/qso-edit.component';
+import {QsoEditComponent} from '../../qso/qso-edit.component';
 import {ParkHuntingStatsComponent} from '../park/stats/park-hunting-stats.component';
 import {Badge} from 'primeng/badge';
 import {PotaAppService} from '../../../services/pota-app.service';
@@ -56,11 +57,13 @@ import {defaultTitle} from '../../../shared/constants';
 export class PotaSpotsComponent implements OnInit, OnDestroy {
   private _titleSvc = inject(Title);
   private _destroyRef = inject(DestroyRef);
+  private _activatedRoute = inject(ActivatedRoute);
   private _potaSvc = inject(PotaService);
   private _ntfSvc= inject(NotificationService);
   private _infraSvc= inject(InfraService);
   private _potaAppSvc= inject(PotaAppService);
   private _log = inject(LogService);
+
   private _allSpots = signal<PotaActivityStatsModel[]>([]);
   // Hash table of clicked callsigns for a quick lookup in the grid.
   private _clickedCallSigns = signal<Record<string, true>>({});
@@ -102,6 +105,9 @@ export class PotaSpotsComponent implements OnInit, OnDestroy {
     });
   });
 
+  protected readonly QsoEditMode = QsoEditMode; //so we can use the enum value in html
+  protected huntingActivationId = signal(0);
+  protected huntingStationCall = signal('');
   protected qsoDlgHeader = signal('');
   protected rigCommanderConfig = signal<any>({});
   protected autoRefresh = signal(false);
@@ -138,6 +144,12 @@ export class PotaSpotsComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this._titleSvc.setTitle('AFØE - POTA | Spots');
+
+    const activationId = this._activatedRoute.snapshot.queryParamMap.get('activationId');
+    if (activationId) this.huntingActivationId.set(parseInt(activationId));
+
+    const stationCall = this._activatedRoute.snapshot.queryParamMap.get('stationCall');
+    if (stationCall) this.huntingStationCall.set(stationCall);
 
     this._infraSvc.getConfig().subscribe({
       next: (r: any) => {
@@ -271,6 +283,4 @@ export class PotaSpotsComponent implements OnInit, OnDestroy {
       clearInterval(this.refreshInterval);
     }
   }
-
-  protected readonly QsoEditMode = QsoEditMode;
 }

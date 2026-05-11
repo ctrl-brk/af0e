@@ -18,6 +18,7 @@ public sealed class RigCommanderSettings
     public List<RadioProfileSettings> Profiles { get; init; } = [];
     public WinkeyerSettings? Winkeyer { get; init; }
     public AdifUdpSettings AdifUdp { get; init; } = new();
+    public OfflineLogSettings OfflineLog { get; init; } = new();
     public Ui Ui { get; init; } = new();
 
     public RadioProfileSettings? FindProfileByName(string? name)
@@ -55,6 +56,11 @@ public sealed class AdifForwardingSettings
     // ReSharper disable once CollectionNeverUpdated.Global
     public List<string> SkipWhenProcessRunning { get; init; } = [];
 #pragma warning restore CA1002
+}
+
+public sealed class OfflineLogSettings
+{
+    public string FilePath { get; init; } = "logs/offline-log.adi";
 }
 
 public sealed class RadioProfileSettings

@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using AF0E.DB;
+using AF0E.Services.DxCluster;
 using AF0E.Services.Pota;
 using AF0E.Services.Qrz;
 using Logbook.Api.Converters;
@@ -28,6 +29,10 @@ Log.Logger = bootstrapLoggerConfiguration.CreateBootstrapLogger();
 try
 {
     WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+
+    builder.Configuration
+        .AddJsonFile("dxcluster.filters.json", optional: true, reloadOnChange: true)
+        .AddJsonFile($"dxcluster.filters.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true);
 
     builder.Host.UseSerilog((context, services, loggerConfiguration) => loggerConfiguration
         .ReadFrom.Configuration(context.Configuration)
@@ -79,7 +84,10 @@ try
     builder.Services.AddSignalR();
     builder.Services.Configure<QrzSettings>(builder.Configuration.GetSection("QrzSettings"));
     builder.Services.Configure<ApiKeyAuthSettings>(builder.Configuration.GetSection("ApiKeyAuth"));
+    builder.Services.AddDxCluster(builder.Configuration.GetSection("DxCluster"));
     builder.Services.AddSingleton<IQrzService, QrzService>();
+    builder.Services.AddSingleton<IDxClusterEventsPublisher, SignalRDxClusterEventsPublisher>();
+    builder.Services.AddSingleton<DxClusterHubSessionManager>();
     builder.Services.AddScoped<ILogEventsPublisher, SignalRLogEventsPublisher>();
 
 //builder.Services.AddDbContext<HrdDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("HrdLog")));

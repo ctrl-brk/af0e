@@ -121,6 +121,7 @@ try
     logger.LogInformation("Using profile '{Profile}' ({Kind})", activeProfile.Name, activeProfile.Kind);
 
     app.RegisterRadioEndpoints(radio, settings, logger);
+    app.RegisterLogEndpoints(settings, logger);
 
     AdifApiForwarder? adifApiForwarder = null;
 

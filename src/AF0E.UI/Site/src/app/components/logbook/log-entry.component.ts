@@ -1,6 +1,6 @@
 import {Component, DestroyRef, inject, OnInit, ViewEncapsulation} from '@angular/core';
 import {ActivatedRoute} from '@angular/router';
-import {QsoEditComponent} from './qso-edit.component';
+import {QsoEditComponent} from '../qso/qso-edit.component';
 import {Card} from 'primeng/card';
 
 @Component({

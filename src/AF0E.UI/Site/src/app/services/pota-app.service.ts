@@ -13,8 +13,8 @@ export class PotaAppService {
     return this._http.post(`${this._url}/spot`, {activator: call, spotter: 'AF0E', source: 'af0e.org', reference, frequency, mode, comments});
   }
 
-  public getSpotHistory(reference: string): Observable<PotaAppSpotHistoryModel[]> {
-    return this._http.get(`${this._url}/v1/spots/AF0E/${reference}`).pipe(
+  public getSpotHistory(call: string, reference: string): Observable<PotaAppSpotHistoryModel[]> {
+    return this._http.get(`${this._url}/v1/spots/${call}/${reference}`).pipe(
       map((x: PotaAppSpotHistoryModel[]) => {
         return x.map((m) => {
           m.spotTime = new Date(m.spotTime);
