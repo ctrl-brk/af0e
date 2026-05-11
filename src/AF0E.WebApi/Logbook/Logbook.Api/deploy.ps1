@@ -7,6 +7,7 @@ $dstLocalPath = $config.dstLocalPath
 
 Remove-Item ($srcPath + "/appsettings.json")
 Remove-Item ($srcPath + "/appsettings.Development.json")
+Remove-Item ($srcPath + "/dxcluster.filters.json")
 Remove-Item ($srcPath + "/web.config")
 
 $session = New-PSSession -ComputerName $serverName
