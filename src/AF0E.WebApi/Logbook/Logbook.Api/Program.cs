@@ -30,6 +30,10 @@ try
 {
     WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
+    builder.Configuration
+        .AddJsonFile("dxcluster.filters.json", optional: true, reloadOnChange: true)
+        .AddJsonFile($"dxcluster.filters.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true);
+
     builder.Host.UseSerilog((context, services, loggerConfiguration) => loggerConfiguration
         .ReadFrom.Configuration(context.Configuration)
         .ReadFrom.Services(services)

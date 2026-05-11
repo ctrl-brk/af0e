@@ -26,9 +26,17 @@ export class DxClusterService {
     return this._http.get(Configuration.dxClusterUrl('status')).pipe(map((status: DxClusterStatusModel) => this.normalizeStatus(status)));
   }
 
-  public getSpots(since?: Date): Observable<DxClusterSpotModel[]> {
-    const url = since
-      ? `${Configuration.dxClusterUrl('spots')}?since=${encodeURIComponent(since.toISOString())}`
+  public getSpots(since?: Date, filterName?: string | null): Observable<DxClusterSpotModel[]> {
+    const query: string[] = [];
+
+    if (since)
+      query.push(`since=${encodeURIComponent(since.toISOString())}`);
+
+    if (filterName)
+      query.push(`filter=${encodeURIComponent(filterName)}`);
+
+    const url = query.length > 0
+      ? `${Configuration.dxClusterUrl('spots')}?${query.join('&')}`
       : `${Configuration.dxClusterUrl('spots')}`;
 
     return this._http.get(url).pipe(map((spots: DxClusterSpotModel[]) => spots.map(spot => this.normalizeSpot(spot))));
@@ -121,7 +129,17 @@ export class DxClusterService {
       lastAccessUtc: this.parseDate(status.lastAccessUtc),
       lastStartUtc: this.parseDate(status.lastStartUtc),
       lastStopUtc: this.parseDate(status.lastStopUtc),
-      servers: status.servers.map(server => ({
+      filters: (status.filters ?? []).map(filter => ({
+        ...filter,
+        callsignPatterns: filter.callsignPatterns ?? '',
+        modes: [...(filter.modes ?? [])],
+        invalidCallsignPatterns: [...(filter.invalidCallsignPatterns ?? [])],
+        frequencyWindows: (filter.frequencyWindows ?? []).map(window => ({
+          minFrequencyKhz: window.minFrequencyKhz ?? null,
+          maxFrequencyKhz: window.maxFrequencyKhz ?? null,
+        })),
+      })),
+      servers: (status.servers ?? []).map(server => ({
         ...server,
         lastConnectUtc: this.parseDate(server.lastConnectUtc),
         lastDisconnectUtc: this.parseDate(server.lastDisconnectUtc),
@@ -135,6 +153,7 @@ export class DxClusterService {
   private normalizeSpot(spot: DxClusterSpotModel): DxClusterSpotModel {
     return {
       ...spot,
+      mode: spot.mode ?? null,
       spotTimeUtc: new Date(spot.spotTimeUtc),
       receivedAtUtc: new Date(spot.receivedAtUtc)
     };

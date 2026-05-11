@@ -7,4 +7,3 @@ public sealed class SignalRLogEventsPublisher(IHubContext<LogbookHub> hubContext
     public Task PublishAsync(LogChangedEvent evt, CancellationToken ct = default)
         => hubContext.Clients.All.SendAsync("log.changed", evt, ct);
 }
-

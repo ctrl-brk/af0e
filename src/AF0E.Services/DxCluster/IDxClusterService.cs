@@ -4,6 +4,6 @@ namespace AF0E.Services.DxCluster;
 
 public interface IDxClusterService
 {
-    Task<IReadOnlyList<DxClusterSpot>> GetSpotsAsync(DateTimeOffset? sinceUtc, CancellationToken cancellationToken);
+    Task<IReadOnlyList<DxClusterSpot>> GetSpotsAsync(DateTimeOffset? sinceUtc, string? filterName, CancellationToken cancellationToken);
     Task<DxClusterStatus> GetStatusAsync(CancellationToken cancellationToken);
 }

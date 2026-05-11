@@ -1,4 +1,5 @@
-﻿namespace AF0E.Services.DxCluster.Models;
+﻿// ReSharper disable UnusedAutoPropertyAccessor.Global
+namespace AF0E.Services.DxCluster.Models;
 
 public sealed record DxClusterStatus
 {
@@ -10,6 +11,7 @@ public sealed record DxClusterStatus
     public int CachedSpotCount { get; init; }
     public TimeSpan InactivityTimeout { get; init; }
     public TimeSpan ReconnectDelay { get; init; }
+    public IReadOnlyList<DxClusterSpotFilter> Filters { get; init; } = [];
     public IReadOnlyList<DxClusterServerStatus> Servers { get; init; } = [];
 }
 

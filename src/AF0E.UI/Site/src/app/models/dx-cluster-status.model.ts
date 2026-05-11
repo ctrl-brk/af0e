@@ -1,4 +1,6 @@
-﻿export interface DxClusterServerStatusModel {
+﻿import {DxClusterFilterModel} from './dx-cluster-filter.model';
+
+export interface DxClusterServerStatusModel {
   name: string;
   host: string;
   port: number;
@@ -22,5 +24,6 @@ export interface DxClusterStatusModel {
   cachedSpotCount: number;
   inactivityTimeout: string;
   reconnectDelay: string;
+  filters: DxClusterFilterModel[];
   servers: DxClusterServerStatusModel[];
 }

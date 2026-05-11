@@ -214,14 +214,15 @@ export class QsoEditComponent implements OnInit {
     });
 
     effect(() => {
-      this.stationInfo = {stationCall: this.potaActivation()?.stationCallsign ?? this.huntingStationCall() ?? 'AF0E', cwCall: 'AF|0|E', operatorCall: this.potaActivation()?.operatorCallsign ?? 'AF0E'};
-      if (this.stationInfo.stationCall !== 'AF0E')
-        this.stationInfo.cwCall = this.stationInfo.stationCall.replace('/', '//');
+      const stationCall = this.potaActivation()?.stationCallsign?.trim() || this.huntingStationCall()?.trim() || 'AF0E';
+      const operatorCall = this.potaActivation()?.operatorCallsign?.trim() || stationCall;
 
-      const call = this.stationInfo.stationCall;
-      this.qsoForm.get('stationCallsign')?.setValue(call, {emitEvent: false});
-      this.f1Title = `cq POTA de ${call} ${call} k`.replaceAll('0', 'Ø');
-      this.f2Title = `r 73 ee\nr 73 de ${call} [alt]`.replaceAll('0', 'Ø');
+      this.stationInfo = {stationCall, cwCall: stationCall === 'AF0E' ? 'AF|0|E' : stationCall.replace('/', '//'), operatorCall};
+
+      this.qsoForm.patchValue({stationCallsign: stationCall, operatorCallsign: operatorCall}, {emitEvent: false});
+
+      this.f1Title = `cq POTA de ${stationCall} ${stationCall} k`.replaceAll('0', 'Ø');
+      this.f2Title = `r 73 ee\nr 73 de ${stationCall} [alt]`.replaceAll('0', 'Ø');
     });
   }
 
@@ -776,8 +777,8 @@ export class QsoEditComponent implements OnInit {
       myCqZone: '4',
       myItuZone: '7',
       myGrid:  this.potaActivation() ? this.potaActivation()!.grid : 'DM79lw',
-      stationCallsign: this.stationInfo.stationCall,
-      operatorCallsign: this.stationInfo.operatorCall,
+      stationCallsign: this.stationInfo.stationCall || 'AF0E',
+      operatorCallsign: this.stationInfo.operatorCall || this.stationInfo.stationCall || 'AF0E',
       qslSent: 'N',
       qslSentDate: null,
       qslSentVia: null,

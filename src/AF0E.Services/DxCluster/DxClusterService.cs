@@ -15,6 +15,7 @@ public sealed partial class DxClusterService : IDxClusterService, IAsyncDisposab
     private readonly CancellationTokenSource _lifetimeCts = new();
     private readonly Lock _sync = new();
     private readonly Queue<DxClusterSpot> _spots = [];
+    private readonly IDisposable? _optionsReloadSubscription;
     private readonly Dictionary<string, ServerRuntime> _servers;
     private readonly TimeSpan _inactivityTimeout;
     private readonly TimeSpan _reconnectDelay;
@@ -25,18 +26,19 @@ public sealed partial class DxClusterService : IDxClusterService, IAsyncDisposab
     private readonly Task _monitorTask;
 
     private SessionState? _session;
+    private FilterSnapshot _filterSnapshot;
     private DateTimeOffset? _lastAccessUtc;
     private DateTimeOffset? _lastStartUtc;
     private DateTimeOffset? _lastStopUtc;
 
-    public DxClusterService(IOptions<DxClusterOptions> options, IDxClusterEventsPublisher eventsPublisher, ILogger<DxClusterService> logger)
+    public DxClusterService(IOptionsMonitor<DxClusterOptions> optionsMonitor, IDxClusterEventsPublisher eventsPublisher, ILogger<DxClusterService> logger)
     {
-        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(optionsMonitor);
 
         _eventsPublisher = eventsPublisher;
         _logger = logger;
 
-        var configuredOptions = options.Value;
+        var configuredOptions = optionsMonitor.CurrentValue;
         _inactivityTimeout = configuredOptions.InactivityTimeout > TimeSpan.Zero ? configuredOptions.InactivityTimeout : TimeSpan.FromMinutes(10);
         _reconnectDelay = configuredOptions.ReconnectDelay > TimeSpan.Zero ? configuredOptions.ReconnectDelay : TimeSpan.FromSeconds(15);
         _monitorInterval = configuredOptions.MonitorInterval > TimeSpan.Zero ? configuredOptions.MonitorInterval : TimeSpan.FromSeconds(15);
@@ -48,10 +50,13 @@ public sealed partial class DxClusterService : IDxClusterService, IAsyncDisposab
             .Select(CreateRuntime)
             .ToDictionary(static runtime => runtime.Key, StringComparer.OrdinalIgnoreCase);
 
+        _filterSnapshot = CreateFilterSnapshot(configuredOptions.Filters);
+        _optionsReloadSubscription = optionsMonitor.OnChange(HandleOptionsChanged);
+
         _monitorTask = MonitorInactivityAsync(_lifetimeCts.Token);
     }
 
-    public async Task<IReadOnlyList<DxClusterSpot>> GetSpotsAsync(DateTimeOffset? sinceUtc, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<DxClusterSpot>> GetSpotsAsync(DateTimeOffset? sinceUtc, string? filterName, CancellationToken cancellationToken)
     {
         await EnsureRunningAsync(cancellationToken);
 
@@ -59,9 +64,11 @@ public sealed partial class DxClusterService : IDxClusterService, IAsyncDisposab
         {
             var now = DateTimeOffset.UtcNow;
             PruneSpots(now);
+            var filter = ResolveFilterRuntimeUnsafe(filterName);
 
             return _spots
                 .Where(spot => sinceUtc is null || spot.SpotTimeUtc >= sinceUtc.Value)
+                .Where(spot => filter is null || filter.IsMatch(spot))
                 .OrderByDescending(static spot => spot.SpotTimeUtc)
                 .ThenByDescending(static spot => spot.ReceivedAtUtc)
                 .ToArray();
@@ -93,6 +100,7 @@ public sealed partial class DxClusterService : IDxClusterService, IAsyncDisposab
         {
         }
 
+        _optionsReloadSubscription?.Dispose();
         _lifecycleGate.Dispose();
         _lifetimeCts.Dispose();
     }
@@ -112,6 +120,62 @@ public sealed partial class DxClusterService : IDxClusterService, IAsyncDisposab
             PostLoginCommand = options.PostLoginCommand,
             Enabled = options.Enabled
         });
+    }
+
+    private static FilterSnapshot CreateFilterSnapshot(IEnumerable<DxClusterFilterOptions> options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        var runtimes = new List<DxClusterSpotFilterRuntime>();
+        var usedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var (filterOptions, index) in options.Select(static (filterOptions, index) => (filterOptions, index)))
+        {
+            ArgumentNullException.ThrowIfNull(filterOptions);
+
+            var baseName = string.IsNullOrWhiteSpace(filterOptions.Name) ? $"filter-{index + 1}" : filterOptions.Name.Trim();
+            var name = baseName;
+            var suffix = 2;
+
+            while (!usedNames.Add(name))
+            {
+                name = $"{baseName}-{suffix}";
+                suffix++;
+            }
+
+            runtimes.Add(DxClusterSpotFilterRuntime.Create(filterOptions, name));
+        }
+
+        return new FilterSnapshot(
+            [.. runtimes],
+            runtimes.ToDictionary(static runtime => runtime.Definition.Name, StringComparer.OrdinalIgnoreCase));
+    }
+
+    private void HandleOptionsChanged(DxClusterOptions options)
+    {
+        if (_lifetimeCts.IsCancellationRequested)
+            return;
+
+        ArgumentNullException.ThrowIfNull(options);
+
+        lock (_sync)
+        {
+            _filterSnapshot = CreateFilterSnapshot(options.Filters);
+        }
+
+        LogFiltersReloaded(_filterSnapshot.Runtimes.Count);
+        _ = PublishStatusAfterOptionsReloadAsync();
+    }
+
+    private async Task PublishStatusAfterOptionsReloadAsync()
+    {
+        try
+        {
+            await PublishStatusSafeAsync(_lifetimeCts.Token);
+        }
+        catch (OperationCanceledException) when (_lifetimeCts.IsCancellationRequested)
+        {
+        }
     }
 
     private async Task EnsureRunningAsync(CancellationToken cancellationToken)
@@ -394,6 +458,11 @@ public sealed partial class DxClusterService : IDxClusterService, IAsyncDisposab
             _spots.Dequeue();
     }
 
+    private DxClusterSpotFilterRuntime? ResolveFilterRuntimeUnsafe(string? filterName)
+        => string.IsNullOrWhiteSpace(filterName)
+            ? null
+            : _filterSnapshot.ByName.GetValueOrDefault(filterName.Trim());
+
     private DxClusterStatus CreateStatusSnapshotUnsafe()
         => new()
         {
@@ -405,6 +474,7 @@ public sealed partial class DxClusterService : IDxClusterService, IAsyncDisposab
             CachedSpotCount = _spots.Count,
             InactivityTimeout = _inactivityTimeout,
             ReconnectDelay = _reconnectDelay,
+            Filters = _filterSnapshot.Runtimes.Select(static runtime => runtime.Definition).ToArray(),
             Servers = _servers.Values
                 .OrderBy(static runtime => runtime.Options.Name, StringComparer.OrdinalIgnoreCase)
                 .ThenBy(static runtime => runtime.Options.Host, StringComparer.OrdinalIgnoreCase)
@@ -491,6 +561,9 @@ public sealed partial class DxClusterService : IDxClusterService, IAsyncDisposab
     [LoggerMessage(Level = LogLevel.Debug, Message = "Sent DX cluster post-login command to {ServerName}: {Command}")]
     private partial void LogPostLoginCommandSent(string serverName, string command);
 
+    [LoggerMessage(Level = LogLevel.Information, Message = "Reloaded DX cluster filters from configuration: {FilterCount} configured filter(s)")]
+    private partial void LogFiltersReloaded(int filterCount);
+
     [LoggerMessage(Level = LogLevel.Warning, Message = "Publishing DX cluster spot realtime event failed")]
     private partial void LogSpotPublishFailed(Exception exception);
 
@@ -501,6 +574,12 @@ public sealed partial class DxClusterService : IDxClusterService, IAsyncDisposab
     {
         public CancellationTokenSource CancellationSource { get; } = cancellationSource;
         public IReadOnlyList<Task> Tasks { get; } = tasks;
+    }
+
+    private sealed class FilterSnapshot(IReadOnlyList<DxClusterSpotFilterRuntime> runtimes, IReadOnlyDictionary<string, DxClusterSpotFilterRuntime> byName)
+    {
+        public IReadOnlyList<DxClusterSpotFilterRuntime> Runtimes { get; } = runtimes;
+        public IReadOnlyDictionary<string, DxClusterSpotFilterRuntime> ByName { get; } = byName;
     }
 
     private sealed class ServerRuntime(string key, DxClusterServerOptions options)

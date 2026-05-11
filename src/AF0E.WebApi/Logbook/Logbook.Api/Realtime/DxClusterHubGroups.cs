@@ -4,4 +4,3 @@ public static class DxClusterHubGroups
 {
     public const string GroupName = "dxcluster";
 }
-

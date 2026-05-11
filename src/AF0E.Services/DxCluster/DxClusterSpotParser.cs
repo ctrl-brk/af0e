@@ -37,6 +37,7 @@ internal static partial class DxClusterSpotParser
             SpotterCallsign = spotter,
             DxCallsign = dxCall,
             FrequencyKhz = frequencyKhz,
+            Mode = DxClusterSpotModeDetector.Detect(frequencyKhz, comment, sanitizedRawLine),
             Comment = comment,
             RawLine = sanitizedRawLine,
             SpotTimeUtc = spotTimeUtc,

@@ -12,4 +12,3 @@ public sealed class SignalRDxClusterEventsPublisher(IHubContext<LogbookHub> hubC
     public ValueTask PublishStatusAsync(DxClusterStatus status, CancellationToken cancellationToken = default)
         => new(hubContext.Clients.Group(DxClusterHubGroups.GroupName).SendAsync("dxcluster.status", status, cancellationToken));
 }
-

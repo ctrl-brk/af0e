@@ -3,6 +3,7 @@
   spotterCallsign: string;
   dxCallsign: string;
   frequencyKhz: number;
+  mode: string | null;
   comment: string;
   rawLine: string;
   spotTimeUtc: Date;

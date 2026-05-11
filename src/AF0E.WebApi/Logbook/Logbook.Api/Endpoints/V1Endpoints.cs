@@ -311,8 +311,8 @@ public static class V1Endpoints
     {
         var builder = v1Builder.MapGroup("dxcluster").WithTags("DX Cluster");
 
-        builder.MapGet("spots", async (DateTimeOffset? since, IDxClusterService dxClusterService, CancellationToken ct) =>
-                TypedResults.Ok(await DxClusterHandlers.GetSpots(since, dxClusterService, ct)))
+        builder.MapGet("spots", async (DateTimeOffset? since, [FromQuery(Name = "filter")] string? filterName, IDxClusterService dxClusterService, CancellationToken ct) =>
+                TypedResults.Ok(await DxClusterHandlers.GetSpots(since, filterName, dxClusterService, ct)))
             .WithName("DxClusterSpots");
 
         builder.MapGet("status", async (IDxClusterService dxClusterService, CancellationToken ct) =>
