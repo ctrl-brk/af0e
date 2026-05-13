@@ -7,6 +7,7 @@ using Logbook.Api.Converters;
 using Logbook.Api.Endpoints;
 using Logbook.Api.Realtime;
 using Logbook.Api.Security;
+using Logbook.Api.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -85,6 +86,7 @@ try
     builder.Services.Configure<QrzSettings>(builder.Configuration.GetSection("QrzSettings"));
     builder.Services.Configure<ApiKeyAuthSettings>(builder.Configuration.GetSection("ApiKeyAuth"));
     builder.Services.AddDxCluster(builder.Configuration.GetSection("DxCluster"));
+    builder.Services.AddSingleton<IDxccMatcher, DbDxccMatcher>();
     builder.Services.AddSingleton<IQrzService, QrzService>();
     builder.Services.AddSingleton<IDxClusterEventsPublisher, SignalRDxClusterEventsPublisher>();
     builder.Services.AddSingleton<DxClusterHubSessionManager>();

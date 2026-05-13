@@ -48,6 +48,15 @@ import {PotaActivationModel} from '../../models/pota-activation.model';
 import {NewActivationFormData} from '../pota/activations/new-activation-form-data';
 import {QsoEditMode} from '../../shared/qso-edit-mode.enum';
 
+export interface QsoEditParams {
+  logId?: number;
+  activationId?: number;
+  callSign?: string;
+  tune?: boolean;
+  freqHz?: number;
+  mode?: string;
+}
+
 @Component({
   selector: 'app-qso-edit',
   templateUrl: './qso-edit.component.html',
@@ -87,7 +96,8 @@ export class QsoEditComponent implements OnInit {
   private _rstRcvdInput = viewChild<ElementRef>('rstRcvdInput');
   private _lastCallsign = '';
 
-  logId = input.required<number>();
+  params = input.required<QsoEditParams>();
+  //logId = input.required<number>();
   callSign = input<string>();
   keyerControl = input<boolean>(false);
   editMode = input<QsoEditMode>(QsoEditMode.View);

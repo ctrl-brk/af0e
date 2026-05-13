@@ -1,11 +1,11 @@
-@if (_authSvc.isAdmin) {
+@if (_authSvc.isAdmin && showDxCluster()) {
   <!--suppress JSUnusedGlobalSymbols -->
   <p-splitter [style]="{ height: 'calc(100vh - 6.4rem)' }" [panelSizes]="[70, 30]" layout="vertical">
     <ng-template #panel>
       <app-log-content />
     </ng-template>
     <ng-template #panel>
-      <app-dxcluster />
+      <app-dxcluster (tune)="onTune($event)" />
     </ng-template>
   </p-splitter>
 } @else {

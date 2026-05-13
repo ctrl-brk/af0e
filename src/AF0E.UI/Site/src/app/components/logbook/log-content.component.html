@@ -88,6 +88,6 @@
 
 <p-dialog [header]="(qsoEditMode == QsoEditMode.Add ? 'Add' : 'Edit') + ' QSO'" [modal]="true" [(visible)]="qsoEditVisible" [style]="{ width: '60rem' }" [focusOnShow]="false">
   @if (qsoEditVisible()) {
-    <app-qso-edit [logId]="selectedId()" [editMode]="qsoEditMode" (saved)="onQsoSaved($event)" />
+    <app-qso-edit [params]="qsoEditParams()" [logId]="selectedId()" [editMode]="qsoEditMode" (saved)="onQsoSaved($event)" />
   }
 </p-dialog>

@@ -55,6 +55,7 @@
     <tr>
       <th>UTC</th>
       <th>DX</th>
+      <th>Entity</th>
       <th>Freq</th>
       <th>Mode</th>
       <th>By</th>
@@ -64,25 +65,28 @@
   </ng-template>
 
   <ng-template pTemplate="body" let-spot>
-    <tr [ngClass]="{'dxcluster-row-offline': !isConnected()}">
+    <tr [ngClass]="getSpotRowClasses(spot)">
       <td class="dxcluster-time">{{ spot.spotTimeUtc | date:'HH:mm':'UTC' }}</td>
       <td class="dxcluster-call"><a href="https://www.qrz.com/db/{{spot.dxCallsign}}" target="_blank">{{spot.dxCallsign}}</a></td>
-      <td class="dxcluster-freq">{{ spot.frequencyKhz | number:'1.1-3' }}</td>
-      <td class="dxcluster-mode">{{ spot.mode || '?' }}</td>
-      <td class="dxcluster-spotter">{{ spot.spotterCallsign }}</td>
+      <td class="dxcluster-entity">@if (getDxccFlagUrl(spot); as flagUrl) {<img class="dxcluster-flag" [ngSrc]="flagUrl" width="16" height="12" />}{{ spot.dxccEntityName || '' }}</td>
+      <td class="dxcluster-freq"><a href="javascript:void(0)" (click)="onFreqClicked(spot)">{{ spot.frequencyKhz | number:'1.1-3' }}</a></td>
+      <td class="dxcluster-mode"><p-tag [value]="spot.mode|qsoMode" [severity]="spot.mode|modeSeverity" /></td>
+      <td class="dxcluster-spotter"><a href="https://www.qrz.com/db/{{spot.spotterCallsign}}" target="_blank">{{spot.spotterCallsign}}</a></td>
 <!--      <td class="dxcluster-source">{{ spot.sourceName }}</td>-->
-      <td class="dxcluster-comment" [title]="spot.rawLine">{{ spot.comment || spot.rawLine }}</td>
+      <td class="dxcluster-comment" [title]="spot.rawLine">{{ getDisplayComment(spot) ?? '' }}</td>
     </tr>
   </ng-template>
 
   <ng-template pTemplate="emptymessage">
     <tr>
-      <td colspan="6" class="dxcluster-empty">
-        @if (loading()) {
-          Waiting for DX cluster spots...
-        } @else {
-          No DX cluster spots available.
-        }
+      <td colspan="7" class="dxcluster-empty">
+        <div class="dxcluster-empty-content">
+          @if (loading()) {
+            Waiting for DX cluster spots...
+          } @else {
+            No DX cluster spots available.
+          }
+        </div>
       </td>
     </tr>
   </ng-template>

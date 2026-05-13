@@ -153,6 +153,10 @@ export class DxClusterService {
   private normalizeSpot(spot: DxClusterSpotModel): DxClusterSpotModel {
     return {
       ...spot,
+      dxccEntityCode: spot.dxccEntityCode ?? null,
+      dxccEntityName: spot.dxccEntityName ?? null,
+      dxccCountryCode: spot.dxccCountryCode ?? null,
+      dxccWorkedStatus: spot.dxccWorkedStatus ?? null,
       mode: spot.mode ?? null,
       spotTimeUtc: new Date(spot.spotTimeUtc),
       receivedAtUtc: new Date(spot.receivedAtUtc)

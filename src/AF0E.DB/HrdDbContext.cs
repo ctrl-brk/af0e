@@ -1,16 +1,18 @@
 ﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using AF0E.DB.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace AF0E.DB;
 
+[SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
 public class HrdDbContext(string connectionString, QueryTrackingBehavior trackingBehavior = QueryTrackingBehavior.NoTracking) : DbContext
 {
+    public virtual DbSet<Dxcc> Dxcc { get; set; }
     public virtual DbSet<HrdLog> Log { get; set; }
     public virtual DbSet<PotaPark> PotaParks { get; set; }
     public virtual DbSet<PotaActivation> PotaActivations { get; set; }
     public virtual DbSet<PotaContact> PotaContacts { get; set; }
-
     public virtual DbSet<PotaHunting> PotaHunting { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -29,10 +31,28 @@ public class HrdDbContext(string connectionString, QueryTrackingBehavior trackin
     {
         //modelBuilder.UseCollation("SQL_Latin1_General_CP1251_CI_AS");
         OnLogModelCreating(modelBuilder);
+        OnDxccModelCreating(modelBuilder);
         OnParksModelCreating(modelBuilder);
         OnActivationsModelCreating(modelBuilder);
         OnContactsModelCreating(modelBuilder);
         OnHuntingModelCreating(modelBuilder);
+    }
+
+    private static void OnDxccModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Dxcc>(entity =>
+        {
+            entity.HasKey(e => e.EntityCode);
+            entity.HasIndex(e => e.EntityCode, "IX_DXCC_EntityCode").IsUnique();
+            entity.HasIndex(e => e.EntityName, "IX_DXCC_EntityName");
+
+            entity.Property(e => e.Prefix).HasMaxLength(50).IsUnicode(false);
+            entity.Property(e => e.EntityName).HasMaxLength(100).IsUnicode(false);
+            entity.Property(e => e.PrefixRegExp).HasMaxLength(100).IsUnicode(false);
+            entity.Property(e => e.Deleted).HasMaxLength(1).IsFixedLength().IsUnicode(false);
+            entity.Property(e => e.CountryCode).HasMaxLength(10).IsUnicode(false);
+            entity.Property(e => e.DisplayName).HasMaxLength(100).IsUnicode(false);
+        });
     }
 
     private static void OnContactsModelCreating(ModelBuilder modelBuilder)

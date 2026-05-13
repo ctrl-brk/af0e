@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using AF0E.Common.Radio;
 using AF0E.Common.Utils;
 using AF0E.DB;
 using AF0E.DB.Models;
@@ -111,7 +112,7 @@ public static class LogbookHandlers
         //not necessary now, but if other users added...
         //var isAdmin = await AuthHelper.HasPolicyAsync(Policies.AdminOnly, authSvc, httpContext);
 
-        qso.Band = NormalizeBand(qso.Band)!;
+        qso.Band = RadioHelper.NormalizeBand(qso.Band)!;
         var log = qso.ToHrdLog(includeAdminFields: true /*isAdmin*/);
         log.ColQsoComplete = "Y";
 
@@ -155,7 +156,7 @@ public static class LogbookHandlers
 
         var isAdmin = await AuthHelper.HasPolicyAsync(Policies.AdminOnly, authSvc, httpContext);
 
-        qso.Band = NormalizeBand(qso.Band)!;
+        qso.Band = RadioHelper.NormalizeBand(qso.Band)!;
         log.UpdateFromQsoDetails(qso, includeAdminFields: isAdmin);
 
         await dbContext.SaveChangesAsync();
@@ -362,7 +363,7 @@ public static class LogbookHandlers
         log = null!;
 
         var call = record["CALL"]?.Trim().ToUpperInvariant();
-        var band = NormalizeBand(record["BAND"]);
+        var band = RadioHelper.NormalizeBand(record["BAND"]);
         var mode = NormalizeUpper(record["MODE"]);
 
         if (string.IsNullOrWhiteSpace(call) || string.IsNullOrWhiteSpace(band) || string.IsNullOrWhiteSpace(mode))
@@ -381,7 +382,7 @@ public static class LogbookHandlers
             ColTimeOn = timeOn,
             ColTimeOff = timeOff ?? timeOn,
             ColBand = band,
-            ColBandRx = NormalizeBand(record["BAND_RX"]),
+            ColBandRx = RadioHelper.NormalizeBand(record["BAND_RX"]),
             ColFreq = ParseDouble(record["FREQ"], 0),
             ColFreqRx = ParseDouble(record["FREQ_RX"]),
             ColMode = mode,
@@ -551,31 +552,6 @@ public static class LogbookHandlers
 
     private static string? NormalizeUpper(string? value, string? defaultValue = null)
         => NormalizeText(value, defaultValue)?.ToUpperInvariant();
-
-    private static string? NormalizeBand(string? value)
-    {
-        var normalized = NormalizeUpper(value);
-        return normalized switch
-        {
-            "160M" => "160m",
-            "80M" => "80m",
-            "60M" => "60m",
-            "40M" => "40m",
-            "30M" => "30m",
-            "20M" => "20m",
-            "17M" => "17m",
-            "15M" => "15m",
-            "12M" => "12m",
-            "10M" => "10m",
-            "6M" => "6m",
-            "2M" => "2m",
-            "1.25M" => "1.25m",
-            "70CM" => "70cm",
-            "33CM" => "33cm",
-            "23CM" => "23cm",
-            _ => NormalizeText(value)
-        };
-    }
 
     private static string? NormalizeIntString(string? value, string? defaultValue = null)
     {

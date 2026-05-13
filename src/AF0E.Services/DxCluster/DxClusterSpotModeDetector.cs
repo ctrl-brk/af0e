@@ -1,8 +1,9 @@
 ﻿using System.Text.RegularExpressions;
+using AF0E.Common.Radio;
 
 namespace AF0E.Services.DxCluster;
 
-internal static partial class DxClusterSpotModeDetector
+public static partial class DxClusterSpotModeDetector
 {
     private static readonly IReadOnlyList<ModeWindow> FrequencyModeWindows =
     [
@@ -53,18 +54,7 @@ internal static partial class DxClusterSpotModeDetector
            ?? TryDetectFromFrequency(frequencyKhz);
 
     public static string? NormalizeMode(string? mode)
-    {
-        if (string.IsNullOrWhiteSpace(mode))
-            return null;
-
-        var normalized = mode.Trim().ToUpperInvariant();
-        return normalized switch
-        {
-            "USB" or "LSB" or "SSB" or "PHONE" => "SSB",
-            "DIGI" or "DIGITAL" or "DATA" => "DIGI",
-            _ => normalized
-        };
-    }
+        => RadioHelper.NormalizeMode(mode);
 
     private static string? TryDetectFromText(string? text)
     {

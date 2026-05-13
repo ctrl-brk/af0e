@@ -19,7 +19,7 @@ import {Button} from 'primeng/button';
 import {ModeSeverityPipe, QsoModePipe} from '../../shared/pipes';
 import {DatePipe} from '@angular/common';
 import {AppAuthService} from '../../services/auth.service';
-import {QsoEditComponent} from '../qso/qso-edit.component';
+import {QsoEditComponent, QsoEditParams} from '../qso/qso-edit.component';
 import {QsoEditMode} from '../../shared/qso-edit-mode.enum';
 import {LogUpdatesService} from '../../services/log-updates.service';
 import {ContextMenu} from 'primeng/contextmenu';
@@ -63,6 +63,7 @@ export class LogContentComponent implements OnInit {
   protected selectedQso!: QsoSummaryModel;
   protected logEntries = signal<QsoSummaryModel[]>([]);
   protected totalRecords = signal(0);
+  protected qsoEditParams = signal<QsoEditParams>({});
   selectedId = signal(0);
   loading = signal(false);
   qsoDateRange = model<Date[]>([]); // model() for two-way binding
@@ -158,7 +159,7 @@ export class LogContentComponent implements OnInit {
     });
   }
 
-  protected onAddQso() {
+  onAddQso(params: QsoEditParams) {
     this.qsoEditMode = QsoEditMode.Add;
     this.selectedId.set(this.selectedId() === 0 ? -1 : 0); // triggers form init
     this.qsoEditVisible.set(true);
