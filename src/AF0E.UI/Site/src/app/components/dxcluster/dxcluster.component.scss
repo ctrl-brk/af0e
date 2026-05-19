@@ -18,6 +18,16 @@
   }
 }
 
+.dxcluster-action {
+  color: var(--text-color);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.dxcluster-action:hover {
+  opacity: 0.85;
+}
+
 .dxcluster-flag {
   display: inline-block;
   width: 16px;

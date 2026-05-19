@@ -1,6 +1,6 @@
-import {Component, DestroyRef, inject, OnInit, ViewEncapsulation} from '@angular/core';
+import {Component, DestroyRef, inject, OnInit, signal, ViewEncapsulation} from '@angular/core';
 import {ActivatedRoute} from '@angular/router';
-import {QsoEditComponent} from '../qso/qso-edit.component';
+import {QsoEditComponent, QsoEditParams} from '../qso/qso-edit.component';
 import {Card} from 'primeng/card';
 
 @Component({
@@ -16,12 +16,12 @@ export class LogEntryComponent implements OnInit {
   private _activatedRoute = inject(ActivatedRoute)
   private _destroyRef = inject(DestroyRef);
 
-  protected logId = 0;
   protected title = 'QSO';
+  protected readonly qsoEditParams = signal<QsoEditParams>({});
 
   ngOnInit(): void {
     const sub = this._activatedRoute.queryParams.subscribe( p => {
-      this.logId = isNaN(+p['id']) ? 0 : +p['id'];
+      this.qsoEditParams.set({logId: isNaN(+p['id']) ? undefined : +p['id']});
     });
 
     this._destroyRef.onDestroy(() => sub.unsubscribe());

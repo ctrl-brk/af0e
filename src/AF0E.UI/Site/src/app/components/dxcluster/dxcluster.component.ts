@@ -46,6 +46,9 @@ export class DxClusterComponent implements OnInit {
   private static readonly FrequencyFormatter = new Intl.NumberFormat(undefined, {maximumFractionDigits: 3});
   private static readonly FlagCdnBaseUrl = 'https://flagcdn.com';
   private static readonly TimeOnlyCommentRegex = /^\d{3,4}Z$/i;
+  private static readonly PotaTagRegex = /(?:_pota_|\bpota\b)/i;
+  private static readonly PotaTagReplaceRegex = /(?:_pota_|\bpota\b)/gi;
+  private static readonly PotaCommentPrefix = '🌲';
   private static readonly DigitalModes = new Set([
     'DIGI',
     'FT8',
@@ -243,6 +246,19 @@ export class DxClusterComponent implements OnInit {
     const comment = spot.comment?.trim() ?? '';
     if (!comment)
       return spot.rawLine;
+
+    const hasPotaTag = DxClusterComponent.PotaTagRegex.test(comment);
+    const commentWithoutPotaTag = comment
+      .replace(DxClusterComponent.PotaTagReplaceRegex, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (hasPotaTag) {
+      if (!commentWithoutPotaTag || DxClusterComponent.TimeOnlyCommentRegex.test(commentWithoutPotaTag))
+        return DxClusterComponent.PotaCommentPrefix;
+
+      return `${DxClusterComponent.PotaCommentPrefix} ${commentWithoutPotaTag}`;
+    }
 
     return DxClusterComponent.TimeOnlyCommentRegex.test(comment) ? null : comment;
   }

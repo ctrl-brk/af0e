@@ -61,7 +61,7 @@ export class LogUpdatesService {
 
     hub.onreconnecting(err => this._log.warn('SignalR reconnecting', err));
     hub.onreconnected(id => this._log.debug('SignalR reconnected', id));
-    hub.onclose(err => this._log.error('SignalR closed', err));
+    hub.onclose(err => this._log.error(err));
 
     hub.on('log.changed', (evt: LogChangedEvent) => {
       if (!evt?.version)

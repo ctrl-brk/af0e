@@ -10,6 +10,10 @@ export class InfraService {
   private _http = inject(HttpService);
   private _infraUrl = Configuration.infraUrl;
 
+  public getHealth(): Observable<{ok: boolean}> {
+    return this._http.get(`${this._infraUrl}/health`);
+  }
+
   public getRigStatus(): Observable<RadioStatus> {
     return this._http.get(`${this._infraUrl}/radio/status`);
   }

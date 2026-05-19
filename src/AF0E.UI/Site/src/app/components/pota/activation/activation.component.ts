@@ -23,13 +23,16 @@ import {Tag} from 'primeng/tag';
 import {Card} from 'primeng/card';
 import {Tab, TabList, TabPanel, TabPanels, Tabs} from 'primeng/tabs';
 import {PotaActivationLogComponent} from './activation-log.component';
-import {ActivationQsoModel, activationLogToAdif, QsoDetailsToActivationQsoModel} from '../../../models/activation-qso.model';
+import {
+  activationLogToAdif,
+  ActivationQsoModel,
+  QsoDetailsToActivationQsoModel
+} from '../../../models/activation-qso.model';
 import {PotaActivationMapComponent} from './activation-map.component';
 import {Button} from 'primeng/button';
 import {AppAuthService} from '../../../services/auth.service';
 import {Dialog} from 'primeng/dialog';
-import {QsoEditComponent} from '../../qso/qso-edit.component';
-import {Checkbox} from 'primeng/checkbox';
+import {QsoEditComponent, QsoEditParams} from '../../qso/qso-edit.component';
 import {FloatLabelModule} from 'primeng/floatlabel';
 import {InputText} from 'primeng/inputtext';
 import {InfraService} from '../../../services/infra.service';
@@ -69,7 +72,6 @@ import {defaultTitle} from '../../../shared/constants';
     Button,
     Dialog,
     QsoEditComponent,
-    Checkbox,
     PotaActivationInfoComponent,
     Tooltip,
     FormField,
@@ -101,16 +103,13 @@ export class PotaActivationComponent implements OnInit {
 
   protected _authSvc = inject(AppAuthService);
   protected activationId = signal(0);
-  protected logId = signal(-1);
+  //protected logId = signal(-1);
   protected activation = signal<PotaActivationModel>(null!);
   protected logEntries = signal<ActivationQsoModel[]>([]);
   protected qsoDlgHeader = signal('Edit QSO');
   protected qsoEditVisible = model(false);
   protected spotDlgVisible = model(false);
   protected editActivationVisible = model(false);
-  protected rigControl = signal(false);
-  protected keyerControl = signal(false);
-  protected rigCommanderConfig = signal<any>({});
   protected spotFreq = signal('14048.00');
   protected spotComment = signal('CQ');
   protected qsoStats = {total: 1, cw: 0, digi: 0, phone: 0};
@@ -138,6 +137,7 @@ export class PotaActivationComponent implements OnInit {
     if (!entries.length) return null;
     return [...entries].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
   });
+  protected readonly qsoEditParams = signal<QsoEditParams>({});
 
   ngOnInit(): void {
     this._titleSvc.setTitle('AFØE - POTA | Activation');
@@ -148,17 +148,7 @@ export class PotaActivationComponent implements OnInit {
       }
     });
 
-    this._infraSvc.getConfig().subscribe({
-      next: (r: any) => {
-        this.rigCommanderConfig.set(r);
-        this.rigControl.set(true);
-      },
-      error: () => {
-        this.rigControl.set(false);
-      }
-    });
-
-    this._logUpdatesSvc.ensureConnected().catch(err => this._log.error('Activation realtime connection failed', err));
+    this._logUpdatesSvc.ensureConnected().catch(err => this._log.error(err));
     const updatesSub = this._logUpdatesSvc.changed$.subscribe(evt => {
 
       if (evt.activationId !== this.activationId())
@@ -230,19 +220,19 @@ export class PotaActivationComponent implements OnInit {
   }
 
   protected onAddQso() {
-    this.logId.set(-1);
+    this.qsoEditParams.set({potaActivation: this.activation()});
     this.qsoEditMode = QsoEditMode.PotaActivating
     this.qsoEditVisible.set(true);
   }
 
   protected onQsoSaved() {
-    if (this.logId() > 0)
+    if (this.qsoEditParams().logId || 0 > 0)
       this.qsoEditVisible.set(false);
-    //the qso gets added from the signalr subscription
+    //the qso gets added from signalr subscription
   }
 
   protected onQsoSelected(logId: number) {
-    this.logId.set(logId);
+    this.qsoEditParams.set({logId, potaActivation: this.activation()});
     this.qsoEditMode = QsoEditMode.Edit
     this.qsoEditVisible.set(true);
   }
@@ -274,17 +264,15 @@ export class PotaActivationComponent implements OnInit {
   }
 
   protected onSpotShow() {
-    if (this.rigControl()) {
-      this._infraSvc.getRigStatus().subscribe({
-        next: (r) => {
-          const f = r.frequencyHz.toString().slice(0, -1);
-          let f2 = f.slice(-2);
-          f2 = f2 === '00' ? '' : `.${f2}`;
-          this.spotFreq.set(`${f.slice(0, -2)}${f2}`);
-        },
-        error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
-      });
-    }
+    this._infraSvc.getRigStatus().subscribe({
+      next: (r) => {
+        const f = r.frequencyHz.toString().slice(0, -1);
+        let f2 = f.slice(-2);
+        f2 = f2 === '00' ? '' : `.${f2}`;
+        this.spotFreq.set(`${f.slice(0, -2)}${f2}`);
+      },
+      error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
+    });
 
     this.spotDlgVisible.set(true);
   }
@@ -307,7 +295,7 @@ export class PotaActivationComponent implements OnInit {
     const existing = this.logEntries().filter(e => e.call === qso.call);
     if (existing.length === 0) return;
 
-    this._ntfSvc.addMessage(new NotificationMessageModel(NotificationMessageSeverity.Warn, `DUP! (${existing.length} before)`));
+    Utils.showWarningMessage('DUP!', `${qso.call} ${existing.length} QSOs before`, this._ntfSvc);
   }
 
   protected setEndTimeAndStatus() {

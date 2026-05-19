@@ -42,6 +42,6 @@ export class LogbookComponent implements OnInit {
   }
 
   protected onTune(spot: DxClusterSpotModel) {
-    this._logContent()?.onAddQso();
+    this._logContent()?.onAddQso({callSign: spot.dxCallsign, tune: {freqHz: spot.frequencyKhz*1000, mode: spot.mode ?? undefined}});
   }
 }

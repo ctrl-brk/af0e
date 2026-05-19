@@ -39,7 +39,7 @@
       <p-button severity="secondary" icon="pi pi-search" (onClick)="onDateRangeSearch()" />
       @if (_authSvc.isAdmin) {
         <div style="flex: 1;"></div>
-        <p-button severity="primary" label="Add QSO" icon="pi pi-plus" (onClick)="onAddQso()" />
+        <p-button severity="primary" label="Add QSO" icon="pi pi-plus" (onClick)="onAddQso({})" />
       }
     </div>
   </ng-template>
@@ -79,7 +79,7 @@
 
 <p-dialog header="{{myCallsign()}} confirms" [modal]="true" [(visible)]="qsoDetailsVisible" [style]="{ width: '25rem' }">
   @if (qsoDetailsVisible()) {
-    <app-qso [logId]="selectedId()" />
+    <app-qso [logId]="qsoEditParams().logId!" />
   }
   <div class="qsl">
     <p-button label="Close" severity="secondary" (click)="qsoDetailsVisible.set(false)" />
@@ -88,6 +88,6 @@
 
 <p-dialog [header]="(qsoEditMode == QsoEditMode.Add ? 'Add' : 'Edit') + ' QSO'" [modal]="true" [(visible)]="qsoEditVisible" [style]="{ width: '60rem' }" [focusOnShow]="false">
   @if (qsoEditVisible()) {
-    <app-qso-edit [params]="qsoEditParams()" [logId]="selectedId()" [editMode]="qsoEditMode" (saved)="onQsoSaved($event)" />
+    <app-qso-edit [params]="qsoEditParams()" [editMode]="qsoEditMode" (saved)="onQsoSaved($event)" />
   }
 </p-dialog>

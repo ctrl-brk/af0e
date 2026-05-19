@@ -9,7 +9,6 @@ import {LogService} from '../../shared/log.service';
 import {TagModule} from 'primeng/tag';
 import {FormsModule} from '@angular/forms';
 import {FloatLabelModule} from 'primeng/floatlabel';
-import {NotificationMessageModel, NotificationMessageSeverity} from '../../shared/notification-message.model';
 import {SortDirection} from '../../shared/sort-direction.enum';
 import {DatePickerModule} from 'primeng/datepicker';
 import {DialogModule} from 'primeng/dialog';
@@ -64,7 +63,7 @@ export class LogContentComponent implements OnInit {
   protected logEntries = signal<QsoSummaryModel[]>([]);
   protected totalRecords = signal(0);
   protected qsoEditParams = signal<QsoEditParams>({});
-  selectedId = signal(0);
+  //selectedId = signal(0);
   loading = signal(false);
   qsoDateRange = model<Date[]>([]); // model() for two-way binding
   qsoMinDate = signal<Date | undefined | null>(undefined);
@@ -97,7 +96,7 @@ export class LogContentComponent implements OnInit {
       }
     });
 
-    this._logUpdatesSvc.ensureConnected().catch(err => this._log.error('Logbook realtime connection failed', err));
+    this._logUpdatesSvc.ensureConnected().catch(err => this._log.error(err));
     const updatesSub = this._logUpdatesSvc.changed$.subscribe(evt => {
       if (evt.operation !== 'created' && evt.operation !== 'updated' && evt.operation !== 'imported')
         return;
@@ -129,7 +128,7 @@ export class LogContentComponent implements OnInit {
 
   onDateRangeSearch() {
     if (!this.qsoDateRange() || !this.qsoDateRange()[0] || !this.qsoDateRange()[1])
-      this._ntfSvc.addMessage(new NotificationMessageModel(NotificationMessageSeverity.Warn, 'Please select a date range'));
+      Utils.showWarningMessage('Warning', 'Please select a date range', this._ntfSvc);
 
     this.loadLog(this._call, 0, 50, this.qsoDateRange());
   }
@@ -161,12 +160,12 @@ export class LogContentComponent implements OnInit {
 
   onAddQso(params: QsoEditParams) {
     this.qsoEditMode = QsoEditMode.Add;
-    this.selectedId.set(this.selectedId() === 0 ? -1 : 0); // triggers form init
+    this.qsoEditParams.set(params);
     this.qsoEditVisible.set(true);
   }
 
   onQsoSelect(qso: QsoSummaryModel) {
-    this.selectedId.set(qso.id);
+    this.qsoEditParams.set({logId: qso.id});
     this.qsoEditMode = QsoEditMode.Edit;
 
     if (this._authSvc.isAdmin) {
