@@ -175,17 +175,19 @@ export class PotaSpotsComponent implements OnInit, OnDestroy {
   }
 
   protected onCallSignClick(callSign: string, parkNum: string, freqKhz: string, mode: string): void {
+    this._spotParkNum = parkNum;
+    this._spotFreq = Number(freqKhz);
+
+    if (mode === 'SSB')
+      mode = this._spotFreq > 14000 ? 'USB' : 'LSB';
+
+    this._infraSvc.setRigStatus(this._spotFreq * 1000, mode).subscribe({
+      error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
+    });
+
     this.rememberClickedCallSign(callSign);
     this.qsoEditParams.set({callSign, huntingFromActivationId: this._huntingActivationId, huntingStationCall: this._huntingStationCall});
     this.qsoEditVisible.set(true);
-
-    this._spotParkNum = parkNum;
-    this._spotFreq = Number(freqKhz);
-    if (mode === 'SSB') {
-      mode = this._spotFreq > 14000 ? 'USB' : 'LSB';
-    }
-
-    this._infraSvc.setRigStatus(this._spotFreq * 1000, mode);
   }
 
   protected wasCallSignClicked(callSign: string): boolean {

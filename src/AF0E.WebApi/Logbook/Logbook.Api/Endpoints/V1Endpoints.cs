@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Net;
 using AF0E.Common.Qrz;
 using AF0E.DB;
 using AF0E.Services.DxCluster;
@@ -16,6 +17,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Logbook.Api.Endpoints;
 
+[SuppressMessage("ReSharper", "RouteTemplates.RouteParameterConstraintNotResolved")]
 public static class V1Endpoints
 {
     public static void RegisterV1Endpoints(this WebApplication app)
@@ -103,6 +105,10 @@ public static class V1Endpoints
             })
             .RequireAuthorization(Policies.AdminOnly)
             .WithName("QsoDelete");
+
+        builder.MapGet("adif/{call?}", async (string? call, string? begin, string? end, HrdDbContext dbContext) =>
+                TypedResults.Ok(await LogbookHandlers.GetAdif(call, begin, end, dbContext)))
+            .WithName("LogbookAdif");
 
         builder.MapGet("{call?}", async (string? call, int? skip, int? take, string? sort, int? orderBy, string? begin, string? end, HrdDbContext dbContext, IAuthorizationService authSvc, IHttpContextAccessor httpContext) =>
                 TypedResults.Ok(await LogbookHandlers.GetLog(call, skip, take, sort, orderBy, begin, end, dbContext, authSvc, httpContext)))

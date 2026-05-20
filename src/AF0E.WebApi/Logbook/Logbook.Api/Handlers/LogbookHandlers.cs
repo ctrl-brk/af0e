@@ -48,27 +48,36 @@ public static class LogbookHandlers
 
         call = WebUtility.UrlDecode(call);
 
-#pragma warning disable CA1305
-        var countQuery = begin is null || end is null ?
-            dbContext.Log.CountAsync(x => call == null || x.ColCall == call) :
-            dbContext.Log.CountAsync(x => (call == null || x.ColCall == call) && x.ColTimeOn >= DateTime.Parse(begin) && x.ColTimeOn <= DateTime.Parse(end).AddDays(1));
+        var countQuery = begin is null || end is null
+            ? dbContext.Log.CountAsync(x => call == null || x.ColCall == call)
+            : dbContext.Log.CountAsync(x => (call == null || x.ColCall == call) && x.ColTimeOn >= DateTime.Parse(begin) && x.ColTimeOn <= DateTime.Parse(end).AddDays(1));
 
         var cnt = await countQuery;
 
-        var logQuery = begin is null || end is null ?
-            dbContext.Log.Where(x => call == null || x.ColCall == call) :
-            dbContext.Log.Where(x => (call == null || x.ColCall == call) && x.ColTimeOn >= DateTime.Parse(begin) && x.ColTimeOn <= DateTime.Parse(end).AddDays(1));
-#pragma warning restore CA1305
+        var logQuery = begin is null || end is null
+            ? dbContext.Log.Where(x => call == null || x.ColCall == call)
+            : dbContext.Log.Where(x => (call == null || x.ColCall == call) && x.ColTimeOn >= DateTime.Parse(begin) && x.ColTimeOn <= DateTime.Parse(end).AddDays(1));
 
-        logQuery = logQuery.Include(c => c.PotaContacts);
-
-        logQuery = orderBy == 1 ? logQuery.OrderBy(x => x.ColTimeOn) : logQuery.OrderByDescending(x => x.ColTimeOn);
-        logQuery = logQuery.Skip(skip.Value).Take(take.Value);
+        IQueryable<HrdLog> pagedQuery = logQuery.Include(c => c.PotaContacts);
+        pagedQuery = orderBy == 1 ? pagedQuery.OrderBy(x => x.ColTimeOn) : pagedQuery.OrderByDescending(x => x.ColTimeOn);
+        pagedQuery = pagedQuery.Skip(skip.Value).Take(take.Value);
 
         var isAdmin = await AuthHelper.HasPolicyAsync(Policies.AdminOnly, authSvc, httpContext);
-        var qsoList = await logQuery.Select(x => new QsoSummary(x, isAdmin)).ToListAsync();
+        var qsoList = await pagedQuery.Select(x => new QsoSummary(x, isAdmin)).ToListAsync();
 
         return new LogSearchResponse { TotalCount = cnt, Contacts = qsoList };
+    }
+
+    public static Task<List<AdifDetails>> GetAdif(string? call, string? begin, string? end, HrdDbContext dbContext)
+    {
+        var query = begin is null || end is null
+            ? dbContext.Log.Where(x => call == null || x.ColCall == call)
+            : dbContext.Log.Where(x => (call == null || x.ColCall == call) && x.ColTimeOn >= DateTime.Parse(begin) && x.ColTimeOn <= DateTime.Parse(end).AddDays(1));
+
+        return query
+            .OrderByDescending(x => x.ColTimeOn)
+            .Select(x => x.ToAdifDetails())
+            .ToListAsync();
     }
 
     public static async Task<QsoDetails?> GetQsoDetails(int logId, HrdDbContext dbContext, IAuthorizationService authSvc, IHttpContextAccessor httpContext)

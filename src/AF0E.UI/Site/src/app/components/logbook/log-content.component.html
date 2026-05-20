@@ -37,10 +37,9 @@
         <label for="daterange">{{dateRangeTitle()}}</label>
       </p-floatlabel>
       <p-button severity="secondary" icon="pi pi-search" (onClick)="onDateRangeSearch()" />
-      @if (_authSvc.isAdmin) {
-        <div style="flex: 1;"></div>
-        <p-button severity="primary" label="Add QSO" icon="pi pi-plus" (onClick)="onAddQso({})" />
-      }
+      <div style="flex: 1;"></div>
+      @if (_authSvc.isAdmin) {<p-button severity="primary" label="Add QSO" icon="pi pi-plus" (onClick)="onAddQso({})" />}
+      <p-button severity="secondary" label="ADIF" icon="pi pi-download" [loading]="exportingAdif()" [disabled]="totalRecords() === 0 || exportingAdif()" (onClick)="onExportAdif()" />
     </div>
   </ng-template>
 

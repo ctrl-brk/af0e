@@ -45,9 +45,6 @@ export interface QsoDetailModel {
   comment: string;
 }
 
-/**
- * Converts a single {@link QsoDetailModel} to an ADIF record string (ending with `<EOR>\n`).
- */
 export function qsoDetailToAdif(qso: QsoDetailModel): string {
   const d = new Date(qso.date);
 
@@ -74,7 +71,7 @@ export function qsoDetailToAdif(qso: QsoDetailModel): string {
     rec += adifField('MY_SIG_INFO', potaStr);
   }
   rec += adifField('NAME', qso.name_fmt);
-  rec += adifField('OPERATOR', qso.operatorCallsign ?? Utils.getMyEffectiveCall(qso.date));
+  rec += adifField('OPERATOR', qso.operatorCallsign ?? Utils.getMyEffectiveCall(qso.date, false));
   rec += adifField('QSO_DATE', adifDate(d));
   rec += adifField('QSL_RCVD', qso.qslRcvd);
   rec += adifField('QSL_SENT', qso.qslSent);
@@ -85,8 +82,9 @@ export function qsoDetailToAdif(qso: QsoDetailModel): string {
     rec += adifField('PROP_MODE', 'SAT');
   }
   rec += adifField('STATE', qso.state);
-  rec += adifField('STATION_CALLSIGN', qso.stationCallsign ?? Utils.getMyEffectiveCall(qso.date));
+  rec += adifField('STATION_CALLSIGN', qso.stationCallsign ?? Utils.getMyEffectiveCall(qso.date, false));
   rec += adifField('TIME_ON', adifTime(d));
   rec += '<EOR>\n';
   return rec;
 }
+

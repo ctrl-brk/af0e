@@ -3,6 +3,7 @@ import {ActivatedRoute} from '@angular/router';
 import {TableLazyLoadEvent, TableModule} from 'primeng/table';
 import {LogbookService} from '../../services/logbook.service';
 import {Utils} from '../../shared/utils';
+import {adifDetailsToAdifFile} from '../../models/adif-details.model';
 import {QsoSummaryModel} from '../../models/qso-summary.model';
 import {NotificationService} from '../../shared/notification.service';
 import {LogService} from '../../shared/log.service';
@@ -65,6 +66,7 @@ export class LogContentComponent implements OnInit {
   protected qsoEditParams = signal<QsoEditParams>({});
   //selectedId = signal(0);
   loading = signal(false);
+  exportingAdif = signal(false);
   qsoDateRange = model<Date[]>([]); // model() for two-way binding
   qsoMinDate = signal<Date | undefined | null>(undefined);
   qsoMaxDate = signal<Date | undefined | null>(undefined);
@@ -127,8 +129,10 @@ export class LogContentComponent implements OnInit {
   }
 
   onDateRangeSearch() {
-    if (!this.qsoDateRange() || !this.qsoDateRange()[0] || !this.qsoDateRange()[1])
+    if (!this.hasValidDateRange()) {
       Utils.showWarningMessage('Warning', 'Please select a date range', this._ntfSvc);
+      return;
+    }
 
     this.loadLog(this._call, 0, 50, this.qsoDateRange());
   }
@@ -158,6 +162,46 @@ export class LogContentComponent implements OnInit {
     });
   }
 
+  protected onExportAdif() {
+    if (!this.hasValidDateRange()) {
+      Utils.showWarningMessage('Warning', 'Please select a date range', this._ntfSvc);
+      return;
+    }
+
+    if (this.totalRecords() === 0) {
+      Utils.showWarningMessage('ADIF', 'No QSOs found for the selected date range and/or call', this._ntfSvc);
+      return;
+    }
+
+    const dateRange = this.qsoDateRange();
+
+    this.exportingAdif.set(true);
+
+    this._lbSvc.getForAdif(this._call, this.qsoDateRange()).subscribe({
+      next: r => {
+        if (!r.length) {
+          this.exportingAdif.set(false);
+          Utils.showWarningMessage('ADIF', 'No QSOs found for the selected date range and/or call', this._ntfSvc);
+          return;
+        }
+
+        const adif = adifDetailsToAdifFile(r, {call: this._call, from: dateRange[0], to: dateRange[1]});
+        const blob = new Blob([adif.content], {type: 'application/octet-stream'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = adif.filename;
+        a.click();
+        URL.revokeObjectURL(url);
+        this.exportingAdif.set(false);
+      },
+      error: e => {
+        this.exportingAdif.set(false);
+        Utils.showErrorMessage(e, this._ntfSvc, this._log);
+      }
+    });
+  }
+
   onAddQso(params: QsoEditParams) {
     this.qsoEditMode = QsoEditMode.Add;
     this.qsoEditParams.set(params);
@@ -173,7 +217,7 @@ export class LogContentComponent implements OnInit {
       return;
     }
 
-    let call = qso.operatorCallsign ?? Utils.getMyEffectiveCall(qso.date);
+    let call = qso.operatorCallsign ?? Utils.getMyEffectiveCall(qso.date, true);
     if (qso.stationCallsign && qso.stationCallsign !== call)
       call = `${call} @ ${qso.stationCallsign}`;
 
@@ -195,6 +239,11 @@ export class LogContentComponent implements OnInit {
       next: () => this.reloadLog(),
       error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
     });
+  }
+
+  private hasValidDateRange(): boolean {
+    const dateRange = this.qsoDateRange();
+    return !!dateRange && !!dateRange[0] && !!dateRange[1];
   }
 
   protected readonly QsoEditMode = QsoEditMode;

@@ -4,6 +4,7 @@ import {HttpService} from '../shared/http.service';
 import {Configuration} from '../shared/configuration.service';
 import {SortDirection} from '../shared/sort-direction.enum';
 import {QsoDetailModel} from '../models/qso-detail.model';
+import {AdifDetailsModel} from '../models/adif-details.model';
 import {Utils} from '../shared/utils';
 import {LogSearchResponseModel} from '../models/logsearch-response.model';
 import {GridTrackerLookupModel} from '../models/gridtracker-lookup.model';
@@ -26,6 +27,18 @@ export class LogbookService {
       map((q: LogSearchResponseModel) => {
         q.contacts.forEach(c => c.date = new Date(c.date));
         return q;
+      })
+    );
+  }
+
+  public getForAdif(call: string | null, dateRange: Date[]): Observable<AdifDetailsModel[]> {
+    const url = `${this._svcUrl}/adif/${(call === null || call === undefined) ? '' : '/' + encodeURIComponent(call)}?&begin=${Utils.dateToSql(dateRange[0])}&end=${Utils.dateToSql(dateRange[1])}`
+    return this._http.get(url).pipe(
+      map((x: AdifDetailsModel[]) => {
+        return x.map((m) => {
+          m.date = new Date(m.date);
+          return m;
+        });
       })
     );
   }

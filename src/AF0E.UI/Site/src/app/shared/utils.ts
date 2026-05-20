@@ -447,7 +447,7 @@ export class Utils {
     return field + square + sub;
   }
 
-  public static getMyEffectiveCall(date: Date, slashed = true): string {
+  public static getMyEffectiveCall(date: Date, slashed: boolean): string {
     if (date > new Date(Date.UTC(2011, 0, 6))) //2011-01-06
       return slashed ? 'AFØE' : 'AF0E';
     else if (date > new Date(2009, 4, 5)) //2009-05-05 - 2011-01-06
