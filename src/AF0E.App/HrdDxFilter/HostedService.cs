@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Xml.Linq;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -51,6 +52,7 @@ public class HostedService(ILogger<HostedService> logger, IHostApplicationLifeti
                 {
                     var sortedResults = MassageResults(results);
                     sortedResults.AddRange(GetCustomDx());
+                    UpdateWebFilter(sortedResults);
                     UpdateHrdFilter(sortedResults);
                     SaveToFile(sortedResults);
                 }
@@ -105,6 +107,48 @@ public class HostedService(ILogger<HostedService> logger, IHostApplicationLifeti
             info.CallSign = info.CallSign.Replace(" ", "", StringComparison.OrdinalIgnoreCase);
 
         return sorted;
+    }
+
+    private void UpdateWebFilter(List<DxInfo> results)
+    {
+        var dxValue = string.Join('|', results.Select(x => x.CallSign));
+
+        var filterFilePath = settings.Value.WebFiltersFile;
+
+        if (string.IsNullOrWhiteSpace(filterFilePath) || !File.Exists(filterFilePath))
+        {
+            logger.LogWebFilterFileMissing(filterFilePath);
+            return;
+        }
+
+        var filterTitle = settings.Value.HrdDxFilterTitle;
+        if (string.IsNullOrEmpty(filterTitle))
+            filterTitle = "DX";
+
+        var json = File.ReadAllText(filterFilePath);
+        var root = JsonNode.Parse(json, documentOptions: new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip })!;
+
+        var filtersArray = root["DxCluster"]?["Filters"]?.AsArray();
+        if (filtersArray is null)
+        {
+            logger.LogWebFilterArrayMissing(filterFilePath);
+            return;
+        }
+
+        var target = filtersArray
+            .OfType<JsonObject>()
+            .FirstOrDefault(f => f["Name"]?.GetValue<string>() == filterTitle);
+
+        if (target is null)
+        {
+            logger.LogWebFilterNotFound(filterTitle, filterFilePath);
+            return;
+        }
+
+        target["CallsignPatterns"] = dxValue;
+
+        var writeOptions = new JsonSerializerOptions { WriteIndented = true };
+        File.WriteAllText(filterFilePath, root.ToJsonString(writeOptions));
     }
 
     private void UpdateHrdFilter(List<DxInfo> results)

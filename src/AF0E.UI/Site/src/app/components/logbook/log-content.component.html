@@ -38,8 +38,11 @@
       </p-floatlabel>
       <p-button severity="secondary" icon="pi pi-search" (onClick)="onDateRangeSearch()" />
       <div style="flex: 1;"></div>
-      @if (_authSvc.isAdmin) {<p-button severity="primary" label="Add QSO" icon="pi pi-plus" (onClick)="onAddQso({})" />}
-      <p-button severity="secondary" label="ADIF" icon="pi pi-download" [loading]="exportingAdif()" [disabled]="totalRecords() === 0 || exportingAdif()" (onClick)="onExportAdif()" />
+      @if (_authSvc.isAdmin) {
+        <p-button severity="primary" label="QSO" icon="pi pi-plus" (onClick)="onAddQso({})" />
+        <p-button severity="info" label="LOTW" icon="pi pi-file-import" (onClick)="lotwDlgVisible.set(true)" title="Download LOTW QSLs" />
+      }
+      <p-button severity="secondary" label="ADIF" icon="pi pi-download" [loading]="exportingAdif()" [disabled]="totalRecords() === 0 || exportingAdif()" (onClick)="onExportAdif()" title="Download ADIF for listed QSOs" />
     </div>
   </ng-template>
 
@@ -90,3 +93,24 @@
     <app-qso-edit [params]="qsoEditParams()" [editMode]="qsoEditMode" (saved)="onQsoSaved($event)" />
   }
 </p-dialog>
+
+@if (_authSvc.isAdmin) {
+  <p-dialog [modal]="true" [showHeader]="false" [(visible)]="lotwDlgVisible" [focusOnShow]="true" [style]="{ width: '20rem' }">
+    <div style="padding-top: 1rem">
+      <p-floatlabel variant="on">
+        <p-datePicker
+          [(ngModel)]="lotwDate"
+          inputId="date"
+          dateFormat="yy-mm-dd"
+          [showTime]="false"
+          hourFormat="24"
+          appendTo="body"
+        />
+        <label for="date">Download since UTC *</label>
+      </p-floatlabel>
+      <div style="display:flex; justify-content:flex-end; margin-top:0.5rem;">
+        <p-button label="Download" icon="pi pi-file-import" [loading]="lotwLoading()" (onClick)="onLotwDownload()" />
+      </div>
+    </div>
+  </p-dialog>
+}

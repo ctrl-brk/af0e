@@ -9,6 +9,7 @@ import {Utils} from '../shared/utils';
 import {LogSearchResponseModel} from '../models/logsearch-response.model';
 import {GridTrackerLookupModel} from '../models/gridtracker-lookup.model';
 import {AdifImportResponseModel} from '../models/adif-import-response.model';
+import {LotwSyncResponseModel} from '../models/lotw-sync-response.model';
 
 @Injectable({providedIn: 'root'})
 export class LogbookService {
@@ -80,5 +81,10 @@ export class LogbookService {
     formData.append('file', file);
     formData.append('activationId', activationId.toString());
     return this._http.post(`${this._svcUrl}/upload`, formData);
+  }
+
+  public lotwDownload(date: Date): Observable<LotwSyncResponseModel> {
+    const formattedDate = new Intl.DateTimeFormat('en-CA').format(date);
+    return this._http.post(`${this._svcUrl}/lotw/qsls`, {date: formattedDate});
   }
 }

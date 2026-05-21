@@ -81,13 +81,21 @@ try
 
     builder.Services.AddHttpContextAccessor();
     builder.Services.AddHttpClient();
+
+    // Named client for LoTW: generous timeout because the server is often slow and large date-range requests can return thousands of records
+    builder.Services.AddHttpClient("lotw", client => client.Timeout = TimeSpan.FromMinutes(5));
+    // Give the full sync operation (HTTP download + ADIF parse + DB update) 8 minutes.
+    builder.Services.AddRequestTimeouts(options => options.AddPolicy("lotw", TimeSpan.FromMinutes(8)));
+
     builder.Services.AddScoped<IPotaApiService, PotaApiService>();
     builder.Services.AddSignalR();
     builder.Services.Configure<QrzSettings>(builder.Configuration.GetSection("QrzSettings"));
+    builder.Services.Configure<LotwSettings>(builder.Configuration.GetSection("LotwSettings"));
     builder.Services.Configure<ApiKeyAuthSettings>(builder.Configuration.GetSection("ApiKeyAuth"));
     builder.Services.AddDxCluster(builder.Configuration.GetSection("DxCluster"));
     builder.Services.AddSingleton<IDxccMatcher, DbDxccMatcher>();
     builder.Services.AddSingleton<IQrzService, QrzService>();
+    builder.Services.AddScoped<ILotwService, LotwService>();
     builder.Services.AddSingleton<IDxClusterEventsPublisher, SignalRDxClusterEventsPublisher>();
     builder.Services.AddSingleton<DxClusterHubSessionManager>();
     builder.Services.AddScoped<ILogEventsPublisher, SignalRLogEventsPublisher>();
@@ -122,6 +130,7 @@ try
     WebApplication app = builder.Build();
 
     app.UseSerilogRequestLogging();
+    app.UseRequestTimeouts();
     app.UseDefaultFiles();
     app.UseStaticFiles();
 
@@ -183,5 +192,5 @@ finally
 }
 
 // Make Program class accessible for integration tests
+#pragma warning disable ASP0027
 public partial class Program { }
-

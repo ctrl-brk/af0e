@@ -8,7 +8,7 @@ import {QsoSummaryModel} from '../../models/qso-summary.model';
 import {NotificationService} from '../../shared/notification.service';
 import {LogService} from '../../shared/log.service';
 import {TagModule} from 'primeng/tag';
-import {FormsModule} from '@angular/forms';
+import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {FloatLabelModule} from 'primeng/floatlabel';
 import {SortDirection} from '../../shared/sort-direction.enum';
 import {DatePickerModule} from 'primeng/datepicker';
@@ -45,6 +45,7 @@ import {MenuItem} from 'primeng/api';
     QsoModePipe,
     QsoEditComponent,
     ContextMenu,
+    ReactiveFormsModule,
   ],
 })
 export class LogContentComponent implements OnInit {
@@ -64,6 +65,12 @@ export class LogContentComponent implements OnInit {
   protected logEntries = signal<QsoSummaryModel[]>([]);
   protected totalRecords = signal(0);
   protected qsoEditParams = signal<QsoEditParams>({});
+  protected readonly QsoEditMode = QsoEditMode; // for template access
+  protected qsoEditMode = QsoEditMode.Add;
+  protected lotwDate = signal<Date>(new Date());
+  protected lotwDlgVisible = signal(false);
+  protected lotwLoading = signal(false);
+
   //selectedId = signal(0);
   loading = signal(false);
   exportingAdif = signal(false);
@@ -74,7 +81,7 @@ export class LogContentComponent implements OnInit {
   qsoDetailsVisible = model(false); // model() for two-way binding with dialog
   qsoEditVisible = model(false); // model() for two-way binding with dialog
   myCallsign = signal('');
-  protected qsoEditMode = QsoEditMode.Add;
+
 
   ngOnInit() {
     const adminSub = this._authSvc.hasRoleAsync('Admin').subscribe(isAdmin => {
@@ -202,6 +209,19 @@ export class LogContentComponent implements OnInit {
     });
   }
 
+  protected onLotwDownload() {
+    this.lotwLoading.set(true);
+    this._lbSvc.lotwDownload(this.lotwDate()).subscribe({
+      next: r => {
+        this.lotwLoading.set(false);
+      },
+      error: e => {
+        this.lotwLoading.set(false);
+        Utils.showErrorMessage(e, this._ntfSvc, this._log);
+      }
+    });
+  }
+
   onAddQso(params: QsoEditParams) {
     this.qsoEditMode = QsoEditMode.Add;
     this.qsoEditParams.set(params);
@@ -245,6 +265,4 @@ export class LogContentComponent implements OnInit {
     const dateRange = this.qsoDateRange();
     return !!dateRange && !!dateRange[0] && !!dateRange[1];
   }
-
-  protected readonly QsoEditMode = QsoEditMode;
 }
