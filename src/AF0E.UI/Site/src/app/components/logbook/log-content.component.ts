@@ -3,13 +3,13 @@ import {ActivatedRoute} from '@angular/router';
 import {TableLazyLoadEvent, TableModule} from 'primeng/table';
 import {LogbookService} from '../../services/logbook.service';
 import {Utils} from '../../shared/utils';
+import {adifDetailsToAdifFile} from '../../models/adif-details.model';
 import {QsoSummaryModel} from '../../models/qso-summary.model';
 import {NotificationService} from '../../shared/notification.service';
 import {LogService} from '../../shared/log.service';
 import {TagModule} from 'primeng/tag';
-import {FormsModule} from '@angular/forms';
+import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {FloatLabelModule} from 'primeng/floatlabel';
-import {NotificationMessageModel, NotificationMessageSeverity} from '../../shared/notification-message.model';
 import {SortDirection} from '../../shared/sort-direction.enum';
 import {DatePickerModule} from 'primeng/datepicker';
 import {DialogModule} from 'primeng/dialog';
@@ -19,7 +19,7 @@ import {Button} from 'primeng/button';
 import {ModeSeverityPipe, QsoModePipe} from '../../shared/pipes';
 import {DatePipe} from '@angular/common';
 import {AppAuthService} from '../../services/auth.service';
-import {QsoEditComponent} from '../qso/qso-edit.component';
+import {QsoEditComponent, QsoEditParams} from '../qso/qso-edit.component';
 import {QsoEditMode} from '../../shared/qso-edit-mode.enum';
 import {LogUpdatesService} from '../../services/log-updates.service';
 import {ContextMenu} from 'primeng/contextmenu';
@@ -45,6 +45,7 @@ import {MenuItem} from 'primeng/api';
     QsoModePipe,
     QsoEditComponent,
     ContextMenu,
+    ReactiveFormsModule,
   ],
 })
 export class LogContentComponent implements OnInit {
@@ -63,8 +64,16 @@ export class LogContentComponent implements OnInit {
   protected selectedQso!: QsoSummaryModel;
   protected logEntries = signal<QsoSummaryModel[]>([]);
   protected totalRecords = signal(0);
-  selectedId = signal(0);
+  protected qsoEditParams = signal<QsoEditParams>({});
+  protected readonly QsoEditMode = QsoEditMode; // for template access
+  protected qsoEditMode = QsoEditMode.Add;
+  protected lotwDate = signal<Date>(new Date());
+  protected lotwDlgVisible = signal(false);
+  protected lotwLoading = signal(false);
+
+  //selectedId = signal(0);
   loading = signal(false);
+  exportingAdif = signal(false);
   qsoDateRange = model<Date[]>([]); // model() for two-way binding
   qsoMinDate = signal<Date | undefined | null>(undefined);
   qsoMaxDate = signal<Date | undefined | null>(undefined);
@@ -72,7 +81,7 @@ export class LogContentComponent implements OnInit {
   qsoDetailsVisible = model(false); // model() for two-way binding with dialog
   qsoEditVisible = model(false); // model() for two-way binding with dialog
   myCallsign = signal('');
-  protected qsoEditMode = QsoEditMode.Add;
+
 
   ngOnInit() {
     const adminSub = this._authSvc.hasRoleAsync('Admin').subscribe(isAdmin => {
@@ -96,7 +105,7 @@ export class LogContentComponent implements OnInit {
       }
     });
 
-    this._logUpdatesSvc.ensureConnected().catch(err => this._log.error('Logbook realtime connection failed', err));
+    this._logUpdatesSvc.ensureConnected().catch(err => this._log.error(err));
     const updatesSub = this._logUpdatesSvc.changed$.subscribe(evt => {
       if (evt.operation !== 'created' && evt.operation !== 'updated' && evt.operation !== 'imported')
         return;
@@ -127,8 +136,10 @@ export class LogContentComponent implements OnInit {
   }
 
   onDateRangeSearch() {
-    if (!this.qsoDateRange() || !this.qsoDateRange()[0] || !this.qsoDateRange()[1])
-      this._ntfSvc.addMessage(new NotificationMessageModel(NotificationMessageSeverity.Warn, 'Please select a date range'));
+    if (!this.hasValidDateRange()) {
+      Utils.showWarningMessage('Warning', 'Please select a date range', this._ntfSvc);
+      return;
+    }
 
     this.loadLog(this._call, 0, 50, this.qsoDateRange());
   }
@@ -158,14 +169,67 @@ export class LogContentComponent implements OnInit {
     });
   }
 
-  protected onAddQso() {
+  protected onExportAdif() {
+    if (!this.hasValidDateRange()) {
+      Utils.showWarningMessage('Warning', 'Please select a date range', this._ntfSvc);
+      return;
+    }
+
+    if (this.totalRecords() === 0) {
+      Utils.showWarningMessage('ADIF', 'No QSOs found for the selected date range and/or call', this._ntfSvc);
+      return;
+    }
+
+    const dateRange = this.qsoDateRange();
+
+    this.exportingAdif.set(true);
+
+    this._lbSvc.getForAdif(this._call, this.qsoDateRange()).subscribe({
+      next: r => {
+        if (!r.length) {
+          this.exportingAdif.set(false);
+          Utils.showWarningMessage('ADIF', 'No QSOs found for the selected date range and/or call', this._ntfSvc);
+          return;
+        }
+
+        const adif = adifDetailsToAdifFile(r, {call: this._call, from: dateRange[0], to: dateRange[1]});
+        const blob = new Blob([adif.content], {type: 'application/octet-stream'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = adif.filename;
+        a.click();
+        URL.revokeObjectURL(url);
+        this.exportingAdif.set(false);
+      },
+      error: e => {
+        this.exportingAdif.set(false);
+        Utils.showErrorMessage(e, this._ntfSvc, this._log);
+      }
+    });
+  }
+
+  protected onLotwDownload() {
+    this.lotwLoading.set(true);
+    this._lbSvc.lotwDownload(this.lotwDate()).subscribe({
+      next: r => {
+        this.lotwLoading.set(false);
+      },
+      error: e => {
+        this.lotwLoading.set(false);
+        Utils.showErrorMessage(e, this._ntfSvc, this._log);
+      }
+    });
+  }
+
+  onAddQso(params: QsoEditParams) {
     this.qsoEditMode = QsoEditMode.Add;
-    this.selectedId.set(this.selectedId() === 0 ? -1 : 0); // triggers form init
+    this.qsoEditParams.set(params);
     this.qsoEditVisible.set(true);
   }
 
   onQsoSelect(qso: QsoSummaryModel) {
-    this.selectedId.set(qso.id);
+    this.qsoEditParams.set({logId: qso.id});
     this.qsoEditMode = QsoEditMode.Edit;
 
     if (this._authSvc.isAdmin) {
@@ -173,7 +237,7 @@ export class LogContentComponent implements OnInit {
       return;
     }
 
-    let call = qso.operatorCallsign ?? Utils.getMyEffectiveCall(qso.date);
+    let call = qso.operatorCallsign ?? Utils.getMyEffectiveCall(qso.date, true);
     if (qso.stationCallsign && qso.stationCallsign !== call)
       call = `${call} @ ${qso.stationCallsign}`;
 
@@ -197,5 +261,8 @@ export class LogContentComponent implements OnInit {
     });
   }
 
-  protected readonly QsoEditMode = QsoEditMode;
+  private hasValidDateRange(): boolean {
+    const dateRange = this.qsoDateRange();
+    return !!dateRange && !!dateRange[0] && !!dateRange[1];
+  }
 }

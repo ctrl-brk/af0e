@@ -15,7 +15,7 @@ export class LogService {
 
   //noinspection JSMethodCanBeStatic
   public error(...obj: any[]) {
-    console.error(obj);
+    console.error();
   }
 
   public alert(msg: any) {

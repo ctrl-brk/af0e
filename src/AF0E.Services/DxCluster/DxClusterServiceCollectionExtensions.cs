@@ -14,6 +14,7 @@ public static class DxClusterServiceCollectionExtensions
 
         services.Configure<DxClusterOptions>(configurationSection);
         services.TryAddSingleton<IDxClusterEventsPublisher>(_ => new NullDxClusterEventsPublisher());
+        services.TryAddSingleton<IDxccMatcher>(_ => new NullDxccMatcher());
         services.AddSingleton<IDxClusterService, DxClusterService>();
 
         return services;

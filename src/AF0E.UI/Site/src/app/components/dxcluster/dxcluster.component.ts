@@ -1,5 +1,5 @@
-﻿import {DatePipe, DecimalPipe, NgClass} from '@angular/common';
-import {Component, computed, DestroyRef, inject, OnInit, signal, ViewEncapsulation} from '@angular/core';
+﻿import {DatePipe, DecimalPipe, NgClass, NgOptimizedImage} from '@angular/common';
+import {Component, computed, DestroyRef, inject, OnInit, output, signal, ViewEncapsulation} from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {FormsModule} from '@angular/forms';
 import {Button} from 'primeng/button';
@@ -14,6 +14,7 @@ import {LogService} from '../../shared/log.service';
 import {NotificationService} from '../../shared/notification.service';
 import {Utils} from '../../shared/utils';
 import {Fieldset} from 'primeng/fieldset';
+import {ModeSeverityPipe, QsoModePipe} from '../../shared/pipes';
 
 interface DxClusterFilterOption {
   label: string;
@@ -35,11 +36,40 @@ interface DxClusterFilterOption {
     DecimalPipe,
     NgClass,
     Fieldset,
+    ModeSeverityPipe,
+    QsoModePipe,
+    NgOptimizedImage,
   ]
 })
 export class DxClusterComponent implements OnInit {
   private static readonly SelectedFilterStorageKey = 'dxcluster.selectedFilter';
   private static readonly FrequencyFormatter = new Intl.NumberFormat(undefined, {maximumFractionDigits: 3});
+  private static readonly FlagCdnBaseUrl = 'https://flagcdn.com';
+  private static readonly TimeOnlyCommentRegex = /^\d{3,4}Z$/i;
+  private static readonly PotaTagRegex = /(?:_pota_|\bpota\b)/i;
+  private static readonly PotaTagReplaceRegex = /(?:_pota_|\bpota\b)/gi;
+  private static readonly PotaCommentPrefix = '🌲';
+  private static readonly DigitalModes = new Set([
+    'DIGI',
+    'FT8',
+    'FT4',
+    'FT2',
+    'JS8',
+    'MFSK',
+    'MSK144',
+    'RTTY',
+    'PSK',
+    'JT65',
+    'JT9',
+    'SSTV',
+    'WSPR',
+    'OLIVIA',
+    'DOMINO',
+    'THOR',
+    'HELL',
+    'PACKET',
+    'PKT',
+  ]);
 
   private readonly _destroyRef = inject(DestroyRef);
   private readonly _dxClusterSvc = inject(DxClusterService);
@@ -52,9 +82,10 @@ export class DxClusterComponent implements OnInit {
   protected readonly loading = signal(false);
   protected readonly statusLoading = signal(false);
   protected readonly selectedFilterName = signal<string | null>(this.readSelectedFilterName());
-
   protected readonly primaryServer = computed(() => this.status()?.servers?.[0] ?? null);
   protected readonly isConnected = computed(() => this.primaryServer()?.connected ?? false);
+  tune = output<DxClusterSpotModel>();
+
   protected readonly selectedFilter = computed(() => {
     const filterName = this.selectedFilterName();
     if (!filterName)
@@ -62,10 +93,12 @@ export class DxClusterComponent implements OnInit {
 
     return this.status()?.filters.find(filter => filter.name.localeCompare(filterName, undefined, {sensitivity: 'accent'}) === 0) ?? null;
   });
+
   protected readonly filterOptions = computed<DxClusterFilterOption[]>(() => [
     {label: 'All spots', value: null},
     ...((this.status()?.filters ?? []).map(filter => ({label: filter.name, value: filter.name}))),
   ]);
+
   protected readonly visibleSpots = computed(() => {
     const filter = this.selectedFilter();
     if (!filter)
@@ -73,6 +106,7 @@ export class DxClusterComponent implements OnInit {
 
     return this.spots().filter(spot => this.matchesFilter(filter, spot));
   });
+
   protected readonly selectedFilterSummary = computed(() => {
     const filter = this.selectedFilter();
     if (!filter)
@@ -97,6 +131,7 @@ export class DxClusterComponent implements OnInit {
 
     return parts.join(' • ');
   });
+
   protected readonly statusSeverity = computed<'success' | 'warn' | 'secondary'>(() => {
     const status = this.status();
     if (!status?.configured)
@@ -189,6 +224,45 @@ export class DxClusterComponent implements OnInit {
     ].join('|');
   }
 
+  protected getDxccFlagUrl(spot: DxClusterSpotModel): string | null {
+    const countryCode = spot.dxccCountryCode?.trim().toLowerCase();
+    if (!countryCode || !/^[a-z]{2}$/.test(countryCode))
+      return null;
+
+    return `${DxClusterComponent.FlagCdnBaseUrl}/16x12/${countryCode}.png`;
+  }
+
+  protected getSpotRowClasses(spot: DxClusterSpotModel): Record<string, boolean> {
+    return {
+      'dxcluster-row-offline': !this.isConnected(),
+      'dxcluster-row-verified-band-mode': spot.dxccWorkedStatus === 'VerifiedBandMode',
+      'dxcluster-row-verified-other': spot.dxccWorkedStatus === 'VerifiedOtherBandMode',
+      'dxcluster-row-worked-unverified': spot.dxccWorkedStatus === 'WorkedNotVerified',
+      'dxcluster-row-not-worked': spot.dxccWorkedStatus === 'NotWorked',
+    };
+  }
+
+  protected getDisplayComment(spot: DxClusterSpotModel): string | null {
+    const comment = spot.comment?.trim() ?? '';
+    if (!comment)
+      return spot.rawLine;
+
+    const hasPotaTag = DxClusterComponent.PotaTagRegex.test(comment);
+    const commentWithoutPotaTag = comment
+      .replace(DxClusterComponent.PotaTagReplaceRegex, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (hasPotaTag) {
+      if (!commentWithoutPotaTag || DxClusterComponent.TimeOnlyCommentRegex.test(commentWithoutPotaTag))
+        return DxClusterComponent.PotaCommentPrefix;
+
+      return `${DxClusterComponent.PotaCommentPrefix} ${commentWithoutPotaTag}`;
+    }
+
+    return DxClusterComponent.TimeOnlyCommentRegex.test(comment) ? null : comment;
+  }
+
   private applyStatus(status: DxClusterStatusModel): void {
     this.status.set(status);
 
@@ -216,12 +290,7 @@ export class DxClusterComponent implements OnInit {
       return false;
 
     if (modes.length > 0) {
-      const normalizedSpotMode = this.normalizeMode(spot.mode);
-      if (!normalizedSpotMode)
-        return false;
-
-      const normalizedFilterModes = modes.map(mode => this.normalizeMode(mode)).filter((mode): mode is string => !!mode);
-      if (!normalizedFilterModes.includes(normalizedSpotMode))
+      if (!modes.some(mode => this.modesMatch(mode, spot.mode)))
         return false;
     }
 
@@ -279,7 +348,9 @@ export class DxClusterComponent implements OnInit {
     if (!mode)
       return null;
 
-    switch (mode.trim().toUpperCase()) {
+    const normalized = mode.trim().toUpperCase();
+
+    switch (normalized) {
       case 'USB':
       case 'LSB':
       case 'SSB':
@@ -289,9 +360,42 @@ export class DxClusterComponent implements OnInit {
       case 'DIGITAL':
       case 'DATA':
         return 'DIGI';
+      case 'FT-8':
+        return 'FT8';
+      case 'FT-4':
+        return 'FT4';
+      case 'FT-2':
+        return 'FT2';
+      case 'JS8CALL':
+        return 'JS8';
+      case 'FSK':
+        return 'RTTY';
       default:
-        return mode.trim().toUpperCase();
+        if (normalized.startsWith('MFSK'))
+          return 'MFSK';
+
+        if (normalized.startsWith('PSK'))
+          return 'PSK';
+
+        return normalized;
     }
+  }
+
+  private modesMatch(left: string | null | undefined, right: string | null | undefined): boolean {
+    const normalizedLeft = this.normalizeMode(left ?? null);
+    const normalizedRight = this.normalizeMode(right ?? null);
+    if (!normalizedLeft || !normalizedRight)
+      return false;
+
+    if (normalizedLeft === normalizedRight)
+      return true;
+
+    return (normalizedLeft === 'DIGI' && this.isDigitalMode(normalizedRight))
+      || (normalizedRight === 'DIGI' && this.isDigitalMode(normalizedLeft));
+  }
+
+  private isDigitalMode(mode: string): boolean {
+    return DxClusterComponent.DigitalModes.has(mode);
   }
 
   private readSelectedFilterName(): string | null {
@@ -310,5 +414,9 @@ export class DxClusterComponent implements OnInit {
         localStorage.removeItem(DxClusterComponent.SelectedFilterStorageKey);
     } catch {
     }
+  }
+
+  protected onFreqClicked(spot: DxClusterSpotModel) {
+    this.tune.emit(spot);
   }
 }

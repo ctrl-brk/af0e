@@ -44,7 +44,7 @@ Read-Host -Prompt "Press Enter to continue..."
 
 Invoke-Command -Session $session -ScriptBlock {
     param($siteRoot)
-    Get-ChildItem -Path $siteRoot -Recurse | Where-Object { $_.Name -notlike "appsettings*" -and $_.Name -ne "web.config" } | Remove-Item -Recurse -Force
+    Get-ChildItem -Path $siteRoot -Recurse | Where-Object { $_.Name -notlike "appsettings*" -and $_.Name -ne "web.config" -and $_.Name -ne "dxcluster.filters.json"} | Remove-Item -Recurse -Force
 } -ArgumentList $dstLocalPath
 
 Copy-Item -Path ($srcPath + "/*") -Destination ("\\" + $serverName + "/" + $dstNetworkPath) -Recurse

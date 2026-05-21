@@ -21,21 +21,6 @@
       &nbsp;<label for="autoRefresh">Auto</label>
       &nbsp;|&nbsp;
       <p-checkbox
-        inputId="rigControl"
-        [ngModel]="rigControl()"
-        (ngModelChange)="rigControl.set($event)"
-        [binary]="true" />
-      &nbsp;<label for="rigControl">Rig</label>
-      &nbsp;
-      <p-checkbox
-        inputId="keyerControl"
-        [ngModel]="keyerControl()"
-        (ngModelChange)="keyerControl.set($event)"
-        [binary]="true" />
-      &nbsp;<label for="keyerControl">Keyer</label>
-
-      &nbsp;|&nbsp;
-      <p-checkbox
         inputId="showDigi"
         [ngModel]="showDigi()"
         (ngModelChange)="showDigi.set($event)"
@@ -105,7 +90,7 @@
   <ng-template pTemplate="body" let-act>
     <tr [ngClass]="getRowClass(act)">
       <td class="act-time">
-        @if (act.activity.callSign == this.selectedCall()) {&#9654;}
+        @if (act.activity.callSign === this.qsoEditParams().callSign) {&#9654;}
         @else if (wasCallSignClicked(act.activity.callSign)) {?}
         @else {&nbsp;}
         {{ act.activity.lastSpotTime | timeAgo }}
@@ -135,7 +120,7 @@
   </ng-template>
   <ng-template pTemplate="emptymessage">
     <tr>
-      <td colspan="6" style="text-align: center;">
+      <td colspan="7" style="text-align: center;">
         NO ACTIVITY
       </td>
     </tr>
@@ -143,20 +128,13 @@
 </p-table>
 
 <p-dialog [header]="qsoDlgHeader()" [modal]="true" [(visible)]="qsoEditVisible" [style]="{width:'64rem'}" [focusOnShow]="false">
-  @if (qsoEditVisible()) {
-    <app-qso-edit
-      [logId]="-1"
-      [callSign]="selectedCall()"
-      [keyerControl]="keyerControl() && rigCommanderConfig().winkeyer.enabled"
-      [(rigControl)]="rigControl"
-      [filtersEnabled]="rigCommanderConfig().activeProfile !== 'FT-897'"
-      [huntingFromActivationId]="huntingActivationId()"
-      [huntingStationCall]="huntingStationCall()"
-      (formInit)="onQsoFormInit($event)"
-      [editMode]="QsoEditMode.PotaHunting"
-      (saved)="onQsoSaved($event)"
-      (close)="qsoDlgHeader.set('Add QSO')" />
-  }
+  <app-qso-edit
+    [shown]="qsoEditVisible()"
+    [params]="qsoEditParams()"
+    (formInit)="onQsoFormInit($event)"
+    [editMode]="QsoEditMode.PotaHunting"
+    (saved)="onQsoSaved($event)"
+    (close)="qsoDlgHeader.set('Add QSO')" />
 </p-dialog>
 
 <p-dialog header="Hunting stats" [modal]="true" [(visible)]="huntingStatsVisible" [style]="{width:'90rem'}" [focusOnShow]="false">

@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using AF0E.Common.Radio;
 using AF0E.Common.Utils;
 using AF0E.DB;
 using AF0E.DB.Models;
@@ -7,6 +8,7 @@ using Logbook.Api.Models;
 using Logbook.Api.Realtime;
 using Logbook.Api.Responses;
 using Logbook.Api.Security;
+using Logbook.Api.Services;
 using Logbook.Api.Validators;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
@@ -45,29 +47,75 @@ public static class LogbookHandlers
         skip ??= 0;
         if (take is null or > MAX_PAGE_SIZE) take = DEFAULT_PAGE_SIZE;
 
-        call = WebUtility.UrlDecode(call);
+        var logQuery = ApplyLogFilters(dbContext.Log, call, begin, end);
+        var cnt = await logQuery.CountAsync();
 
-#pragma warning disable CA1305
-        var countQuery = begin is null || end is null ?
-            dbContext.Log.CountAsync(x => call == null || x.ColCall == call) :
-            dbContext.Log.CountAsync(x => (call == null || x.ColCall == call) && x.ColTimeOn >= DateTime.Parse(begin) && x.ColTimeOn <= DateTime.Parse(end).AddDays(1));
-
-        var cnt = await countQuery;
-
-        var logQuery = begin is null || end is null ?
-            dbContext.Log.Where(x => call == null || x.ColCall == call) :
-            dbContext.Log.Where(x => (call == null || x.ColCall == call) && x.ColTimeOn >= DateTime.Parse(begin) && x.ColTimeOn <= DateTime.Parse(end).AddDays(1));
-#pragma warning restore CA1305
-
-        logQuery = logQuery.Include(c => c.PotaContacts);
-
-        logQuery = orderBy == 1 ? logQuery.OrderBy(x => x.ColTimeOn) : logQuery.OrderByDescending(x => x.ColTimeOn);
-        logQuery = logQuery.Skip(skip.Value).Take(take.Value);
+        IQueryable<HrdLog> pagedQuery = logQuery.Include(c => c.PotaContacts);
+        pagedQuery = orderBy == 1 ? pagedQuery.OrderBy(x => x.ColTimeOn) : pagedQuery.OrderByDescending(x => x.ColTimeOn);
+        pagedQuery = pagedQuery.Skip(skip.Value).Take(take.Value);
 
         var isAdmin = await AuthHelper.HasPolicyAsync(Policies.AdminOnly, authSvc, httpContext);
-        var qsoList = await logQuery.Select(x => new QsoSummary(x, isAdmin)).ToListAsync();
+        var qsoList = await pagedQuery.Select(x => new QsoSummary(x, isAdmin)).ToListAsync();
 
         return new LogSearchResponse { TotalCount = cnt, Contacts = qsoList };
+    }
+
+    public static Task<List<AdifDetails>> GetAdif(string? call, string? begin, string? end, HrdDbContext dbContext)
+    {
+        var query = ApplyLogFilters(dbContext.Log, call, begin, end)
+            .Where(x => x.ColTimeOn != null && x.ColBand != null && x.ColMode != null);
+
+        return query
+            .OrderByDescending(x => x.ColTimeOn)
+            .Select(x => x.ToAdifDetails())
+            .ToListAsync();
+    }
+
+    public static async Task<LotwSyncResponse> SyncLotwQsls(DateOnly since, HrdDbContext dbContext, ILotwService lotwService, CancellationToken ct)
+    {
+        var qslRecords = await lotwService.GetConfirmedQslRecordsAsync(since, ct);
+        if (qslRecords.Count == 0)
+            return new LotwSyncResponse(0, 0, []);
+
+        var calls = qslRecords.Select(static x => x.Call).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        var minDate = qslRecords.Min(static x => x.QsoDate).ToDateTime(TimeOnly.MinValue);
+        var maxExclusive = qslRecords.Max(static x => x.QsoDate).AddDays(1).ToDateTime(TimeOnly.MinValue);
+
+        var candidateLogs = await dbContext.Log
+            .AsTracking()
+            .Where(x => x.ColTimeOn != null
+                        && calls.Contains(x.ColCall)
+                        && x.ColTimeOn >= minDate
+                        && x.ColTimeOn < maxExclusive)
+            .ToListAsync(ct);
+
+        var matched = 0;
+        var unmatched = new List<string>();
+
+        foreach (var qsl in qslRecords)
+        {
+            var log = FindBestLotwMatch(candidateLogs, qsl);
+            if (log is null)
+            {
+                unmatched.Add(FormatLotwUnmatched(qsl));
+                continue;
+            }
+
+            log.ColLotwQslRcvd = "V";
+            if (qsl.QslReceivedDate is { } qslReceivedDate)
+            {
+                var confirmedAt = qslReceivedDate.ToDateTime(TimeOnly.MinValue);
+                log.ColLotwQslrdate = confirmedAt;
+                log.ColLotwQslsdate = confirmedAt;
+            }
+
+            matched++;
+        }
+
+        if (matched > 0)
+            await dbContext.SaveChangesAsync(ct);
+
+        return new LotwSyncResponse(qslRecords.Count, matched, unmatched);
     }
 
     public static async Task<QsoDetails?> GetQsoDetails(int logId, HrdDbContext dbContext, IAuthorizationService authSvc, IHttpContextAccessor httpContext)
@@ -111,7 +159,7 @@ public static class LogbookHandlers
         //not necessary now, but if other users added...
         //var isAdmin = await AuthHelper.HasPolicyAsync(Policies.AdminOnly, authSvc, httpContext);
 
-        qso.Band = NormalizeBand(qso.Band)!;
+        qso.Band = RadioHelper.NormalizeBand(qso.Band)!;
         var log = qso.ToHrdLog(includeAdminFields: true /*isAdmin*/);
         log.ColQsoComplete = "Y";
 
@@ -155,7 +203,7 @@ public static class LogbookHandlers
 
         var isAdmin = await AuthHelper.HasPolicyAsync(Policies.AdminOnly, authSvc, httpContext);
 
-        qso.Band = NormalizeBand(qso.Band)!;
+        qso.Band = RadioHelper.NormalizeBand(qso.Band)!;
         log.UpdateFromQsoDetails(qso, includeAdminFields: isAdmin);
 
         await dbContext.SaveChangesAsync();
@@ -362,7 +410,7 @@ public static class LogbookHandlers
         log = null!;
 
         var call = record["CALL"]?.Trim().ToUpperInvariant();
-        var band = NormalizeBand(record["BAND"]);
+        var band = RadioHelper.NormalizeBand(record["BAND"]);
         var mode = NormalizeUpper(record["MODE"]);
 
         if (string.IsNullOrWhiteSpace(call) || string.IsNullOrWhiteSpace(band) || string.IsNullOrWhiteSpace(mode))
@@ -381,7 +429,7 @@ public static class LogbookHandlers
             ColTimeOn = timeOn,
             ColTimeOff = timeOff ?? timeOn,
             ColBand = band,
-            ColBandRx = NormalizeBand(record["BAND_RX"]),
+            ColBandRx = RadioHelper.NormalizeBand(record["BAND_RX"]),
             ColFreq = ParseDouble(record["FREQ"], 0),
             ColFreqRx = ParseDouble(record["FREQ_RX"]),
             ColMode = mode,
@@ -552,31 +600,6 @@ public static class LogbookHandlers
     private static string? NormalizeUpper(string? value, string? defaultValue = null)
         => NormalizeText(value, defaultValue)?.ToUpperInvariant();
 
-    private static string? NormalizeBand(string? value)
-    {
-        var normalized = NormalizeUpper(value);
-        return normalized switch
-        {
-            "160M" => "160m",
-            "80M" => "80m",
-            "60M" => "60m",
-            "40M" => "40m",
-            "30M" => "30m",
-            "20M" => "20m",
-            "17M" => "17m",
-            "15M" => "15m",
-            "12M" => "12m",
-            "10M" => "10m",
-            "6M" => "6m",
-            "2M" => "2m",
-            "1.25M" => "1.25m",
-            "70CM" => "70cm",
-            "33CM" => "33cm",
-            "23CM" => "23cm",
-            _ => NormalizeText(value)
-        };
-    }
-
     private static string? NormalizeIntString(string? value, string? defaultValue = null)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -595,5 +618,106 @@ public static class LogbookHandlers
     {
         var normalized = NormalizeUpper(value);
         return normalized is "B" or "D" or "E" or "M" ? normalized : null;
+    }
+
+    private static IQueryable<HrdLog> ApplyLogFilters(IQueryable<HrdLog> query, string? call, string? begin, string? end)
+    {
+        call = WebUtility.UrlDecode(call);
+        if (!string.IsNullOrWhiteSpace(call))
+            query = query.Where(x => x.ColCall == call);
+
+        if (TryParseDateRange(begin, end, out var beginDate, out var endExclusive))
+            query = query.Where(x => x.ColTimeOn >= beginDate && x.ColTimeOn < endExclusive);
+
+        return query;
+    }
+
+    private static bool TryParseDateRange(string? begin, string? end, out DateTime beginDate, out DateTime endExclusive)
+    {
+        beginDate = default;
+        endExclusive = default;
+
+        if (string.IsNullOrWhiteSpace(begin) || string.IsNullOrWhiteSpace(end))
+            return false;
+
+        beginDate = DateTime.Parse(begin, CultureInfo.InvariantCulture);
+        endExclusive = DateTime.Parse(end, CultureInfo.InvariantCulture).AddDays(1);
+        return true;
+    }
+
+    private static HrdLog? FindBestLotwMatch(List<HrdLog> candidateLogs, LotwQslRecord qsl)
+    {
+        var sameDayCandidates = candidateLogs
+            .Where(log => string.Equals(log.ColCall, qsl.Call, StringComparison.OrdinalIgnoreCase)
+                          && log.ColTimeOn is not null
+                          && DateOnly.FromDateTime(log.ColTimeOn.Value) == qsl.QsoDate
+                          && LotwBandsMatch(log.ColBand, qsl.Band)
+                          && LotwModesMatch(log, qsl)
+                          && LotwStationCallsignMatches(log.ColStationCallsign, qsl.StationCallsign))
+            .ToList();
+
+        if (sameDayCandidates.Count == 0)
+            return null;
+
+        if (qsl.QsoTimeUtc is null)
+            return sameDayCandidates.OrderBy(log => log.ColTimeOn).First();
+
+        var exactOrNear = sameDayCandidates
+            .Select(log => new
+            {
+                Log = log,
+                Delta = log.ColTimeOn is null ? long.MaxValue : Math.Abs((log.ColTimeOn.Value - qsl.QsoTimeUtc.Value).Ticks),
+            })
+            .OrderBy(x => x.Delta)
+            .ToList();
+
+        var best = exactOrNear.First();
+        if (best.Delta <= TimeSpan.FromMinutes(30).Ticks || sameDayCandidates.Count == 1)
+            return best.Log;
+
+        return null;
+    }
+
+    private static bool LotwBandsMatch(string? left, string? right)
+        => string.Equals(RadioHelper.NormalizeBand(left), RadioHelper.NormalizeBand(right), StringComparison.OrdinalIgnoreCase);
+
+    private static bool LotwModesMatch(HrdLog log, LotwQslRecord qsl)
+    {
+        var logMode = !string.IsNullOrWhiteSpace(log.ColSubmode) ? log.ColSubmode : log.ColMode;
+        return RadioHelper.ModesMatch(logMode, qsl.Mode);
+    }
+
+    private static bool LotwStationCallsignMatches(string? logStationCallsign, string? qslStationCallsign)
+    {
+        if (string.IsNullOrWhiteSpace(qslStationCallsign))
+            return true;
+
+        if (string.IsNullOrWhiteSpace(logStationCallsign))
+            return true;
+
+        return string.Equals(logStationCallsign.Trim(), qslStationCallsign.Trim(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string FormatLotwUnmatched(LotwQslRecord qsl)
+    {
+        var parts = new List<string>
+        {
+            qsl.Call,
+            qsl.QsoDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+        };
+
+        if (qsl.QsoTimeUtc is not null)
+            parts.Add(qsl.QsoTimeUtc.Value.ToString("HH:mm'Z'", CultureInfo.InvariantCulture));
+
+        if (!string.IsNullOrWhiteSpace(qsl.Band))
+            parts.Add(qsl.Band);
+
+        if (!string.IsNullOrWhiteSpace(qsl.Mode))
+            parts.Add(qsl.Mode!);
+
+        if (!string.IsNullOrWhiteSpace(qsl.StationCallsign))
+            parts.Add($"@{qsl.StationCallsign}");
+
+        return string.Join(" ", parts);
     }
 }

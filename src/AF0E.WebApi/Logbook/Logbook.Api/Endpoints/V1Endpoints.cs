@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Net;
 using AF0E.Common.Qrz;
 using AF0E.DB;
 using AF0E.Services.DxCluster;
@@ -10,12 +11,14 @@ using Logbook.Api.Realtime;
 using Logbook.Api.Requests;
 using Logbook.Api.Responses;
 using Logbook.Api.Security;
+using Logbook.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Logbook.Api.Endpoints;
 
+[SuppressMessage("ReSharper", "RouteTemplates.RouteParameterConstraintNotResolved")]
 public static class V1Endpoints
 {
     public static void RegisterV1Endpoints(this WebApplication app)
@@ -103,6 +106,34 @@ public static class V1Endpoints
             })
             .RequireAuthorization(Policies.AdminOnly)
             .WithName("QsoDelete");
+
+        builder.MapGet("adif/{call?}", async (string? call, string? begin, string? end, HrdDbContext dbContext) =>
+                TypedResults.Ok(await LogbookHandlers.GetAdif(call, begin, end, dbContext)))
+            .WithName("LogbookAdif");
+
+        // could be run as GET "logbook/lotw/qsls?date=yyyy-mm-dd" or POST with {"date":"yyyy-mm-dd"}
+        builder.MapPost("lotw/qsls", async Task<Results<BadRequest<string>, Ok<LotwSyncResponse>>> ([FromQuery] DateOnly? date, [FromBody] LotwQslSyncRequest? request, HrdDbContext dbContext, ILotwService lotwService, CancellationToken ct) =>
+            {
+                try
+                {
+                    var since = request?.Date ?? date;
+                    if (since is null)
+                        return TypedResults.BadRequest("Provide date either as query (?date=YYYY-MM-DD) or JSON body {\"date\":\"YYYY-MM-DD\"}.");
+
+                    return TypedResults.Ok(await LogbookHandlers.SyncLotwQsls(since.Value, dbContext, lotwService, ct));
+                }
+                catch (ArgumentException ex)
+                {
+                    return TypedResults.BadRequest(ex.Message);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    return TypedResults.BadRequest(ex.Message);
+                }
+            })
+            .RequireAuthorization(Policies.AdminOnly)
+            .WithRequestTimeout("lotw")
+            .WithName("LogbookLotwQsls");
 
         builder.MapGet("{call?}", async (string? call, int? skip, int? take, string? sort, int? orderBy, string? begin, string? end, HrdDbContext dbContext, IAuthorizationService authSvc, IHttpContextAccessor httpContext) =>
                 TypedResults.Ok(await LogbookHandlers.GetLog(call, skip, take, sort, orderBy, begin, end, dbContext, authSvc, httpContext)))

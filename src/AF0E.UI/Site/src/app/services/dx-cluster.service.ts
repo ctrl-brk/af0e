@@ -1,6 +1,5 @@
 ﻿import {inject, Injectable, NgZone} from '@angular/core';
-import {map, Observable, Subject} from 'rxjs';
-import {firstValueFrom} from 'rxjs';
+import {firstValueFrom, map, Observable, Subject} from 'rxjs';
 import * as signalR from '@microsoft/signalr';
 import {AuthService} from '@auth0/auth0-angular';
 import {Configuration} from '../shared/configuration.service';
@@ -105,10 +104,10 @@ export class DxClusterService {
         const status = this.normalizeStatus(await hub.invoke<DxClusterStatusModel>('SubscribeDxCluster'));
         this._zone.run(() => this.status$.next(status));
       } catch (err) {
-        this._log.error('DX cluster SignalR resubscribe failed', err);
+        this._log.error(err);
       }
     });
-    hub.onclose(err => this._log.error('DX cluster SignalR closed', err));
+    hub.onclose(err => this._log.error(err));
 
     hub.on('dxcluster.status', (status: DxClusterStatusModel) => {
       const normalized = this.normalizeStatus(status);
@@ -153,6 +152,10 @@ export class DxClusterService {
   private normalizeSpot(spot: DxClusterSpotModel): DxClusterSpotModel {
     return {
       ...spot,
+      dxccEntityCode: spot.dxccEntityCode ?? null,
+      dxccEntityName: spot.dxccEntityName ?? null,
+      dxccCountryCode: spot.dxccCountryCode ?? null,
+      dxccWorkedStatus: spot.dxccWorkedStatus ?? null,
       mode: spot.mode ?? null,
       spotTimeUtc: new Date(spot.spotTimeUtc),
       receivedAtUtc: new Date(spot.receivedAtUtc)

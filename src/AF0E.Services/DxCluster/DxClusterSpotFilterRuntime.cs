@@ -1,4 +1,5 @@
 ﻿using System.Text.RegularExpressions;
+using AF0E.Common.Radio;
 using AF0E.Services.DxCluster.Configuration;
 using AF0E.Services.DxCluster.Models;
 
@@ -85,7 +86,7 @@ internal sealed class DxClusterSpotFilterRuntime
             return true;
 
         var spotMode = DxClusterSpotModeDetector.NormalizeMode(spot.Mode);
-        return spotMode is not null && _modes.Contains(spotMode);
+        return _modes.Any(filterMode => RadioHelper.ModesMatch(filterMode, spotMode));
     }
 
     private static bool IsRegexMatch(Regex regex, string value)

@@ -66,7 +66,7 @@ export class PotaActivationLogComponent implements OnInit {
       return;
     }
 
-    let call = qso.operatorCallsign ?? Utils.getMyEffectiveCall(qso.date);
+    let call = qso.operatorCallsign ?? Utils.getMyEffectiveCall(qso.date, true);
     if (qso.stationCallsign && qso.stationCallsign !== call)
       call = `${call} @ ${qso.stationCallsign}`;
 

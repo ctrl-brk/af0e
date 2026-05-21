@@ -8,6 +8,7 @@
 - `GET /api/v1/dxcluster/spots?since=2026-05-06T18:00:00Z&filter=Rare DX` returns cached recent spots, optionally filtered by spot time and a named filter
 - The service reconnects automatically and stops itself after the configured inactivity timeout
 - Changes to `DxCluster:Filters` in `dxcluster.filters.json` are hot-reloaded; connection/server settings are still loaded at service startup
+- DX cluster spots are also enriched with a best-effort DXCC entity name and country code by matching the spotted callsign against `Dxcc.PrefixRegExp`; the UI renders a small flag image from that country code when available
 
 ### Named DX Cluster filters
 
@@ -62,3 +63,5 @@ Optional environment-specific overrides are also loaded from `dxcluster.filters.
 - when present, `CallsignPatterns` is a pipe-delimited list of regex patterns and each pattern is anchored as `^pattern$`
 - invalid regex fragments are ignored and reported back in the DX cluster status payload
 - mode detection is best-effort: explicit mode text in the spot/comment wins, otherwise the service falls back to common amateur band-plan frequency windows
+- DXCC matching is also best-effort: the matcher prefers the most specific prefix/regex match available, but some entities remain inherently ambiguous from callsign alone
+- when a DXCC entity is matched, the feed also classifies your log status into four cases: verified on the same band/mode, verified on another band/mode, worked but not verified, or not worked yet; the DX cluster UI colors rows green, yellow, orange, and red respectively

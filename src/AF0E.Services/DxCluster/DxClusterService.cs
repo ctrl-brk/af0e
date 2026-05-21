@@ -9,6 +9,7 @@ namespace AF0E.Services.DxCluster;
 
 public sealed partial class DxClusterService : IDxClusterService, IAsyncDisposable
 {
+    private readonly IDxccMatcher _dxccMatcher;
     private readonly IDxClusterEventsPublisher _eventsPublisher;
     private readonly ILogger<DxClusterService> _logger;
     private readonly SemaphoreSlim _lifecycleGate = new(1, 1);
@@ -31,10 +32,11 @@ public sealed partial class DxClusterService : IDxClusterService, IAsyncDisposab
     private DateTimeOffset? _lastStartUtc;
     private DateTimeOffset? _lastStopUtc;
 
-    public DxClusterService(IOptionsMonitor<DxClusterOptions> optionsMonitor, IDxClusterEventsPublisher eventsPublisher, ILogger<DxClusterService> logger)
+    public DxClusterService(IOptionsMonitor<DxClusterOptions> optionsMonitor, IDxccMatcher dxccMatcher, IDxClusterEventsPublisher eventsPublisher, ILogger<DxClusterService> logger)
     {
         ArgumentNullException.ThrowIfNull(optionsMonitor);
 
+        _dxccMatcher = dxccMatcher;
         _eventsPublisher = eventsPublisher;
         _logger = logger;
 
@@ -351,7 +353,33 @@ public sealed partial class DxClusterService : IDxClusterService, IAsyncDisposab
             }
 
             if (DxClusterSpotParser.TryParse(runtime.Options.Name, line, DateTimeOffset.UtcNow, out var spot) && spot is not null)
-                await AddSpotAsync(runtime, spot, cancellationToken);
+                await AddSpotAsync(runtime, await EnrichSpotAsync(spot, cancellationToken), cancellationToken);
+        }
+    }
+
+    private async ValueTask<DxClusterSpot> EnrichSpotAsync(DxClusterSpot spot, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var match = await _dxccMatcher.MatchAsync(spot, cancellationToken);
+            return match is null || string.IsNullOrWhiteSpace(match.EntityName)
+                ? spot
+                : spot with
+                {
+                    DxccEntityCode = match.EntityCode,
+                    DxccEntityName = match.EntityName.Trim(),
+                    DxccCountryCode = string.IsNullOrWhiteSpace(match.CountryCode) ? null : match.CountryCode.Trim().ToUpperInvariant(),
+                    DxccWorkedStatus = match.WorkedStatus.ToString()
+                };
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested || _lifetimeCts.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            LogDxccLookupFailed(spot.DxCallsign, ex);
+            return spot;
         }
     }
 
@@ -557,6 +585,9 @@ public sealed partial class DxClusterService : IDxClusterService, IAsyncDisposab
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Connected to DX cluster server {ServerName} ({Host}:{Port})")]
     private partial void LogServerConnected(string serverName, string host, int port);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "DXCC lookup failed for spotted callsign {Callsign}")]
+    private partial void LogDxccLookupFailed(string callsign, Exception exception);
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Sent DX cluster post-login command to {ServerName}: {Command}")]
     private partial void LogPostLoginCommandSent(string serverName, string command);

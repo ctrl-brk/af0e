@@ -48,7 +48,7 @@ export class QsoModePipe implements PipeTransform {
       case 'MFSK':
         return 'FT4';
     }
-    return mode;
+    return mode || '?';
   }
 }
 

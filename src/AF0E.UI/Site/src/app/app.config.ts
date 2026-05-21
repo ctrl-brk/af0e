@@ -47,6 +47,11 @@ export const appConfig: ApplicationConfig = {
             httpMethod: 'POST',
           },
           {
+            // LOTW download - require authentication
+            uri: '/api/v1/logbook/lotw/*',
+            httpMethod: 'POST',
+          },
+          {
             // Create activation - require authentication
             uri: '/api/v1/pota/activations',
             httpMethod: 'POST',

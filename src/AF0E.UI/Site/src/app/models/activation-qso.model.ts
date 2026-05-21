@@ -87,13 +87,13 @@ export function activationQsoToAdif(qso: ActivationQsoModel, activation: PotaAct
   rec += adifField('MY_SIG', 'POTA');
   rec += adifField('MY_SIG_INFO', activation.parkNum);
   if (activation.state) rec += adifField('MY_STATE', qso.myState);
-  rec += adifField('OPERATOR', qso.operatorCallsign ?? Utils.getMyEffectiveCall(qso.date));
+  rec += adifField('OPERATOR', qso.operatorCallsign ?? Utils.getMyEffectiveCall(qso.date, false));
   rec += adifField('QSLMSG', `POTA ${activation.parkNum}`);
   rec += adifField('QSO_DATE', adifDate(d));
   rec += adifField('RST_RCVD', qso.rstRcvd);
   rec += adifField('RST_SENT', qso.rstSent);
   rec += adifField('STATE', qso.state);
-  rec += adifField('STATION_CALLSIGN', qso.stationCallsign ?? Utils.getMyEffectiveCall(qso.date));
+  rec += adifField('STATION_CALLSIGN', qso.stationCallsign ?? Utils.getMyEffectiveCall(qso.date, false));
   rec += adifField('TIME_ON', adifTime(d));
   rec += '<EOR>\n';
   return rec;
@@ -118,7 +118,25 @@ export function activationLogToAdif(entries: ActivationQsoModel[], activation: P
     `<PROGRAMID:8>AF0E.org\n` +
     `<EOH>\n`;
 
-  const records = entries.map(qso => activationQsoToAdif(qso, activation)).join('');
+  // Deduplicate: keep only the latest QSO per band/mode/date combination
+  const dedupMap = new Map<string, ActivationQsoModel>();
+  for (const qso of entries) {
+    const qsoDate = new Date(qso.date);
+    const dateKey =
+      `${qsoDate.getFullYear()}-` +
+      `${String(qsoDate.getMonth() + 1).padStart(2, '0')}-` +
+      `${String(qsoDate.getDate()).padStart(2, '0')}`;
+    const key = `${qso.band}|${qso.mode}|${dateKey}`;
+    const existing = dedupMap.get(key);
+
+    // Keep the one with the latest timestamp
+    if (!existing || new Date(qso.date).getTime() > new Date(existing.date).getTime()) {
+      dedupMap.set(key, qso);
+    }
+  }
+
+  const deduped = Array.from(dedupMap.values());
+  const records = deduped.map(qso => activationQsoToAdif(qso, activation)).join('');
 
   return {
     content: header + records,

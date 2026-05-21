@@ -6,16 +6,36 @@
   .p-datatable-tbody > tr > td {
     white-space: nowrap;
     padding: 0.5rem;
+    a {color: var(--text-color);}
     &.dxcluster-time { width: 3rem;}
+    &.dxcluster-entity { width: 12rem; }
     &.dxcluster-freq { width: 8rem;}
     &.dxcluster-mode { width: 4rem; }
     &.dxcluster-spotter { width: 8rem;}
     &.dxcluster-comment { font-style: italic; text-transform: lowercase}
-    &.dxcluster-call {
-      width: 8rem;
-      a {color: var(--text-color);}
-    }
+    &.dxcluster-call {width: 8rem;}
+
   }
+}
+
+.dxcluster-action {
+  color: var(--text-color);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.dxcluster-action:hover {
+  opacity: 0.85;
+}
+
+.dxcluster-flag {
+  display: inline-block;
+  width: 16px;
+  height: 12px;
+  margin-right: 0.35rem;
+  vertical-align: text-top;
+  object-fit: cover;
+  //border: 1px solid color-mix(in srgb, var(--text-color-secondary) 35%, transparent);
 }
 
 .dxcluster-caption {
@@ -59,11 +79,37 @@
 }
 
 .dxcluster-empty {
+  white-space: normal !important;
   text-align: center;
   padding: 1.5rem;
   color: var(--text-color-secondary);
 }
 
+.dxcluster-empty-content {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
 .dxcluster-row-offline {
   opacity: 0.85;
 }
+
+.tbl-dxcluster {
+  .p-datatable-tbody > tr.dxcluster-row-verified-band-mode > td {
+    background: rgba(34, 197, 94, 0.14);
+  }
+
+  .p-datatable-tbody > tr.dxcluster-row-verified-other > td {
+    background: rgba(234, 179, 8, 0.16);
+  }
+
+  .p-datatable-tbody > tr.dxcluster-row-worked-unverified > td {
+    background: rgba(249, 115, 22, 0.18);
+  }
+
+  .p-datatable-tbody > tr.dxcluster-row-not-worked > td {
+    background: rgba(239, 68, 68, 0.14);
+  }
+}
+
