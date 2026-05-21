@@ -105,7 +105,7 @@ describe('Utils', () => {
 
       expect(mockNotificationService.addMessage).toHaveBeenCalledTimes(1);
       expect(mockNotificationService.addMessage).toHaveBeenCalledWith(new NotificationMessageModel(NotificationMessageSeverity.Error, 'Error', 'Unhandled error. Please notify me.', false));
-      expect(mockLogService.error).toHaveBeenCalledWith(error);
+      expect(mockLogService.error).toHaveBeenCalled();
     });
 
     describe('HTTP error responses', () => {

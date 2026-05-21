@@ -3,7 +3,7 @@
   <div class="card-layout">
     <div class="card-main">
       <h3>
-        <a href="https://pota.app/#/park/{{activation()!.parkNum}}">{{activation()!.parkNum}} - {{activation()!.parkName}}</a>
+        <a href="https://pota.app/#/park/{{activation()!.parkNum}}">{{activation()?.stationCallsign !== 'AF0E' ? activation()?.stationCallsign + ' / ' : '' }}{{activation()?.parkNum}} - {{activation()?.parkName}}</a>
         @if (_authSvc.isAdmin) {
           <p-confirmpopup />
           &nbsp;&nbsp;<p-button severity="info" icon="pi pi-pencil" size="small" title="Edit" outlined="true" (onClick)="editActivationVisible.set(true)" />
@@ -35,10 +35,6 @@
     <div class="card-actions">
       <div class="card-actions-row">
         @if (_authSvc.isAdmin) {
-          <p-checkbox inputId="rigControl" [(ngModel)]="rigControl" [binary]="true" />
-          <label for="rigControl">Rig</label>&nbsp;
-          <p-checkbox inputId="keyerControl" [(ngModel)]="keyerControl" [binary]="true" />
-          <label for="keyerControl">Keyer</label>
           <p-button severity="help" label="Spot" icon="pi pi-megaphone" [disabled]="activation().endDate" (onClick)="onSpotShow()" />
           <p-button severity="success" label="QSO" icon="pi pi-plus" (onClick)="onAddQso()" />
         }
@@ -65,7 +61,7 @@
     <p-tabpanel value="log">
       <div class="log-container">
         <div>
-          <app-activation-log [logEntries]="logEntries()" (qsoSelected)="onQsoSelected($event)" (qsoDeleted)="onQsoDeleted()"></app-activation-log>
+          <app-activation-log [activation]="activation()"  [logEntries]="logEntries()" (qsoSelected)="onQsoSelected($event)" (qsoDeleted)="onQsoDeleted()"></app-activation-log>
         </div>
         <div>
           <app-activation-info [activation]="activation()"></app-activation-info>
@@ -80,21 +76,16 @@
 
 @if (_authSvc.isAdmin) {
   <p-dialog [header]="qsoDlgHeader()" [modal]="true" [(visible)]="qsoEditVisible" [style]="{width:'64rem'}" [focusOnShow]="false">
-    @if (qsoEditVisible()) {
-      <app-qso-edit
-        [logId]="logId()"
-        [potaActivation]="activation()"
-        [keyerControl]="keyerControl() && rigCommanderConfig().winkeyer.enabled"
-        [(rigControl)]="rigControl"
-        [filtersEnabled]="rigCommanderConfig().activeProfile !== 'FT-897'"
-        [editMode]="qsoEditMode"
-        (activationCreated)="onNewActivationCreated($event)"
-        (formInit)="onQsoFormInit($event)"
-        (saved)="onQsoSaved()" />
-    }
+    <app-qso-edit
+      [shown]="qsoEditVisible()"
+      [params]="qsoEditParams()"
+      [editMode]="qsoEditMode"
+      (activationCreated)="onNewActivationCreated($event)"
+      (formInit)="onQsoFormInit($event)"
+      (saved)="onQsoSaved()" />
   </p-dialog>
 
-  <p-dialog header="Add spot" [modal]="true" [(visible)]="spotDlgVisible" [style]="{width:'16rem'}" [focusOnShow]="true">
+  <p-dialog header="Spot {{activation()?.stationCallsign}}" [modal]="true" [(visible)]="spotDlgVisible" [style]="{width:'16rem'}" [focusOnShow]="true">
     @if (spotDlgVisible()) {
       <div style="margin-top: 1rem;">
         <p-floatlabel variant="on">

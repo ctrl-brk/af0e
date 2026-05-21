@@ -4,8 +4,8 @@ import {
   effect,
   ElementRef,
   inject,
+  Injector,
   input,
-  model,
   OnInit,
   output,
   signal,
@@ -18,11 +18,10 @@ import {toSignal} from '@angular/core/rxjs-interop';
 import {NotificationService} from '../../shared/notification.service';
 import {LogService} from '../../shared/log.service';
 import {LogbookService} from '../../services/logbook.service';
-import {IdbService} from '../../services/idb.service';
 import {InfraService} from '../../services/infra.service';
 import {PotaService} from '../../services/pota.service';
 import {QrzService} from '../../services/qrz.service';
-import {QsoDetailModel} from '../../models/qso-detail.model';
+import {QsoDetailModel, qsoDetailToAdif} from '../../models/qso-detail.model';
 import {Utils} from '../../shared/utils';
 import {NotificationMessageModel, NotificationMessageSeverity} from '../../shared/notification-message.model';
 import {FloatLabelModule} from 'primeng/floatlabel';
@@ -48,6 +47,19 @@ import {Checkbox, CheckboxChangeEvent} from 'primeng/checkbox';
 import {PotaActivationModel} from '../../models/pota-activation.model';
 import {NewActivationFormData} from '../pota/activations/new-activation-form-data';
 import {QsoEditMode} from '../../shared/qso-edit-mode.enum';
+
+export interface QsoEditParams {
+  logId?: number;
+  callSign?: string;
+  tune?: {
+    freqHz: number;
+    mode?: string;
+  },
+  potaActivation?: PotaActivationModel;
+  huntingStationCall?: string;
+  //we might be hunting, but at the same time activating. Need the component to work in hunting mode, but add activationId when saving.
+  huntingFromActivationId?: number;
+}
 
 @Component({
   selector: 'app-qso-edit',
@@ -76,9 +88,9 @@ import {QsoEditMode} from '../../shared/qso-edit-mode.enum';
   ],
 })
 export class QsoEditComponent implements OnInit {
+  private _injector = inject(Injector);
   private _fb = inject(FormBuilder);
   private _lbSvc = inject(LogbookService);
-  private _idbSvc = inject(IdbService);
   private _ntfSvc= inject(NotificationService);
   private _log = inject(LogService);
   private _potaSvc = inject(PotaService);
@@ -87,15 +99,16 @@ export class QsoEditComponent implements OnInit {
   private _callInput = viewChild<ElementRef>('callInput');
   private _rstSentInput = viewChild<ElementRef>('rstSentInput');
   private _rstRcvdInput = viewChild<ElementRef>('rstRcvdInput');
+  private _rigReady = signal(false);
+  private _keyerReady = signal(false);
   private _lastCallsign = '';
+  private _prevParams: QsoEditParams = {};
 
-  logId = input.required<number>();
-  callSign = input<string>();
-  keyerControl = input<boolean>(false);
+  params = input.required<QsoEditParams>();
   editMode = input<QsoEditMode>(QsoEditMode.View);
-  rigControl = model(false);
-  filtersEnabled = input(false);
-  potaActivation = input<PotaActivationModel|null>(null);
+  shown = input(false);
+  rigReady = this._rigReady.asReadonly();
+  keyerReady = this._keyerReady.asReadonly();
 
   editModeChange = output<boolean>();
   saved = output<any>();
@@ -105,6 +118,7 @@ export class QsoEditComponent implements OnInit {
   protected qso: QsoDetailModel = null!;
   protected qsoForm!: FormGroup;
   isEditMode = false;
+  protected rcConfig: any;
   protected imgUrl = signal('');
   protected cwCallLabel = signal('???');
   protected cwSending = signal(false);
@@ -112,7 +126,7 @@ export class QsoEditComponent implements OnInit {
   protected cwSpeed = signal(22);
   protected callHistory = signal<GridTrackerLookupModel[]>([]);
   protected cwTextVisible = signal(false);
-  protected readonly QsoEditMode = QsoEditMode;
+  protected readonly QsoEditMode = QsoEditMode; //so we can use the enum value in html
 
   // Dropdown options
   protected modeOptions = MODE_OPTIONS;
@@ -120,62 +134,60 @@ export class QsoEditComponent implements OnInit {
   protected qslOptions = QSL_OPTIONS;
   protected qslViaOptions = QSL_VIA_OPTIONS;
 
+  protected stationInfo = {stationCall: "AF0E", cwCall: "AF|0|E", operatorCall: "AF0E"};
+
   protected f3CwMsg = signal<{def: string, alt: string, ctl: string, f6: string}>({def: '', alt: '', ctl: '', f6: ''});
-  protected f1Title = 'cq POTA de AFØE AFØE k';
+  protected f1Title = 'cq POTA de AF|Ø|E AFØE k';
   protected f2Title = 'r 73 ee\nr 73 de AFØE [alt]';
-  protected f3Title = computed(() => {return `${this.f3CwMsg().def.replaceAll('|', '')} k\n${this.f3CwMsg().alt.replaceAll('|', '')} k [alt]\n${this.f3CwMsg().ctl.replaceAll('|', '')} k [ctl]\n${this.f3CwMsg().f6.replaceAll('|', '')} k [F6]`});
+  protected f3Title = computed(() => {return `${this.f3CwMsg().def.replaceAll('|', '')} k\n${this.f3CwMsg().alt.replaceAll('|', '')} k [alt]\n${this.f3CwMsg().ctl.replaceAll('|', '')} k [ctl]\n${this.f3CwMsg().f6.replaceAll('|', '')} k [F6]`.replaceAll('0', 'Ø');});
   protected f8Title = '?\nAGN? [alt]';
 
-  constructor() {
-    this.initializeForm();
+  ngOnInit(): void {
+    this._infraSvc.getConfig().subscribe({
+      next: (r: any) => this.rcConfig = r
+    });
 
-    const callSignal = toSignal<string>(this.qsoForm.get('call')!.valueChanges);
-    const freqSignal = toSignal(this.qsoForm.get('freq')!.valueChanges);
-    const modeSignal = toSignal<string>(this.qsoForm.get('mode')!.valueChanges);
-    const rstSentSignal = toSignal<string>(this.qsoForm.get('rstSent')!.valueChanges);
-    const stateSignal = toSignal<string>(this.qsoForm.get('state')!.valueChanges);
-    const nameSignal = toSignal<string>(this.qsoForm.get('name_fmt')!.valueChanges);
-    const filterSignal = toSignal(this.qsoForm.get('radioFilter')!.valueChanges);
+    this.initializeForm();
+    this.setEffects();
+  }
+
+  private setEffects(inj: {injector: Injector} = {injector: this._injector}) {
+    const callSignal = toSignal<string>(this.qsoForm.get('call')!.valueChanges, inj);
+    const freqSignal = toSignal(this.qsoForm.get('freq')!.valueChanges, inj);
+    const modeSignal = toSignal<string>(this.qsoForm.get('mode')!.valueChanges, inj);
+    const rstSentSignal = toSignal<string>(this.qsoForm.get('rstSent')!.valueChanges, inj);
+    const stateSignal = toSignal<string>(this.qsoForm.get('state')!.valueChanges, inj);
+    const nameSignal = toSignal<string>(this.qsoForm.get('name_fmt')!.valueChanges, inj);
+    const filterSignal = toSignal(this.qsoForm.get('radioFilter')!.valueChanges, inj);
+
+    effect(() => {
+      const p = this.params();
+      if (p.logId !== this._prevParams.logId || p.callSign !== this._prevParams.callSign)
+        this.handleLogIdOrCallChange(p);
+
+      if (p.potaActivation?.id !== this._prevParams.potaActivation?.id || p.huntingStationCall !== this._prevParams.huntingStationCall)
+        this.handlePotaActivationChange(p);
+
+      if (p.tune && p.tune.freqHz !== this._prevParams.tune?.freqHz)
+        this.tuneRig(p.tune.freqHz, p.tune.mode);
+
+      this._prevParams = {...p};
+    }, inj);
 
     effect(() => {
       const call = callSignal();
       this.cwCallLabel.set(call ? call.toUpperCase() : '???');
-    });
+    }, inj);
 
     effect(() => {
       const mode = modeSignal();
       if (mode)
         this.adjustRstForMode(mode);
-    });
+    }, inj);
 
     effect(() => {
       this.setExchangeText(rstSentSignal()!, stateSignal()!, nameSignal()!);
-    });
-
-    effect(() => {
-      const id = this.logId();
-      const call = this.callSign();
-
-      // Use untracked to prevent form operations from triggering this effect again
-      untracked(() => {
-        if (id > 0) {
-          this.isEditMode = true;
-          this.editModeChange.emit(true);
-          this.onQsoChange(id);
-        } else {
-          this.isEditMode = false;
-          this.editModeChange.emit(false);
-          this.initializeNewQso(false);
-
-          if (call) {
-            this.qsoForm.patchValue({call});
-            this.emitFormInit();
-          }
-        }
-
-        this.setCallFocus(true);
-      });
-    });
+    }, inj);
 
     effect(() => {
       const ctrl = this.qsoForm.get('radioFilter')!;
@@ -186,10 +198,10 @@ export class QsoEditComponent implements OnInit {
       }
       else
         ctrl.disable();
-    });
+    }, inj);
 
     effect(() => {
-      if (!this.rigControl()) return;
+      if (!this._rigReady()) return;
 
       let freq = this.qsoForm.get('freq')?.value;
       let mode = this.qsoForm.get('mode')?.value;
@@ -203,18 +215,20 @@ export class QsoEditComponent implements OnInit {
       }
 
       this._infraSvc.setRigStatus(freq, mode, filter).subscribe({
-        error: e => {
-          this.rigControl.set(false);
-          Utils.showErrorMessage(e, this._ntfSvc, this._log);
-        }
+        error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
       });
-    });
-  }
+    }, inj);
 
-  ngOnInit(): void {
-    if (this.potaActivation() && this.rigControl()) {
-      this.getRadioStatus();
-    }
+    effect(() => {
+      if (this.shown()) {
+        this.checkInfraAccess();
+        this.setCallFocus(true);
+        this.imgUrl.set('');
+        this.cwSpeed.set(22);
+      }
+      else
+        this._prevParams = {};
+    }, inj);
   }
 
   private initializeForm() {
@@ -328,14 +342,14 @@ export class QsoEditComponent implements OnInit {
     });
   }
 
-  protected onFreqBlur(){
+  protected normalizeFreqAndMode(){
     const freq = this.qsoForm.get('freq')?.value;
 
     if (!freq || freq < 1.8 || freq > 450000000) return;
 
     let freq1 = freq;
     if (freq < 1000) freq1 *= 1000000;
-    else if (freq < 1000000) freq1 *= 100;
+    else if (freq < 1000000) freq1 *= 1000;
     if (freq1 !== freq)
       this.qsoForm.get('freq')?.setValue(freq1, { emitEvent: false });
 
@@ -349,14 +363,12 @@ export class QsoEditComponent implements OnInit {
 
   onCallBlur() {
     const callControl = this.qsoForm.get('call');
-    if (!callControl || callControl.invalid) {
+    if (!callControl || callControl.invalid)
       return;
-    }
 
     const callSign = (callControl.value || '').trim();
-    if (!callSign) {
+    if (!callSign)
       return;
-    }
 
     if (this._lastCallsign == callSign.toLowerCase())
       return;
@@ -505,6 +517,9 @@ export class QsoEditComponent implements OnInit {
   }
 
   sendCw(text: string, k = false, updateUi = true, repeat: number|null = null, repeatDelaySeconds: number|null = null) {
+    if (!this._keyerReady())
+      return;
+
     let timeToSend = 0;
     this.cqSending.set(false);
     this.cwSending.set(true);
@@ -514,14 +529,16 @@ export class QsoEditComponent implements OnInit {
     if (updateUi)
       timeToSend = Utils.calculateMorseTime(text, this.cwSpeed());
 
-    this._infraSvc.sendCw(text, this.rigControl(), this.cwSpeed(), repeat, repeatDelaySeconds).subscribe({
+    this._infraSvc.sendCw(text, this._rigReady(), this.cwSpeed(), repeat, repeatDelaySeconds).subscribe({
       next: (r) => {
         if (r.split && !r.sent) {
-          this._ntfSvc.addMessage(new NotificationMessageModel(NotificationMessageSeverity.Warn, "SPLIT ON!", "Split is on. Send again.", false));
+          Utils.showWarningMessage('SPLIT ON!', "Split is on. Send again.", this._ntfSvc);
           return;
         }
         if (updateUi)
           setTimeout(() => this.checkKeyerStatus(), timeToSend);
+        else
+          this.cwSending.set(false);
       },
       error: e => {
         this.cwSending.set(false);
@@ -533,7 +550,7 @@ export class QsoEditComponent implements OnInit {
   protected sendPotaCq(startCq: boolean) {
     if (!startCq && !this.cqSending()) return;
 
-    this.sendCw('CQ POTA DE AF0E AF0E K', false, false, 50, 5);
+    this.sendCw(`CQ POTA DE ${this.stationInfo.cwCall} ${this.stationInfo.cwCall} K`, false, false, 50, 5);
     this.cqSending.set(true);
   }
 
@@ -551,25 +568,36 @@ export class QsoEditComponent implements OnInit {
     })
   }
 
-  protected getRadioStatus() {
-    if (!this.rigControl()) return;
+  protected getRadioStatus(healthOnly = false) {
+    if (!healthOnly && !this._rigReady()) return;
 
     this._infraSvc.getRigStatus().subscribe({
       next: r => {
+        this._rigReady.set(r.ok);
+        if (healthOnly && !this.params().potaActivation)
+          return;
+
         this.qsoForm.get('freq')?.setValue(r.frequencyHz, { emitEvent: false });
         this.qsoForm.get('band')?.setValue(Utils.getBandFromFrequency(r.frequencyHz), {emitEvent: false});
         this.qsoForm.get('mode')?.setValue(r.mode);
       },
       error: e => {
-        this.rigControl.set(false);
-        Utils.showErrorMessage(e, this._ntfSvc, this._log)
+        this._rigReady.set(false);
+        if (!healthOnly)
+          Utils.showErrorMessage(e, this._ntfSvc, this._log)
       }
     });
   }
 
-  checkKeyerStatus() {
+  private checkKeyerStatus(healthOnly = false) {
+    if (!healthOnly && !this._keyerReady()) return;
+
     this._infraSvc.getKeyerStatus().subscribe({
       next: (r) => {
+        if (healthOnly) {
+          this._keyerReady.set(r.ok);
+          return;
+        }
         if (r.busy) {
           setTimeout(() => this.checkKeyerStatus(), 1000);
           return;
@@ -578,9 +606,30 @@ export class QsoEditComponent implements OnInit {
       },
       error: e => {
         this.cwSending.set(false);
-        Utils.showErrorMessage(e, this._ntfSvc, this._log);
+        this._keyerReady.set(false);
+        if (!healthOnly)
+          Utils.showErrorMessage(e, this._ntfSvc, this._log);
       }
     })
+  }
+
+  private checkInfraAccess() {
+    this._infraSvc.getHealth().subscribe({
+      next: r => {
+        if (!r.ok) {
+          this._rigReady.set(false);
+          this._keyerReady.set(false);
+        }
+        else {
+          this.checkKeyerStatus(true);
+          this.getRadioStatus(true);
+        }
+      },
+      error: () => {
+        this._rigReady.set(false);
+        this._keyerReady.set(false);
+      }
+    });
   }
 
   protected setNoiseReduction(event: CheckboxChangeEvent) {
@@ -632,11 +681,11 @@ export class QsoEditComponent implements OnInit {
     formValue.call = formValue.call.toUpperCase();
     formValue.state = formValue.state?.toUpperCase();
 
-    let activationId = this.potaActivation() ? this.potaActivation()!.id : 0; //stupid typescript
+    let activationId = this.params().potaActivation?.id || 0;
 
     if (this.isEditMode) {
       if (activationId > 0) {
-        this._idbSvc.saveQso(activationId, formValue).subscribe({
+        this._infraSvc.saveAdif(qsoDetailToAdif(formValue)).subscribe({
           error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
         });
       }
@@ -654,33 +703,39 @@ export class QsoEditComponent implements OnInit {
     let qsoCreated = false;
 
     if (activationId > 0) {
-      this._idbSvc.saveQso(activationId, formValue).subscribe({
+      this._infraSvc.saveAdif(qsoDetailToAdif(formValue)).subscribe({
         error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
       });
 
       qsoCreated = this.isNewActivationDay(formValue);
     }
 
-    if (!qsoCreated)
-      this.createQso(formValue, activationId, true);
+    if (qsoCreated)
+      return;
+
+    if (!activationId)
+      activationId = this.params().huntingFromActivationId || 0;
+
+    this.createQso(formValue, activationId, true);
   }
 
   private isNewActivationDay(formValue: any): boolean {
-    const actDay = this.potaActivation()!.startDate.getDate(); //treats date as local, but the value is in UTC
+    const act = this.params().potaActivation!;
+    const actDay = act.startDate.getDate(); //treats date as local, but the value is in UTC
     const qsoDate = Utils.utcStringToDate(formValue.date);
 
     if (actDay === qsoDate!.getDate()) return false; //same day, same activation
 
     const newAct:NewActivationFormData = {
-      prevDayActivationId: this.potaActivation()!.id,
-      parkNumber: this.potaActivation()!.parkNum,
-      grid: this.potaActivation()!.grid,
-      county: this.potaActivation()!.county,
-      state: this.potaActivation()!.state,
-      lat: this.potaActivation()!.lat ? this.potaActivation()!.lat!.toString() : '',
-      lon: this.potaActivation()!.long ? this.potaActivation()!.long!.toString() : '',
-      stationCallsign: this.potaActivation()!.stationCallsign,
-      operatorCallsign: this.potaActivation()!.operatorCallsign,
+      prevDayActivationId: act.id,
+      parkNumber: act.parkNum,
+      grid: act.grid,
+      county: act.county,
+      state: act.state,
+      lat: act.lat ? act.lat!.toString() : '',
+      lon: act.long ? act.long!.toString() : '',
+      stationCallsign: this.stationInfo.stationCall,
+      operatorCallsign: this.stationInfo.operatorCall,
       startDate: formValue.date
     };
 
@@ -699,7 +754,7 @@ export class QsoEditComponent implements OnInit {
   private createQso(formValue: any, activationId: number, emitSaved: boolean) {
     this._lbSvc.createQso(activationId > 0 ? activationId : null, formValue).subscribe({
       next: (q) => {
-        if (this.potaActivation()) {
+        if (this.params().potaActivation) {
           this.initializeNewQso(true);
           this.setCallFocus(false);
         }
@@ -733,6 +788,8 @@ export class QsoEditComponent implements OnInit {
   }
 
   private getDefaultFormValues() {
+    const act = this.params().potaActivation;
+
     return {
       id: 0,
       date: Utils.getCurrentUtcDate(),
@@ -750,22 +807,22 @@ export class QsoEditComponent implements OnInit {
       cqZone: '',
       ituZone: '',
       dxcc: '',
-      myCity: this.potaActivation() ? this.potaActivation()!.city : 'Broomfield',
-      myCounty: this.potaActivation() ? this.potaActivation()!.county : 'Broomfield',
-      myState: this.potaActivation() ? this.potaActivation()!.state : 'CO',
+      myCity: act?.city || 'Broomfield',
+      myCounty: act?.county || 'Broomfield',
+      myState: act?.state || 'CO',
       myCountry: 'United States',
       myCqZone: '4',
       myItuZone: '7',
-      myGrid:  this.potaActivation() ? this.potaActivation()!.grid : 'DM79lw',
-      stationCallsign: this.potaActivation() ? this.potaActivation()!.stationCallsign : 'AF0E',
-      operatorCallsign: this.potaActivation() ? this.potaActivation()!.operatorCallsign : 'AF0E',
+      myGrid:  act?.grid || 'DM79lw',
+      stationCallsign: this.stationInfo.stationCall || 'AF0E',
+      operatorCallsign: this.stationInfo.operatorCall || this.stationInfo.stationCall || 'AF0E',
       qslSent: 'N',
       qslSentDate: null,
       qslSentVia: null,
       qslRcvd: 'N',
       qslRcvdDate: null,
       qslRcvdVia: null,
-      comment: this.potaActivation()?.parkNum ? `POTA activation ${this.potaActivation()!.parkNum} (${Utils.abbreviateParkName(this.potaActivation()!.parkName)})` : '',
+      comment: act?.parkNum ? `POTA activation ${act.parkNum} (${Utils.abbreviateParkName(act.parkName)})` : '',
       siteComment: '',
       radioFilter: {value: '1', disabled: true}
     };
@@ -839,7 +896,7 @@ export class QsoEditComponent implements OnInit {
         handled = true;
         $event.preventDefault();
         if ($event.altKey)
-          this.sendCw('R 73 de AF0E');
+          this.sendCw(`R 73 de ${this.stationInfo.cwCall}`);
         else
           this.sendCw('R 73 E|E');
         break;
@@ -859,9 +916,9 @@ export class QsoEditComponent implements OnInit {
         handled = true;
         $event.preventDefault();
         if ($event.altKey)
-          this.sendCw('DE AF0|E');
+          this.sendCw(`DE ${this.stationInfo.cwCall}`);
         else
-          this.sendCw('AF0|E');
+          this.sendCw(this.stationInfo.cwCall);
         break;
       case 'F5':
         handled = true;
@@ -966,5 +1023,52 @@ export class QsoEditComponent implements OnInit {
         state: this.qsoForm.get('myState')?.value || '',
       }
     });
+  }
+
+  private handleLogIdOrCallChange(p: QsoEditParams) {
+    untracked(() => {
+      if (p.logId || 0 > 0) {
+        this.isEditMode = true;
+        this.editModeChange.emit(true);
+        this.onQsoChange(p.logId!);
+      } else {
+        this.isEditMode = false;
+        this.editModeChange.emit(false);
+        this.initializeNewQso(false);
+
+        if (p.callSign) {
+          this.qsoForm.patchValue({call: p.callSign});
+          this.emitFormInit();
+        }
+      }
+    });
+  }
+
+  private handlePotaActivationChange(p: QsoEditParams) {
+    const act: PotaActivationModel = p.potaActivation!;
+    const stationCall = act.stationCallsign?.trim() || p.huntingStationCall?.trim() || 'AF0E';
+    const operatorCall = act.operatorCallsign?.trim() || stationCall;
+
+    this.stationInfo = {stationCall, cwCall: stationCall === 'AF0E' ? 'AF|0|E' : stationCall.replace('/', '//'), operatorCall};
+
+    this.qsoForm.patchValue({
+      stationCallsign: stationCall,
+      operatorCallsign: operatorCall,
+      myCity: act.city,
+      myCounty: act.county,
+      myState: act.state,
+      comment: `POTA activation ${act.parkNum} (${Utils.abbreviateParkName(act.parkName)})`,
+      },
+      {emitEvent: false}
+    );
+
+    this.f1Title = `cq POTA de ${stationCall} ${stationCall} k`.replaceAll('0', 'Ø');
+    this.f2Title = `r 73 ee\nr 73 de ${stationCall} [alt]`.replaceAll('0', 'Ø');
+  }
+
+  private tuneRig(freqHz: number, mode: string | undefined) {
+    this.qsoForm.get('freq')?.setValue(freqHz);
+    this.qsoForm.get('mode')?.setValue(mode);
+    this.normalizeFreqAndMode();
   }
 }

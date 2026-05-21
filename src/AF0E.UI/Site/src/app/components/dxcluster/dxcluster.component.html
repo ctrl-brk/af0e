@@ -1,0 +1,99 @@
+﻿<p-table
+  [value]="visibleSpots()"
+  [loading]="loading()"
+  dataKey="rawLine"
+  sortField="spotTimeUtc"
+  [sortOrder]="-1"
+  [scrollable]="true"
+  scrollHeight="flex"
+  class="tbl-dxcluster">
+
+  <ng-template pTemplate="caption">
+    <div class="dxcluster-caption">
+      <div class="caption-row">
+        <div class="caption-left">
+          <p-button severity="primary" size="small" icon="pi pi-refresh" [disabled]="loading() || statusLoading()" (onClick)="refresh()" />
+          <p-tag [severity]="statusSeverity()" [value]="isConnected() ? 'Live' : 'Offline'"></p-tag>
+
+          @if (primaryServer(); as server) {
+            <span class="caption-server">{{ server.name }} ({{ server.host }}:{{ server.port }})</span>
+            <span class="caption-meta">Reconnects: {{ server.reconnectCount }}</span>
+            @if (server.lastSpotUtc) {
+              <span class="caption-meta">Last spot: {{ server.lastSpotUtc | date:'HH:mm:ss':'UTC' }}Z</span>
+            }
+          }
+        </div>
+
+        <div class="caption-right">
+          <p-select
+            inputId="dxcluster-filter"
+            [options]="filterOptions()"
+            [ngModel]="selectedFilterName()"
+            (ngModelChange)="onFilterChanged($event)"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="All spots"
+            size="small" />
+
+          @if (selectedFilter()) {
+            <span>Showing {{ visibleSpots().length }} of {{ spots().length }}</span>
+          } @else {
+            <span>Total: {{ visibleSpots().length }}</span>
+          }
+        </div>
+      </div>
+
+      @if (selectedFilterSummary(); as summary) {
+        <p-fieldset legend="{{selectedFilterName()}}" [toggleable]="true" collapsed="true">
+          <div class="caption-filter">{{ summary }}</div>
+        </p-fieldset>
+      }
+    </div>
+  </ng-template>
+
+  <ng-template pTemplate="header">
+    <tr>
+      <th>UTC</th>
+      <th>DX</th>
+      <th>Entity</th>
+      <th>Freq</th>
+      <th>Mode</th>
+      <th>By</th>
+<!--      <th pSortableColumn="sourceName">Source <p-sortIcon field="sourceName" /></th>-->
+      <th>Comment</th>
+    </tr>
+  </ng-template>
+
+  <ng-template pTemplate="body" let-spot>
+    <tr [ngClass]="getSpotRowClasses(spot)">
+      <td class="dxcluster-time">{{ spot.spotTimeUtc | date:'HH:mm':'UTC' }}</td>
+      <td class="dxcluster-call"><a href="https://www.qrz.com/db/{{spot.dxCallsign}}" target="_blank">{{spot.dxCallsign}}</a></td>
+      <td class="dxcluster-entity">@if (getDxccFlagUrl(spot); as flagUrl) {<img class="dxcluster-flag" [ngSrc]="flagUrl" width="16" height="12" alt="" />}{{ spot.dxccEntityName || '' }}</td>
+      <td class="dxcluster-freq">
+        @if (spot.mode === 'CW' || spot.mode === 'SSB' || spot.mode === 'RTTY' || spot.mode === 'FM' || spot.mode === 'AM') {
+        <span class="dxcluster-action" (click)="onFreqClicked(spot)">{{ spot.frequencyKhz | number:'1.1-3' }}</span>
+        } @else {
+        {{ spot.frequencyKhz | number:'1.1-3' }}
+        }
+      </td>
+      <td class="dxcluster-mode"><p-tag [value]="spot.mode|qsoMode" [severity]="spot.mode|modeSeverity" /></td>
+      <td class="dxcluster-spotter"><a href="https://www.qrz.com/db/{{spot.spotterCallsign}}" target="_blank">{{spot.spotterCallsign}}</a></td>
+<!--      <td class="dxcluster-source">{{ spot.sourceName }}</td>-->
+      <td class="dxcluster-comment" [title]="spot.rawLine">{{ getDisplayComment(spot) ?? '' }}</td>
+    </tr>
+  </ng-template>
+
+  <ng-template pTemplate="emptymessage">
+    <tr>
+      <td colspan="7" class="dxcluster-empty">
+        <div class="dxcluster-empty-content">
+          @if (loading()) {
+            Waiting for DX cluster spots...
+          } @else {
+            No DX cluster spots available.
+          }
+        </div>
+      </td>
+    </tr>
+  </ng-template>
+</p-table>

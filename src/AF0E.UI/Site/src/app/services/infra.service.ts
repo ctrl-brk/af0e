@@ -10,6 +10,10 @@ export class InfraService {
   private _http = inject(HttpService);
   private _infraUrl = Configuration.infraUrl;
 
+  public getHealth(): Observable<{ok: boolean}> {
+    return this._http.get(`${this._infraUrl}/health`);
+  }
+
   public getRigStatus(): Observable<RadioStatus> {
     return this._http.get(`${this._infraUrl}/radio/status`);
   }
@@ -41,6 +45,10 @@ export class InfraService {
         return x;
       })
     );
+  }
+
+  public saveAdif(adif: string): Observable<any> {
+    return this._http.post(`${this._infraUrl}/log/adif`, {adif});
   }
 
   public getConfig(): Observable<any> {

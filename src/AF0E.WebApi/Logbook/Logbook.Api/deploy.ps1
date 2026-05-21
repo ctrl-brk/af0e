@@ -7,6 +7,7 @@ $dstLocalPath = $config.dstLocalPath
 
 Remove-Item ($srcPath + "/appsettings.json")
 Remove-Item ($srcPath + "/appsettings.Development.json")
+Remove-Item ($srcPath + "/dxcluster.filters.json")
 Remove-Item ($srcPath + "/web.config")
 
 $session = New-PSSession -ComputerName $serverName
@@ -43,7 +44,7 @@ Read-Host -Prompt "Press Enter to continue..."
 
 Invoke-Command -Session $session -ScriptBlock {
     param($siteRoot)
-    Get-ChildItem -Path $siteRoot -Recurse | Where-Object { $_.Name -notlike "appsettings*" -and $_.Name -ne "web.config" } | Remove-Item -Recurse -Force
+    Get-ChildItem -Path $siteRoot -Recurse | Where-Object { $_.Name -notlike "appsettings*" -and $_.Name -ne "web.config" -and $_.Name -ne "dxcluster.filters.json"} | Remove-Item -Recurse -Force
 } -ArgumentList $dstLocalPath
 
 Copy-Item -Path ($srcPath + "/*") -Destination ("\\" + $serverName + "/" + $dstNetworkPath) -Recurse

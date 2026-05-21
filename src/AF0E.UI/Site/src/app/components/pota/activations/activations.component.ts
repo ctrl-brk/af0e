@@ -17,7 +17,6 @@ import {Dialog} from 'primeng/dialog';
 import {Tooltip} from 'primeng/tooltip';
 import {MapboxService} from '../../../services/mapbox.service';
 import {activationSchema, initialActivationData, NewActivationFormData} from './new-activation-form-data';
-import {NotificationMessageModel, NotificationMessageSeverity} from '../../../shared/notification-message.model';
 import {defaultTitle} from '../../../shared/constants';
 
 @Component({
@@ -87,7 +86,7 @@ export class PotaActivationsComponent implements OnInit {
     let lon = parseFloat(this.newActivationForm.lon().value().trim());
 
     if ((isNaN(lat) || isNaN(lon)) && !navigator.geolocation) {
-      this._ntfSvc.addMessage(new NotificationMessageModel(NotificationMessageSeverity.Warn, 'Location', 'Geocoding is not supported in this browser.'));
+      Utils.showWarningMessage('Location', 'Geocoding is not supported in this browser.', this._ntfSvc);
       return;
     }
 

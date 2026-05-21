@@ -20,8 +20,8 @@ describe('Pipes', () => {
     });
 
     it('should handle null or undefined', () => {
-      expect(pipe.transform(null as any)).toBeNull();
-      expect(pipe.transform(undefined as any)).toBeUndefined();
+      expect(pipe.transform(null as any)).toBe('?');
+      expect(pipe.transform(undefined as any)).toBe('?');
     });
 
     it('should handle unknown modes', () => {

@@ -5,5 +5,5 @@ export const environment = {
   ...commonEnvironment,
   production: true,
   apiUrl: '/api/v1',
-  logLevel: LogLevel.Error,
+  logLevel: LogLevel.Warning,
 };

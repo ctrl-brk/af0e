@@ -7,6 +7,7 @@ namespace Logbook.Api.Extensions;
 public static class HrdLogExtensions
 {
     /// <param name="log">The HrdLog entity to update</param>
+#pragma warning disable CA1034 // Analyzer does not yet recognize C# 14 extension member blocks
     extension(HrdLog log)
     {
         /// <summary>
@@ -74,6 +75,28 @@ public static class HrdLogExtensions
             log.ColEmail ??= qrzResult.email;
             log.ColLat ??= (double)qrzResult.lat;
             log.ColLon ??= (double)qrzResult.lon;
+        }
+
+        public AdifDetails ToAdifDetails()
+        {
+            return new AdifDetails(
+                Call: log.ColCall,
+                Date: log.ColTimeOn!.Value,
+                Band: log.ColBand!,
+                BandRx: log.ColBandRx,
+                FreqHz: log.ColFreq,
+                FreqRxHz: log.ColFreqRx,
+                Mode: log.ColMode!,
+                PropMode: log.ColPropMode,
+                RstSent: log.ColRstSent,
+                RstRcvd: log.ColRstRcvd,
+                Sat: log.ColSatName,
+                MyGrid: log.ColMyGridsquare ?? "", //shouldn't have nulls, but...
+                MyCounty: log.ColMyCnty ?? "",
+                MyState: log.ColMyState ?? "",
+                StationCallsign: log.ColStationCallsign,
+                OperatorCallsign: log.ColOperator
+            );
         }
     }
 

@@ -70,6 +70,10 @@ export class PotaService {
     );
   }
 
+  public unlinkQso(activationId: number, logId: number): Observable<any> {
+    return this._http.put(Configuration.potaUrl(`activations/${activationId}/unlinkqso/${logId}`));
+  }
+
   public createActivation(form: NewActivationFormData): Observable<number> {
     return this._http.post(Configuration.potaUrl(`activations`), form);
   }

@@ -10,6 +10,7 @@ import {
   signal,
   ViewEncapsulation
 } from '@angular/core';
+import {ActivatedRoute} from '@angular/router';
 import {Title} from '@angular/platform-browser';
 import {Utils} from '../../../shared/utils';
 import {PotaService} from '../../../services/pota.service';
@@ -25,7 +26,7 @@ import {Checkbox} from 'primeng/checkbox';
 import {FormsModule} from '@angular/forms';
 import {DatePipe, NgClass} from '@angular/common';
 import {Dialog} from 'primeng/dialog';
-import {QsoEditComponent} from '../../logbook/qso-edit.component';
+import {QsoEditComponent, QsoEditParams} from '../../qso/qso-edit.component';
 import {ParkHuntingStatsComponent} from '../park/stats/park-hunting-stats.component';
 import {Badge} from 'primeng/badge';
 import {PotaAppService} from '../../../services/pota-app.service';
@@ -56,16 +57,20 @@ import {defaultTitle} from '../../../shared/constants';
 export class PotaSpotsComponent implements OnInit, OnDestroy {
   private _titleSvc = inject(Title);
   private _destroyRef = inject(DestroyRef);
+  private _activatedRoute = inject(ActivatedRoute);
   private _potaSvc = inject(PotaService);
   private _ntfSvc= inject(NotificationService);
   private _infraSvc= inject(InfraService);
   private _potaAppSvc= inject(PotaAppService);
   private _log = inject(LogService);
+
   private _allSpots = signal<PotaActivityStatsModel[]>([]);
   // Hash table of clicked callsigns for a quick lookup in the grid.
   private _clickedCallSigns = signal<Record<string, true>>({});
   private _spotFreq = 0;
   private _spotParkNum = '';
+  private _huntingActivationId: number|undefined = undefined;
+  private _huntingStationCall: string|undefined = undefined;
 
   protected spots = computed(() => {
     const all = this._allSpots();
@@ -102,24 +107,22 @@ export class PotaSpotsComponent implements OnInit, OnDestroy {
     });
   });
 
+  protected readonly QsoEditMode = QsoEditMode; //so we can use the enum value in html
   protected qsoDlgHeader = signal('');
-  protected rigCommanderConfig = signal<any>({});
   protected autoRefresh = signal(false);
-  protected rigControl = signal(false);
-  protected keyerControl = signal(false);
   protected showDigi = signal(false);
   protected showPhone = signal(true);
   protected showCw = signal(true);
   protected beam = signal(true);
   protected slopper = signal(false);
   protected showDups = signal(false);
-  protected selectedCall = signal('');
   protected selectedParkNum = signal('');
   private refreshInterval?: ReturnType<typeof setInterval>;
   protected qsoEditVisible = model(false); // model() for two-way binding with dialog
   protected huntingStatsVisible = model(false);
   protected isRefreshing = signal(false);
   protected lastQso = signal<any>(null);
+  protected readonly qsoEditParams = signal<QsoEditParams>({});
 
   constructor() {
     effect(() => {
@@ -139,15 +142,11 @@ export class PotaSpotsComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this._titleSvc.setTitle('AFØE - POTA | Spots');
 
-    this._infraSvc.getConfig().subscribe({
-      next: (r: any) => {
-        this.rigCommanderConfig.set(r);
-        this.rigControl.set(true);
-        },
-      error: () => {
-        this.rigControl.set(false);
-      }
-    });
+    const activationId = this._activatedRoute.snapshot.queryParamMap.get('activationId');
+    if (activationId) this._huntingActivationId = parseInt(activationId);
+
+    const stationCall = this._activatedRoute.snapshot.queryParamMap.get('stationCall');
+    if (stationCall) this._huntingStationCall = stationCall;
 
     this.refreshSpots();
 
@@ -176,26 +175,19 @@ export class PotaSpotsComponent implements OnInit, OnDestroy {
   }
 
   protected onCallSignClick(callSign: string, parkNum: string, freqKhz: string, mode: string): void {
-    this.rememberClickedCallSign(callSign);
-    this.selectedCall.set(callSign);
-    this.qsoEditVisible.set(true);
-
-    if (!this.rigControl()) {
-      return;
-    }
-
     this._spotParkNum = parkNum;
     this._spotFreq = Number(freqKhz);
-    if (mode === 'SSB') {
+
+    if (mode === 'SSB')
       mode = this._spotFreq > 14000 ? 'USB' : 'LSB';
-    }
 
     this._infraSvc.setRigStatus(this._spotFreq * 1000, mode).subscribe({
-      error: e => {
-        Utils.showErrorMessage(e, this._ntfSvc, this._log);
-        this.rigControl.set(false);
-      }
+      error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
     });
+
+    this.rememberClickedCallSign(callSign);
+    this.qsoEditParams.set({callSign, huntingFromActivationId: this._huntingActivationId, huntingStationCall: this._huntingStationCall});
+    this.qsoEditVisible.set(true);
   }
 
   protected wasCallSignClicked(callSign: string): boolean {
@@ -215,7 +207,7 @@ export class PotaSpotsComponent implements OnInit, OnDestroy {
   }
 
   protected onAddQso() {
-    this.selectedCall.set('');
+    this.qsoEditParams.set({huntingFromActivationId: this._huntingActivationId, huntingStationCall: this._huntingStationCall});
     this.qsoEditVisible.set(true);
   }
 
@@ -271,6 +263,4 @@ export class PotaSpotsComponent implements OnInit, OnDestroy {
       clearInterval(this.refreshInterval);
     }
   }
-
-  protected readonly QsoEditMode = QsoEditMode;
 }

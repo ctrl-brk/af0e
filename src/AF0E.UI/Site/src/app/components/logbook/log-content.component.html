@@ -1,0 +1,116 @@
+<p-contextMenu #cm [model]="cmItems()"></p-contextMenu>
+<p-table
+  [value]="logEntries()"
+  dataKey="id"
+  [contextMenu]="_authSvc.isAdmin ? cm : null"
+  [(contextMenuSelection)]="selectedQso"
+  sortField="date"
+  [sortOrder]="-1"
+  [paginator]="true"
+  [showCurrentPageReport]="true"
+  currentPageReportTemplate="{first}-{last} of {totalRecords}"
+  [rows]="50"
+  [lazy]="true"
+  [lazyLoadOnInit]="false"
+  [totalRecords]="totalRecords()"
+  [loading]="loading()"
+  (onLazyLoad)="onLazyLoad($event)"
+  [scrollable]="true"
+  [scrollHeight]="_authSvc.isAdmin ? 'flex' : 'calc(100vh - 13.8rem)'"
+  class="tbl-log"
+  stripedRows>
+
+  <ng-template pTemplate="caption">
+    <div class='log-caption'>
+      <p-floatlabel variant="on">
+        <p-datePicker
+          selectionMode="range"
+          [(ngModel)]="qsoDateRange"
+          [minDate]="qsoMinDate()"
+          [maxDate]="qsoMaxDate()"
+          dateFormat="yy-mm-dd"
+          inputId="daterange"
+          [readonlyInput]="false"
+          (onFocus)="onDateRangeFocus(true)"
+          (onBlur)="onDateRangeFocus(false)"
+        />
+        <label for="daterange">{{dateRangeTitle()}}</label>
+      </p-floatlabel>
+      <p-button severity="secondary" icon="pi pi-search" (onClick)="onDateRangeSearch()" />
+      <div style="flex: 1;"></div>
+      @if (_authSvc.isAdmin) {
+        <p-button severity="primary" label="QSO" icon="pi pi-plus" (onClick)="onAddQso({})" />
+        <p-button severity="info" label="LOTW" icon="pi pi-file-import" (onClick)="lotwDlgVisible.set(true)" title="Download LOTW QSLs" />
+      }
+      <p-button severity="secondary" label="ADIF" icon="pi pi-download" [loading]="exportingAdif()" [disabled]="totalRecords() === 0 || exportingAdif()" (onClick)="onExportAdif()" title="Download ADIF for listed QSOs" />
+    </div>
+  </ng-template>
+
+  <ng-template pTemplate="header">
+    <tr>
+      <th pSortableColumn="date">UTC (ymd) <p-sortIcon field="date" /></th>
+      <th>Call</th>
+      <th>Band</th>
+      <th>Mode</th>
+      @if (_authSvc.isAdmin) {
+        <th>Comment</th>
+      }
+      <th title="POTA activation">POTA</th>
+      <th title="Satellite name">SAT</th>
+    </tr>
+  </ng-template>
+
+  <ng-template pTemplate="body" let-qso>
+    <tr (click)="onQsoSelect(qso)" [pContextMenuRow]="qso">
+      <td>{{ qso.date | date:'yy-MM-dd HH:mm' }}</td>
+      <td>{{ qso.call }}</td>
+      <td>{{ qso.band }}</td>
+      <td><p-tag [value]="qso.mode|qsoMode" [severity]="qso.mode|modeSeverity" /></td>
+      @if (_authSvc.isAdmin) {
+        <td>{{ qso.comment }}</td>
+      }
+      <td>
+        @if (qso.potaCount) {
+          <span class="material-symbols-outlined">park</span>
+        }
+      </td>
+      <td>{{qso.satName}}</td>
+    </tr>
+  </ng-template>
+</p-table>
+
+<p-dialog header="{{myCallsign()}} confirms" [modal]="true" [(visible)]="qsoDetailsVisible" [style]="{ width: '25rem' }">
+  @if (qsoDetailsVisible()) {
+    <app-qso [logId]="qsoEditParams().logId!" />
+  }
+  <div class="qsl">
+    <p-button label="Close" severity="secondary" (click)="qsoDetailsVisible.set(false)" />
+  </div>
+</p-dialog>
+
+<p-dialog [header]="(qsoEditMode == QsoEditMode.Add ? 'Add' : 'Edit') + ' QSO'" [modal]="true" [(visible)]="qsoEditVisible" [style]="{ width: '60rem' }" [focusOnShow]="false">
+  @if (qsoEditVisible()) {
+    <app-qso-edit [params]="qsoEditParams()" [editMode]="qsoEditMode" (saved)="onQsoSaved($event)" />
+  }
+</p-dialog>
+
+@if (_authSvc.isAdmin) {
+  <p-dialog [modal]="true" [showHeader]="false" [(visible)]="lotwDlgVisible" [focusOnShow]="true" [style]="{ width: '20rem' }">
+    <div style="padding-top: 1rem">
+      <p-floatlabel variant="on">
+        <p-datePicker
+          [(ngModel)]="lotwDate"
+          inputId="date"
+          dateFormat="yy-mm-dd"
+          [showTime]="false"
+          hourFormat="24"
+          appendTo="body"
+        />
+        <label for="date">Download since UTC *</label>
+      </p-floatlabel>
+      <div style="display:flex; justify-content:flex-end; margin-top:0.5rem;">
+        <p-button label="Download" icon="pi pi-file-import" [loading]="lotwLoading()" (onClick)="onLotwDownload()" />
+      </div>
+    </div>
+  </p-dialog>
+}

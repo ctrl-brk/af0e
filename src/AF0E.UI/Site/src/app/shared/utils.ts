@@ -12,7 +12,7 @@ export class Utils {
 
     if (!(e instanceof HttpErrorResponse)) {
       msg = 'Unhandled error. Please notify me.';
-      if (log) log.error(e);
+      if (log) log.error();
     } else if (e.status === 0) {
       title = 'Connection error';
       msg = 'Please make sure the back-end service is accessible.';
@@ -38,7 +38,10 @@ export class Utils {
     }
 
     ntf.addMessage(new NotificationMessageModel(severity, title, msg, sticky));
+  }
 
+  public static showWarningMessage(title: string, message: string, ntf: NotificationService) {
+    ntf.addMessage(new NotificationMessageModel(NotificationMessageSeverity.Warn, title, message));
   }
 
   public static dateToYmd(date?: Date | string | null): string {
@@ -140,7 +143,7 @@ export class Utils {
       ['State Park',                 'SP'],
       ['State Historic Site',        'SHS'],
       ['National Forest',            'NF'],
-      ['National Wildlife Refugee',  'NWR'],
+      ['National Wildlife Refuge',   'NWR'],
       ['National Recreational Area', 'NRA'],
       ['National Monument',          'NM'],
       ['National Historic Site',     'NHS'],
@@ -444,7 +447,7 @@ export class Utils {
     return field + square + sub;
   }
 
-  public static getMyEffectiveCall(date: Date, slashed = true): string {
+  public static getMyEffectiveCall(date: Date, slashed: boolean): string {
     if (date > new Date(Date.UTC(2011, 0, 6))) //2011-01-06
       return slashed ? 'AFØE' : 'AF0E';
     else if (date > new Date(2009, 4, 5)) //2009-05-05 - 2011-01-06
