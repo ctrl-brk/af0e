@@ -106,7 +106,7 @@ export class PotaActivationComponent implements OnInit {
   //protected logId = signal(-1);
   protected activation = signal<PotaActivationModel>(null!);
   protected logEntries = signal<ActivationQsoModel[]>([]);
-  protected qsoDlgHeader = signal('Edit QSO');
+  protected qsoDlgHeader = signal('');
   protected qsoEditVisible = model(false);
   protected spotDlgVisible = model(false);
   protected editActivationVisible = model(false);
@@ -150,14 +150,11 @@ export class PotaActivationComponent implements OnInit {
 
     this._logUpdatesSvc.ensureConnected().catch(err => this._log.error(err));
     const updatesSub = this._logUpdatesSvc.changed$.subscribe(evt => {
-
-      if (evt.activationId !== this.activationId())
-        return;
-      //there's also 'imported', but we don't need it here
       if (evt.operation === 'updated') //rare case, OK to reload the log (small most of the time)
         this.loadActivationLog(this.activationId());
-      else if (evt.operation === 'created')
+      else if (evt.activationId !== this.activationId() && evt.operation === 'created') //the updated event above doesn't have the activationId, so no check, and it's a rare case anyway
         this.loadNewQso(evt.logId!);
+      //there's also 'imported', but we don't care here
     });
 
     this._destroyRef.onDestroy(() => {
@@ -221,7 +218,8 @@ export class PotaActivationComponent implements OnInit {
 
   protected onAddQso() {
     this.qsoEditParams.set({potaActivation: this.activation()});
-    this.qsoEditMode = QsoEditMode.PotaActivating
+    this.qsoEditMode = QsoEditMode.PotaActivatingAdd
+    this.qsoDlgHeader.set('Add QSO');
     this.qsoEditVisible.set(true);
   }
 
@@ -234,6 +232,7 @@ export class PotaActivationComponent implements OnInit {
   protected onQsoSelected(logId: number) {
     this.qsoEditParams.set({logId, potaActivation: this.activation()});
     this.qsoEditMode = QsoEditMode.Edit
+    this.qsoDlgHeader.set('Edit QSO');
     this.qsoEditVisible.set(true);
   }
 
@@ -285,7 +284,7 @@ export class PotaActivationComponent implements OnInit {
   }
 
   protected onQsoFormInit(qso: { call: string; qsoCount: number, DE: { grid: string; city: string; county: string; state: string } }) {
-    if (this.qsoEditMode == QsoEditMode.Edit) return;
+    if (this.qsoEditMode !== QsoEditMode.PotaActivatingAdd) return;
 
     this.qsoDlgHeader.set(`${qso.call.replace('0', 'Ø')} (${qso.qsoCount}) de ${qso.DE.grid} ${qso.DE.city}, ${qso.DE.county}, ${qso.DE.state}`);
 

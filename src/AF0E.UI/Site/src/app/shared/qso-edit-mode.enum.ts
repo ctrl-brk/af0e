@@ -2,6 +2,6 @@ export enum QsoEditMode {
   Add,
   View,
   Edit,
-  PotaHunting,
-  PotaActivating
+  PotaHuntingAdd,
+  PotaActivatingAdd
 }

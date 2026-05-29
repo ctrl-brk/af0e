@@ -379,8 +379,8 @@
 
     <div class="form-actions form-actions-wide">
         <div class="form-actions-left">
-          @if (keyerReady() && (editMode() === QsoEditMode.PotaHunting || editMode() === QsoEditMode.PotaActivating)) {
-            @if (editMode() === QsoEditMode.PotaActivating) {
+          @if (qsoMode() == 'CW' && keyerReady() && (editMode() === QsoEditMode.Add || editMode() === QsoEditMode.PotaHuntingAdd || editMode() === QsoEditMode.PotaActivatingAdd)) {
+            @if (editMode() === QsoEditMode.PotaActivatingAdd) {
               <p-button label="F1&middot;CQ" [severity]="cqSending() ? 'danger' : 'success'" (onClick)="sendPotaCq(true)" title="{{f1Title}}" />
               <p-button label="F2&middot;TU" severity="help" (onClick)="sendCw('R 73 de AF|0|E')" title="{{f2Title}}" />
             }
