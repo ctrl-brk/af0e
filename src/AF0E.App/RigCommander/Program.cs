@@ -63,18 +63,22 @@ try
 
     var app = builder.Build();
 
-    app.UseSerilogRequestLogging();
+    // Cap request-log level at Information so that 4xx/5xx responses don't fire a second
+    // Warning/Error log event — those are already explicitly logged in the endpoint catch blocks,
+    // and a duplicate error-level entry would trigger a second UI balloon notification.
+    app.UseSerilogRequestLogging(opts => opts.GetLevel = (_, _, _) => LogEventLevel.Information);
 
     app.UseExceptionHandler(errorApp =>
     {
         errorApp.Run(async context =>
         {
+            /* Logging here shows second balloon in addition to the one, already coming from UI logging
             var feature = context.Features.Get<IExceptionHandlerFeature>();
             if (feature?.Error is not null)
             {
                 var requestLogger = context.RequestServices.GetRequiredService<ILogger<Program>>();
                 requestLogger.LogError(feature.Error, "Unhandled exception for {Method} {Path}", context.Request.Method, context.Request.Path);
-            }
+            } */
 
             context.Response.StatusCode = StatusCodes.Status500InternalServerError;
             context.Response.ContentType = "application/json";

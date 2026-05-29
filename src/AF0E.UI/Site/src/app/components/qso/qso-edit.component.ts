@@ -119,6 +119,7 @@ export class QsoEditComponent implements OnInit {
   protected qsoForm!: FormGroup;
   isEditMode = false;
   protected rcConfig: any;
+  protected qsoMode = signal('');
   protected imgUrl = signal('');
   protected cwCallLabel = signal('???');
   protected cwSending = signal(false);
@@ -162,7 +163,7 @@ export class QsoEditComponent implements OnInit {
 
     effect(() => {
       const p = this.params();
-      if (p.logId !== this._prevParams.logId || p.callSign !== this._prevParams.callSign)
+      if (!p.logId || p.logId !== this._prevParams.logId || p.callSign !== this._prevParams.callSign)
         this.handleLogIdOrCallChange(p);
 
       if (p.potaActivation?.id !== this._prevParams.potaActivation?.id || p.huntingStationCall !== this._prevParams.huntingStationCall)
@@ -181,6 +182,7 @@ export class QsoEditComponent implements OnInit {
 
     effect(() => {
       const mode = modeSignal();
+      this.qsoMode.set(mode || '');
       if (mode)
         this.adjustRstForMode(mode);
     }, inj);
@@ -306,7 +308,7 @@ export class QsoEditComponent implements OnInit {
 
     const cwText = {...untracked(() => this.f3CwMsg())};
 
-    if (this.editMode() === QsoEditMode.PotaHunting) {
+    if (this.editMode() === QsoEditMode.PotaHuntingAdd) {
       cwText.def = `R TU ${rst} C|O`;
       cwText.alt = `R ${greet} UR ${rst} C|O`;
       cwText.ctl = `R TU ${rst} ${rst} C|O C|O`;
@@ -314,13 +316,21 @@ export class QsoEditComponent implements OnInit {
 
       this.f3CwMsg.set(cwText);
     }
-    else if (this.editMode() === QsoEditMode.PotaActivating) {
+    else if (this.editMode() === QsoEditMode.PotaActivatingAdd) {
       const call = this.cwCallLabel() ? this.cwCallLabel() : '';
 
       cwText.def = `${call} TU ${rst} C|O`;
       cwText.alt = `${call} ${greet} UR ${rst} C|O`;
       cwText.ctl = `${call} TU ${rst} ${rst} C|O C|O`;
       cwText.f6 = `TU ${rst} C|O`;
+
+      this.f3CwMsg.set(cwText);
+    }
+    else if (this.editMode() === QsoEditMode.Add) {
+      cwText.def = `TU ${rst}`;
+      cwText.alt = '';
+      cwText.ctl = '';
+      cwText.f6 = '';
 
       this.f3CwMsg.set(cwText);
     }
@@ -376,13 +386,23 @@ export class QsoEditComponent implements OnInit {
     this.emitFormInit();
     this._lastCallsign = callSign.toLowerCase();
 
-    if (this.editMode() === QsoEditMode.PotaHunting) {
+    if (this.editMode() === QsoEditMode.PotaHuntingAdd) {
       this._potaSvc.getActivityByCall(callSign).subscribe({
         next: (r) => {
           if (!r.active)
             this.getRadioStatus();
           else
             this.populatePotaDetails(r);
+        },
+        error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
+      });
+    }
+
+    if (this.editMode() === QsoEditMode.PotaActivatingAdd) {
+      this._potaSvc.getActivityByCall(callSign).subscribe({
+        next: (r) => {
+          if (r.active)
+            this._ntfSvc.addMessage(new NotificationMessageModel(NotificationMessageSeverity.Info, 'P2P', `${r.parkNum} - ${r.location}`));
         },
         error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
       });
@@ -465,7 +485,7 @@ export class QsoEditComponent implements OnInit {
     this.qsoForm.get('name_fmt')?.setValue(name_fmt);
     this.qsoForm.get('country')?.setValue(country);
 
-    if (this.editMode() !== QsoEditMode.PotaHunting) {
+    if (this.editMode() !== QsoEditMode.PotaHuntingAdd) {
       this.qsoForm.get('county')?.setValue(county);
       this.qsoForm.get('grid')?.setValue(grid);
       this.qsoForm.get('state')?.setValue(state);
@@ -476,8 +496,6 @@ export class QsoEditComponent implements OnInit {
     this.qsoForm.get('dxcc')?.setValue(dxcc);
 
     this.qsoForm.markAsDirty();
-
-
   }
 
   private initializeNewQso(keepFreq: boolean) {
@@ -882,9 +900,18 @@ export class QsoEditComponent implements OnInit {
   protected onKeyDown($event: KeyboardEvent) {
     let handled = false;
 
+    if ($event.key === 'F9') {
+      $event.preventDefault();
+      $event.stopPropagation();
+      this.onClear(true);
+      return;
+    }
+
+    if (this.qsoMode() !== 'CW') return;
+
     switch ($event.key) {
       case 'F1':
-        if (this.editMode() !== QsoEditMode.PotaActivating) break;
+        if (this.editMode() !== QsoEditMode.PotaActivatingAdd) break;
         handled = true;
         $event.preventDefault();
         if (this.cqSending())
@@ -939,10 +966,6 @@ export class QsoEditComponent implements OnInit {
           this.sendCw('AGN?');
         else
           this.sendCw('?');
-        break;
-      case 'F9':
-        handled = true;
-        this.onClear(true);
         break;
       case 'K':
       case 'k':
@@ -1070,5 +1093,8 @@ export class QsoEditComponent implements OnInit {
     this.qsoForm.get('freq')?.setValue(freqHz);
     this.qsoForm.get('mode')?.setValue(mode);
     this.normalizeFreqAndMode();
+
+    this.checkKeyerStatus(true)
+    this.getRadioStatus(true);
   }
 }

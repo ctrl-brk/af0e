@@ -1,9 +1,11 @@
-﻿using System.Net.Mime;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Net.Mime;
 using RigCommander.Abstractions;
 using RigCommander.Contracts;
 
 namespace RigCommander.Endpoints;
 
+[SuppressMessage("Performance", "CA1848:Use the LoggerMessage delegates")]
 public static class WinkeyerEndpoints
 {
     private static bool _splitOk;

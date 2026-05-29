@@ -118,7 +118,7 @@ export function activationLogToAdif(entries: ActivationQsoModel[], activation: P
     `<PROGRAMID:8>AF0E.org\n` +
     `<EOH>\n`;
 
-  // Deduplicate: keep only the latest QSO per band/mode/date combination
+  // Deduplicate: keep only the latest QSO per band/mode/date/call combination
   const dedupMap = new Map<string, ActivationQsoModel>();
   for (const qso of entries) {
     const qsoDate = new Date(qso.date);
@@ -126,7 +126,7 @@ export function activationLogToAdif(entries: ActivationQsoModel[], activation: P
       `${qsoDate.getFullYear()}-` +
       `${String(qsoDate.getMonth() + 1).padStart(2, '0')}-` +
       `${String(qsoDate.getDate()).padStart(2, '0')}`;
-    const key = `${qso.band}|${qso.mode}|${dateKey}`;
+    const key = `${qso.band}|${qso.mode}|${dateKey}|${qso.call}`;
     const existing = dedupMap.get(key);
 
     // Keep the one with the latest timestamp
