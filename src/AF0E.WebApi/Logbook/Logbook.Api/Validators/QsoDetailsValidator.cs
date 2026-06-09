@@ -50,10 +50,10 @@ public static class QsoDetailsValidator
         ValidationRules.ValidateGrid(errors, qso.Grid, false);
 
         if (qso.MyCqZone is < 1 or > 40)
-            errors.Add("CQ Zone must be between 1 and 40");
+            errors.Add("My CQ Zone must be between 1 and 40");
 
         if (qso.MyItuZone is < 1 or > 90)
-            errors.Add("ITU Zone must be between 1 and 90");
+            errors.Add("My ITU Zone must be between 1 and 90");
 
         ValidationRules.ValidateCallSign(errors, qso.StationCallsign, false);
         ValidationRules.ValidateCallSign(errors, qso.OperatorCallsign, false);

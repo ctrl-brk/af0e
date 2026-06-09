@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.Globalization;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Threading.Channels;
@@ -28,6 +29,9 @@ public sealed class AdifApiForwarder(
     : IDisposable
 {
     private const string ForwardingEndpointPath = "logbook/qso";
+    private const string ActivationsEndpointPath = "pota/activations/";
+    private DateTime? _lastLogTime;
+    private int? _lastResolvedActivationId;
 
     private readonly Channel<AdifForwardingItem> _channel = Channel.CreateBounded<AdifForwardingItem>(new BoundedChannelOptions(settings.QueueCapacity)
     {
@@ -41,7 +45,8 @@ public sealed class AdifApiForwarder(
         Timeout = TimeSpan.FromSeconds(settings.TimeoutSeconds)
     };
 
-    private readonly Uri _endpointUri = BuildEndpointUri(logbookApiUrl);
+    private readonly Uri _endpointUri = BuildEndpointUri(logbookApiUrl, ForwardingEndpointPath);
+    private readonly Uri _activationBaseUri = BuildEndpointUri(logbookApiUrl, ActivationsEndpointPath);
 
     private CancellationTokenSource? _workerCts;
     private bool _started;
@@ -87,6 +92,12 @@ public sealed class AdifApiForwarder(
         {
             // Normal shutdown path.
         }
+        catch (Exception ex)
+        {
+            // The worker loop itself crashed — this means no more QSOs will be forwarded.
+            logger.LogError(ex, "ADIF forwarding worker loop crashed; no further QSOs will be forwarded until restart");
+            activityLog?.LogError("[ADIF UDP] Forwarding worker crashed. Restart RigCommander to resume logging.");
+        }
     }
 
     private async Task SendWithRetryAsync(AdifForwardingItem item, CancellationToken cancellationToken)
@@ -106,14 +117,25 @@ public sealed class AdifApiForwarder(
             return;
         }
 
+        var activationIdResolved = false;
+
         for (var attempt = 0; attempt <= settings.MaxRetries; attempt++)
         {
             try
             {
+                if (!activationIdResolved)
+                {
+                    activationId = await ResolveActivationIdForQsoDateAsync(activationId, payload.Qso.Date, cancellationToken);
+                    payload.PotaActivationId = activationId;
+                    activationIdResolved = true;
+                }
+
                 using var response = await _httpClient.PostAsJsonAsync(_endpointUri, payload, JsonSerializerOptions.Web, cancellationToken);
 
                 if (response.IsSuccessStatusCode)
                 {
+                    _lastLogTime = payload.Qso.Date;
+                    _lastResolvedActivationId = payload.PotaActivationId;
                     activityLog?.LogInformation($"[ADIF UDP] LOG: {payload.Qso.Call}, Freq: {payload.Qso.Freq}, Band: {payload.Qso.Band}, Mode: {payload.Qso.Mode}, Grid: {payload.Qso.Grid}, Cmt: {payload.Qso.Comment}");
                     return;
                 }
@@ -132,11 +154,7 @@ public sealed class AdifApiForwarder(
             }
             catch (Exception ex)
             {
-                logger.LogWarning(
-                    ex,
-                    "ADIF forwarding failed on attempt {Attempt}/{Attempts}",
-                    attempt + 1,
-                    settings.MaxRetries + 1);
+                logger.LogWarning(ex, "ADIF forwarding failed on attempt {Attempt}/{Attempts}", attempt + 1, settings.MaxRetries + 1);
             }
 
             if (attempt >= settings.MaxRetries)
@@ -146,8 +164,73 @@ public sealed class AdifApiForwarder(
                 await Task.Delay(settings.RetryDelayMs, cancellationToken);
         }
 
-        activityLog?.LogError("[ADIF UDP] Failed to forward ADIF record after retries.");
+        var failedCall = item.Fields.TryGetValue("CALL", out var c) ? c : "-";
+        logger.LogError("ADIF forwarding failed after {Attempts} attempt(s) for call={Call}; API may be down", settings.MaxRetries + 1, failedCall);
+        activityLog?.LogError($"[ADIF UDP] Failed to forward ADIF record for {failedCall} after retries. API may be down.");
     }
+
+    private async Task<int?> ResolveActivationIdForQsoDateAsync(int? activationId, DateTime qsoDate, CancellationToken cancellationToken)
+    {
+        if (activationId is null)
+            return null;
+
+        if (_lastResolvedActivationId == activationId && _lastLogTime is not null && IsSameUtcDate(_lastLogTime.Value, qsoDate))
+            return activationId;
+
+        var activation = await GetActivationAsync(activationId.Value, cancellationToken);
+
+        if (IsSameUtcDate(activation.StartDate, qsoDate))
+            return activationId;
+
+        var newActivationId = await CreateActivationForNewDayAsync(activation, qsoDate, cancellationToken);
+        activationIdStore?.Set(newActivationId);
+
+        logger.LogInformation(
+            "Created new POTA activation {NewActivationId} from previous activation {PreviousActivationId} for QSO date {QsoDate:yyyy-MM-dd}",
+            newActivationId,
+            activation.Id,
+            qsoDate);
+        activityLog?.LogInformation($"[ADIF UDP] Created new POTA activation {newActivationId} for {qsoDate:yyyy-MM-dd}; forwarding QSO with the new id.");
+
+        return newActivationId;
+    }
+
+    private async Task<PotaActivationPayload> GetActivationAsync(int activationId, CancellationToken cancellationToken)
+    {
+        using var response = await _httpClient.GetAsync(BuildActivationUri(activationId), cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<PotaActivationPayload>(JsonSerializerOptions.Web, cancellationToken)
+               ?? throw new InvalidOperationException($"Activation lookup returned an empty response for id {activationId}.");
+    }
+
+    private async Task<int> CreateActivationForNewDayAsync(PotaActivationPayload previousActivation, DateTime qsoDate, CancellationToken cancellationToken)
+    {
+        var request = new NewActivationPayload
+        {
+            PrevDayActivationId = previousActivation.Id,
+            ParkNumber = previousActivation.ParkNum,
+            Grid = previousActivation.Grid,
+            County = previousActivation.County,
+            State = previousActivation.State,
+            Lat = previousActivation.Lat,
+            Lon = previousActivation.Long,
+            StationCallsign = previousActivation.StationCallsign,
+            OperatorCallsign = previousActivation.OperatorCallsign,
+            StartDate = qsoDate
+        };
+
+        using var response = await _httpClient.PostAsJsonAsync(_activationBaseUri, request, JsonSerializerOptions.Web, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<int>(JsonSerializerOptions.Web, cancellationToken);
+    }
+
+    private Uri BuildActivationUri(int activationId)
+        => new(_activationBaseUri, activationId.ToString(CultureInfo.InvariantCulture));
+
+    private static bool IsSameUtcDate(DateTime left, DateTime right)
+        => DateOnly.FromDateTime(left) == DateOnly.FromDateTime(right);
 
     private bool TryGetBlockingProcess(out string processName)
     {
@@ -193,7 +276,7 @@ public sealed class AdifApiForwarder(
         _httpClient.Dispose();
     }
 
-    private static Uri BuildEndpointUri(string logbookApiUrl)
+    private static Uri BuildEndpointUri(string logbookApiUrl, string relativePath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(logbookApiUrl);
 
@@ -202,6 +285,36 @@ public sealed class AdifApiForwarder(
         if (!baseUri.AbsolutePath.EndsWith('/'))
             baseUri = new Uri($"{baseUri.AbsoluteUri}/");
 
-        return new Uri(baseUri, ForwardingEndpointPath);
+        return new Uri(baseUri, relativePath);
+    }
+
+    [SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Instantiated by System.Text.Json during response deserialization.")]
+    private sealed record PotaActivationPayload
+    {
+        public int Id { get; init; }
+        public DateTime StartDate { get; init; }
+        public string ParkNum { get; init; } = string.Empty;
+        public string Grid { get; init; } = string.Empty;
+        public string County { get; init; } = string.Empty;
+        public string State { get; init; } = string.Empty;
+        public decimal Lat { get; init; }
+        public decimal Long { get; init; }
+        public string StationCallsign { get; init; } = string.Empty;
+        public string OperatorCallsign { get; init; } = string.Empty;
+    }
+
+    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Local", Justification = "Read by System.Text.Json during request serialization.")]
+    private sealed record NewActivationPayload
+    {
+        public int PrevDayActivationId { get; init; }
+        public string ParkNumber { get; init; } = string.Empty;
+        public string Grid { get; init; } = string.Empty;
+        public string County { get; init; } = string.Empty;
+        public string State { get; init; } = string.Empty;
+        public decimal Lat { get; init; }
+        public decimal Lon { get; init; }
+        public DateTime StartDate { get; init; }
+        public string StationCallsign { get; init; } = string.Empty;
+        public string OperatorCallsign { get; init; } = string.Empty;
     }
 }

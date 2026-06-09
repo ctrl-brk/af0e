@@ -1,8 +1,10 @@
 ﻿using System.Buffers.Binary;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
 using AF0E.Common.Utils;
+using Microsoft.Win32;
 using RigCommander.Abstractions;
 
 namespace RigCommander.Services;
@@ -20,8 +22,15 @@ public sealed class AdifUdpBroadcastListener(
     private const int DuplicateCacheMaxEntries = 512;
     private static readonly TimeSpan _duplicateWindow = TimeSpan.FromSeconds(20);
 
-    private readonly UdpClient _udpClient = CreateUdpClient(settings);
+    // Retry delays for socket recreation after a network disruption or sleep/wake cycle.
+    // Bind to IPAddress.Any is fast, so short intervals are enough.
+    private static readonly int[] _recreateRetryDelaysSeconds = [2, 5, 10, 15, 30];
+
+    private UdpClient _udpClient = CreateUdpClient(settings);
     private readonly Dictionary<string, DateTime> _recentRecordFingerprints = new(StringComparer.OrdinalIgnoreCase);
+    private volatile CancellationTokenSource? _socketCts;
+    // Prevents multiple simultaneous reconnections when NetworkAddressChanged fires repeatedly.
+    private volatile bool _reconnecting;
     private bool _started;
 
     public Task StartAsync(CancellationToken cancellationToken)
@@ -35,40 +44,187 @@ public sealed class AdifUdpBroadcastListener(
             logger.LogInformation("ADIF UDP listener joining multicast group {Group}", settings.MulticastGroup);
 
         logger.LogInformation("ADIF UDP listener started on UDP port {Port}", settings.Port);
-        return Task.Run(() => ListenLoopAsync(cancellationToken), cancellationToken);
+        return Task.Run(() => StartWithMulticastAsync(cancellationToken), cancellationToken);
+    }
+
+    private async Task StartWithMulticastAsync(CancellationToken cancellationToken)
+    {
+        // Fire-and-forget: don't await the multicast join so the listen loop starts immediately
+        // and can receive unicast packets while multicast routing finishes initialising.
+        _ = TryJoinMulticastGroupAsync(_udpClient, cancellationToken);
+        await ListenLoopAsync(cancellationToken);
     }
 
     private async Task ListenLoopAsync(CancellationToken cancellationToken)
     {
-        while (!cancellationToken.IsCancellationRequested)
+        SystemEvents.PowerModeChanged += OnPowerModeChanged;
+        NetworkChange.NetworkAddressChanged += OnNetworkAddressChanged;
+
+        try
         {
-            UdpReceiveResult packet;
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                UdpReceiveResult packet;
 
-            try
-            {
-                packet = await _udpClient.ReceiveAsync(cancellationToken);
-            }
-            catch (OperationCanceledException)
-            {
-                break;
-            }
-            catch (ObjectDisposedException) when (cancellationToken.IsCancellationRequested)
-            {
-                break;
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "ADIF UDP receive failed; listener continues running");
-                continue;
-            }
+                // Per-socket CTS: allows power/network events to abort the current ReceiveAsync
+                // without cancelling the overall listener.
+                var socketCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                _socketCts = socketCts;
 
-            if (packet.Buffer.Length == 0)
-                continue;
+                try
+                {
+                    packet = await _udpClient.ReceiveAsync(socketCts.Token);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    socketCts.Dispose();
+                    break;
+                }
+                catch (OperationCanceledException)
+                {
+                    // socketCts was cancelled by a power-resume or network-change event.
+                    socketCts.Dispose();
+                    _socketCts = null;
+                    if (!await RecreateUdpClientAsync(cancellationToken))
+                        break;
+                    continue;
+                }
+                catch (ObjectDisposedException) when (cancellationToken.IsCancellationRequested)
+                {
+                    socketCts.Dispose();
+                    break;
+                }
+                catch (ObjectDisposedException)
+                {
+                    // Socket was disposed due to a failed recreation — do not spin.
+                    socketCts.Dispose();
+                    _socketCts = null;
+                    logger.LogWarning("ADIF UDP socket was disposed unexpectedly; recreating socket");
+                    if (!await RecreateUdpClientAsync(cancellationToken))
+                        break;
+                    continue;
+                }
+                catch (SocketException ex)
+                {
+                    // Socket became invalid (e.g. ICMP port unreachable, interface reset).
+                    socketCts.Dispose();
+                    _socketCts = null;
+                    logger.LogWarning(ex, "ADIF UDP socket error ({ErrorCode}); recreating socket", ex.SocketErrorCode);
+                    activityLog?.LogWarning($"[ADIF UDP] Socket error ({ex.SocketErrorCode}); reconnecting...");
+                    if (!await RecreateUdpClientAsync(cancellationToken))
+                        break;
+                    continue;
+                }
+                catch (Exception ex)
+                {
+                    socketCts.Dispose();
+                    _socketCts = null;
+                    logger.LogWarning(ex, "ADIF UDP receive failed; listener continues running");
+                    continue;
+                }
 
-            ProcessPacket(packet.Buffer, packet.RemoteEndPoint);
+                socketCts.Dispose();
+                _socketCts = null;
+
+                if (packet.Buffer.Length == 0)
+                    continue;
+
+                try
+                {
+                    ProcessPacket(packet.Buffer, packet.RemoteEndPoint);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "ADIF UDP packet processing failed for packet from {RemoteEndPoint}; listener continues running", packet.RemoteEndPoint);
+                    activityLog?.LogError($"[ADIF UDP] Failed to process packet from {packet.RemoteEndPoint}. See log for details.");
+                }
+            }
         }
+        finally
+        {
+            NetworkChange.NetworkAddressChanged -= OnNetworkAddressChanged;
+            SystemEvents.PowerModeChanged -= OnPowerModeChanged;
+            logger.LogInformation("ADIF UDP listener stopped");
+        }
+    }
 
-        logger.LogInformation("ADIF UDP listener stopped");
+    private void OnPowerModeChanged(object sender, PowerModeChangedEventArgs e)
+    {
+        if (e.Mode != PowerModes.Resume)
+            return;
+
+        if (_reconnecting)
+            return;
+
+        logger.LogInformation("PC waking from sleep; ADIF UDP socket will be recreated");
+        activityLog?.LogInformation("[ADIF UDP] PC resumed from sleep; reconnecting...");
+        _socketCts?.Cancel();
+    }
+
+    private void OnNetworkAddressChanged(object? sender, EventArgs e)
+    {
+        // This event fires many times per network change. Ignore if we are already handling one.
+        if (_reconnecting)
+            return;
+
+        logger.LogInformation("Network address changed; ADIF UDP socket will be recreated");
+        activityLog?.LogInformation("[ADIF UDP] Network changed; reconnecting...");
+        _socketCts?.Cancel();
+    }
+
+    /// <returns><c>true</c> if the socket was successfully recreated; <c>false</c> if all attempts
+    /// failed and the listen loop should exit (the app must be restarted to resume).</returns>
+    private async Task<bool> RecreateUdpClientAsync(CancellationToken cancellationToken)
+    {
+        _reconnecting = true;
+        try
+        {
+            // Brief pause to let the network stack settle and suppress the flood of
+            // repeated NetworkAddressChanged events that follow a single network change.
+            try { await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken); }
+            catch (OperationCanceledException) { return false; }
+
+            // Explicitly close the socket at the OS level before disposing the managed wrapper
+            // to avoid WSAEADDRINUSE on the very first bind attempt.
+            try { _udpClient.Client.Close(); } catch { /* ignore */ }
+            try { _udpClient.Dispose(); } catch { /* ignore */ }
+
+            for (var attempt = 1; attempt <= _recreateRetryDelaysSeconds.Length + 1; attempt++)
+            {
+                try
+                {
+                    _udpClient = CreateUdpClient(settings);
+                    logger.LogInformation("ADIF UDP socket recreated on port {Port} (attempt {Attempt})", settings.Port, attempt);
+                    activityLog?.LogInformation($"[ADIF UDP] Reconnected on port {settings.Port}.");
+                    // Fire-and-forget multicast join — don't block the listen loop resuming.
+                    _ = TryJoinMulticastGroupAsync(_udpClient, cancellationToken);
+                    return true;
+                }
+                catch (Exception ex) when (attempt <= _recreateRetryDelaysSeconds.Length)
+                {
+                    var delaySec = _recreateRetryDelaysSeconds[attempt - 1];
+                    logger.LogWarning(ex,
+                        "ADIF UDP socket recreation attempt {Attempt} failed ({ErrorType}: {ErrorMessage}); retrying in {Delay}s",
+                        attempt, ex.GetType().Name, ex.Message, delaySec);
+                    try { await Task.Delay(TimeSpan.FromSeconds(delaySec), cancellationToken); }
+                    catch (OperationCanceledException) { return false; }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex,
+                        "ADIF UDP socket could not be recreated after {Attempts} attempts ({ErrorType}: {ErrorMessage}); listener will stop. Restart RigCommander to resume",
+                        attempt, ex.GetType().Name, ex.Message);
+                    activityLog?.LogError($"[ADIF UDP] Failed to reconnect after {attempt} attempts. Restart RigCommander to resume.");
+                    return false;
+                }
+            }
+
+            return false;
+        }
+        finally
+        {
+            _reconnecting = false;
+        }
     }
 
     private void ProcessPacket(byte[] packetBytes, IPEndPoint remoteEndPoint)
@@ -153,6 +309,12 @@ public sealed class AdifUdpBroadcastListener(
             : normalized[..maxLength] + "...";
     }
 
+    /// <summary>
+    /// Creates and binds a UDP socket. Multicast group join is intentionally excluded here —
+    /// it is done separately because <c>IP_ADD_MEMBERSHIP</c> can fail with WSAEHOSTUNREACH
+    /// after sleep/wake even when the bind itself succeeds, and the two operations need
+    /// independent retry logic.
+    /// </summary>
     private static UdpClient CreateUdpClient(AdifUdpSettings settings)
     {
         var udpClient = new UdpClient(AddressFamily.InterNetwork)
@@ -163,10 +325,53 @@ public sealed class AdifUdpBroadcastListener(
         udpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
         udpClient.Client.Bind(new IPEndPoint(IPAddress.Any, settings.Port));
 
-        if (settings.JoinMulticastGroup)
-            udpClient.JoinMulticastGroup(IPAddress.Parse(settings.MulticastGroup));
-
         return udpClient;
+    }
+
+    /// <summary>
+    /// Attempts to join the multicast group on <paramref name="udpClient"/>. Retries a few times
+    /// with short delays because <c>IP_ADD_MEMBERSHIP</c> frequently throws WSAEHOSTUNREACH right
+    /// after sleep/wake while multicast routing is still initializing. If all attempts fail the
+    /// socket keeps working for unicast traffic only. The <paramref name="udpClient"/> parameter
+    /// is captured explicitly so that background retries don't accidentally operate on a
+    /// replaced/disposed socket if the listener recreates its socket in the meantime.
+    /// </summary>
+    private async Task TryJoinMulticastGroupAsync(UdpClient udpClient, CancellationToken cancellationToken)
+    {
+        if (!settings.JoinMulticastGroup)
+            return;
+
+        var group = IPAddress.Parse(settings.MulticastGroup);
+        var joined = false;
+
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            try
+            {
+                udpClient.JoinMulticastGroup(group);
+
+                if (!joined)
+                {
+                    joined = true;
+                    logger.LogInformation("Joined multicast group {Group}", settings.MulticastGroup);
+                }
+            }
+            catch (ObjectDisposedException) { return; } // socket replaced — stop
+            catch (OperationCanceledException) { return; }
+            catch (SocketException ex) when (ex.SocketErrorCode == SocketError.AddressAlreadyInUse)
+            {
+                // Already a member — socket is still receiving multicast packets, nothing to do.
+                // No drop+rejoin: that would create a packet-loss window between the two calls.
+            }
+            catch
+            {
+                // Route not available (WSJT-X not running) — retry silently next cycle.
+                joined = false;
+            }
+
+            try { await Task.Delay(TimeSpan.FromSeconds(30), cancellationToken); }
+            catch (OperationCanceledException) { return; }
+        }
     }
 
     private static bool TryExtractAdifPayload(byte[] packetBytes, AdifUdpSettings settings, out string adifPayload, out string sourceDescription, out string diagnostics)
@@ -314,6 +519,8 @@ public sealed class AdifUdpBroadcastListener(
 
     public void Dispose()
     {
+        _socketCts?.Cancel();
+        _socketCts?.Dispose();
         _udpClient.Dispose();
     }
 
@@ -410,3 +617,4 @@ public sealed class AdifUdpBroadcastListener(
             ? raw.Trim().ToUpperInvariant()
             : null;
 }
+

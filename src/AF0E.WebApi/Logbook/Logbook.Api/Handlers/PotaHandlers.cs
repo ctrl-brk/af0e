@@ -290,10 +290,13 @@ public static partial class PotaHandlers
     public static async Task<PotaActivityInfo> CheckActivity(string callSign, IPotaApiService potaApiService) =>
         await potaApiService.CheckActivityAsync(callSign: callSign);
 
-    public static async Task<List<PotaActivityWithStats>> CheckActivity(string? band, string? mode, bool dups, IPotaApiService potaApiService, HrdDbContext dbContext)
+    public static async Task<List<PotaActivityWithStats>> CheckActivity(int? activationId, string? band, string? mode, bool dups, IPotaApiService potaApiService, HrdDbContext dbContext)
     {
         var spots = await potaApiService.CheckActivityAsync(band, mode);
         var filteredSpots = dups ? spots : await FilterAlreadyLoggedSpots(spots, dbContext);
+
+        if (activationId is > 0)
+            filteredSpots = await FilterActivationLoggedSpots(filteredSpots, activationId.Value, dbContext);
 
         if (filteredSpots.Count == 0)
             return [];
@@ -401,6 +404,33 @@ public static partial class PotaHandlers
         dbContext.PotaContacts.Add(contact);
 
         await dbContext.SaveChangesAsync(ct);
+    }
+
+    private static async Task<List<PotaActivityInfo>> FilterActivationLoggedSpots(List<PotaActivityInfo> spots, int activationId, HrdDbContext dbContext)
+    {
+        if (spots.Count == 0)
+            return spots;
+
+        // Get all contacts already in the activation log with their band and mode
+        var activationContacts = await dbContext.PotaContacts
+            .Where(c => c.ActivationId == activationId)
+            .Select(c => new
+            {
+                c.Log.ColCall,
+                c.Log.ColBand,
+                c.Log.ColMode
+            })
+            .ToListAsync();
+
+        if (activationContacts.Count == 0)
+            return spots;
+
+        // Filter out spots where the call sign is already in the activation on the same band and mode
+        return [.. spots.Where(spot =>
+            !activationContacts.Any(c =>
+                string.Equals(c.ColCall, spot.CallSign, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(c.ColBand, spot.Band, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(c.ColMode, spot.Mode, StringComparison.OrdinalIgnoreCase)))];
     }
 
     private static async Task<List<PotaActivityInfo>> FilterAlreadyLoggedSpots(List<PotaActivityInfo> spots, HrdDbContext dbContext)
