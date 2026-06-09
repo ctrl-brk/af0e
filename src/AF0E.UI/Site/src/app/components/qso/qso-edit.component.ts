@@ -900,11 +900,19 @@ export class QsoEditComponent implements OnInit {
   protected onKeyDown($event: KeyboardEvent) {
     let handled = false;
 
-    if ($event.key === 'F9') {
-      $event.preventDefault();
-      $event.stopPropagation();
-      this.onClear(true);
-      return;
+    switch ($event.key) {
+      case 'F9':
+        $event.preventDefault();
+        $event.stopPropagation();
+        this.onClear(true);
+        return;
+      case 'Enter':
+        if ($event.ctrlKey) {
+          this.onSave();
+          $event.preventDefault();
+          $event.stopPropagation();
+          return;
+        }
     }
 
     if (this.qsoMode() !== 'CW') return;
@@ -999,12 +1007,6 @@ export class QsoEditComponent implements OnInit {
         handled = true;
         this.stopCw();
         break;
-      case 'Enter':
-        if ($event.ctrlKey) {
-          handled = true;
-          this.onSave();
-        }
-        break;
       case 'PageDown':
         handled = true;
         let speed = this.cwSpeed();
@@ -1089,12 +1091,28 @@ export class QsoEditComponent implements OnInit {
     this.f2Title = `r 73 ee\nr 73 de ${stationCall} [alt]`.replaceAll('0', 'Ø');
   }
 
-  private tuneRig(freqHz: number, mode: string | undefined) {
-    this.qsoForm.get('freq')?.setValue(freqHz);
-    this.qsoForm.get('mode')?.setValue(mode);
-    this.normalizeFreqAndMode();
+   private tuneRig(freqHz: number, mode: string | undefined) {
+     this.qsoForm.get('freq')?.setValue(freqHz);
+     this.qsoForm.get('mode')?.setValue(mode);
+     this.normalizeFreqAndMode();
 
-    this.checkKeyerStatus(true)
-    this.getRadioStatus(true);
-  }
+     this.checkKeyerStatus(true)
+     this.getRadioStatus(true);
+   }
+
+   protected onQslRcvdChange() {
+     // Populate qslRcvdDate with current UTC date if empty
+     const qslRcvdDateControl = this.qsoForm.get('qslRcvdDate');
+     if (qslRcvdDateControl && !qslRcvdDateControl.value) {
+       qslRcvdDateControl.setValue(Utils.getCurrentUtcDate());
+     }
+
+     // Populate qslRcvdVia with "Bureau" (value "B") if empty
+     const qslRcvdViaControl = this.qsoForm.get('qslRcvdVia');
+     if (qslRcvdViaControl && !qslRcvdViaControl.value) {
+       qslRcvdViaControl.setValue('B');
+     }
+
+     this.qsoForm.markAsDirty();
+   }
 }

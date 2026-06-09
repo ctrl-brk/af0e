@@ -152,7 +152,7 @@ export class PotaActivationComponent implements OnInit {
     const updatesSub = this._logUpdatesSvc.changed$.subscribe(evt => {
       if (evt.operation === 'updated') //rare case, OK to reload the log (small most of the time)
         this.loadActivationLog(this.activationId());
-      else if (evt.activationId !== this.activationId() && evt.operation === 'created') //the updated event above doesn't have the activationId, so no check, and it's a rare case anyway
+      else if (evt.activationId === this.activationId() && evt.operation === 'created') //the updated event above doesn't have the activationId, so no check, and it's a rare case anyway
         this.loadNewQso(evt.logId!);
       //there's also 'imported', but we don't care here
     });

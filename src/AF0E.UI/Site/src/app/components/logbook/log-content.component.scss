@@ -35,3 +35,10 @@ p-table {
   padding-top: 0.75rem;
   border-top: 1px solid #f3f4f6;
 }
+
+.p-dialog {
+  .p-dialog-header {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+}

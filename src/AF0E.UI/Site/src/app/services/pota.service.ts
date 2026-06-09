@@ -144,14 +144,20 @@ export class PotaService {
     );
   }
 
-  public getActivity(band?: string, mode?: string, dups?: boolean): Observable<PotaActivityStatsModel[]> {
-    let url = 'activity?band=';
+  public getActivity(activationId?: number, band?: string, mode?: string, dups?: boolean): Observable<PotaActivityStatsModel[]> {
+    const params = new URLSearchParams();
+
+    if (activationId)
+      params.set('activationId', activationId.toString());
     if (band)
-      url += band;
+      params.set('band', band);
     if (mode)
-      url += `&mode=${mode}`;
+      params.set('mode', mode);
     if (dups)
-      url += `&dups=true`;
+      params.set('dups', 'true');
+
+    const queryString = params.toString();
+    const url = queryString ? `activity?${queryString}` : 'activity';
 
     return this._http.get(Configuration.potaUrl(url)).pipe(
       map((x: PotaActivityStatsModel[]) => {
