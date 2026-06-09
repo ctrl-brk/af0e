@@ -162,7 +162,7 @@ export class PotaSpotsComponent implements OnInit, OnDestroy {
 
   protected refreshSpots() {
     this.isRefreshing.set(true);
-    this._potaSvc.getActivity(undefined, undefined, this.showDups()).subscribe({
+    this._potaSvc.getActivity( this._huntingActivationId, undefined, undefined, this.showDups()).subscribe({
       next: (r: PotaActivityStatsModel[]) => {
         this._allSpots.set(r);
         this.isRefreshing.set(false);

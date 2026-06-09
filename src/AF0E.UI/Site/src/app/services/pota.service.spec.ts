@@ -150,6 +150,28 @@ describe('PotaService', () => {
     });
   });
 
+  describe('getActivity', () => {
+    it('should omit activationId when not provided', () => {
+      service.getActivity(undefined, undefined, undefined, false).subscribe(spots => {
+        expect(spots.length).toBe(0);
+      });
+
+      const req = httpMock.expectOne('/api/v1/pota/activity');
+      expect(req.request.method).toBe('GET');
+      req.flush([]);
+    });
+
+    it('should include activationId and dups when provided', () => {
+      service.getActivity(123, undefined, undefined, true).subscribe(spots => {
+        expect(spots.length).toBe(0);
+      });
+
+      const req = httpMock.expectOne('/api/v1/pota/activity?activationId=123&dups=true');
+      expect(req.request.method).toBe('GET');
+      req.flush([]);
+    });
+  });
+
   describe('GeoJSON endpoints', () => {
     it('should fetch activated parks GeoJSON', () => {
       const mockGeoJson = {

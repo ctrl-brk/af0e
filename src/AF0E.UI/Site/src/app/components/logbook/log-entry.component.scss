@@ -7,6 +7,13 @@ main.le-content {
   p-card {max-width: 55rem;}
 }
 
+.p-dialog {
+  .p-dialog-header {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+}
+
 @media (max-width: 768px) {
   main.le-content {
     padding: 1rem;

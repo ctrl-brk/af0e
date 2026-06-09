@@ -27,6 +27,7 @@
             severity="info"
             (onClick)="setCurrentDateTime()"
             class="date-now-btn"
+            tabindex="-1"
           />
 
           <p-floatlabel class="w-freq" variant="on">
@@ -261,6 +262,7 @@
                 [options]="qslOptions"
                 optionLabel="label"
                 optionValue="value"
+                (onChange)="onQslRcvdChange()"
               />
               <label for="qslRcvd">Rcvd</label>
             </p-floatlabel>
