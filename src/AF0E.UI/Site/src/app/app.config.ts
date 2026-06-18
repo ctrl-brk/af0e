@@ -5,7 +5,7 @@ import {provideHttpClient, withInterceptors} from '@angular/common/http';
 import {MessageService} from 'primeng/api';
 import {LogService} from './shared/log.service';
 import {providePrimeNG} from 'primeng/config';
-import Aura from '@primeng/themes/aura';
+import Aura from '@primeuix/themes/aura';
 import {authHttpInterceptorFn, provideAuth0} from '@auth0/auth0-angular';
 import {environment} from '../environments/environment';
 

@@ -22,28 +22,28 @@
       <p-popover #op1>
         <div class="thresh-popover">
           <div class="thresh-value">Upper limit: <b>{{thresholds.t1}}</b></div>
-          <p-slider [(ngModel)]="thresholds.t1" [min]="1" [max]="thresholds.t2 - 1" (onChange)="onThresholdChanged()" styleClass="thresh-slider" />
+          <p-slider [(ngModel)]="thresholds.t1" [min]="0" [max]="thresholds.t2 - 1" (onChange)="onThresholdChanged()" class="thresh-slider" />
         </div>
       </p-popover>
 
       <p-popover #op2>
         <div class="thresh-popover">
           <div class="thresh-value">Upper limit: <b>{{thresholds.t2}}</b></div>
-          <p-slider [(ngModel)]="thresholds.t2" [min]="thresholds.t1 + 1" [max]="thresholds.t3 - 1" (onChange)="onThresholdChanged()" styleClass="thresh-slider" />
+          <p-slider [(ngModel)]="thresholds.t2" [min]="thresholds.t1 + 1" [max]="thresholds.t3 - 1" (onChange)="onThresholdChanged()" class="thresh-slider" />
         </div>
       </p-popover>
 
       <p-popover #op3>
         <div class="thresh-popover">
           <div class="thresh-value">Upper limit: <b>{{thresholds.t3}}</b></div>
-          <p-slider [(ngModel)]="thresholds.t3" [min]="thresholds.t2 + 1" [max]="thresholds.t4 - 1" (onChange)="onThresholdChanged()" styleClass="thresh-slider" />
+          <p-slider [(ngModel)]="thresholds.t3" [min]="thresholds.t2 + 1" [max]="thresholds.t4 - 1" (onChange)="onThresholdChanged()" class="thresh-slider" />
         </div>
       </p-popover>
 
       <p-popover #op4>
         <div class="thresh-popover">
           <div class="thresh-value">Starts at: <b>{{thresholds.t4 + 1}}</b></div>
-          <p-slider [(ngModel)]="thresholds.t4" [min]="thresholds.t3 + 1" [max]="500" (onChange)="onThresholdChanged()" styleClass="thresh-slider" />
+          <p-slider [(ngModel)]="thresholds.t4" [min]="thresholds.t3 + 1" [max]="500" (onChange)="onThresholdChanged()" class="thresh-slider" />
         </div>
       </p-popover>
     </p-fieldset>
