@@ -37,10 +37,19 @@ public sealed class PotaApiService(IHttpClientFactory httpClientFactory) : IPota
 
     private async Task<List<PotaActivityInfo>> CheckActivityInternalAsync(string? band = null, string? mode = null, CancellationToken ct = default)
     {
+        HttpResponseMessage response;
+
         using var client = httpClientFactory.CreateClient();
 
-        var response = await client.GetAsync(SpotsUrl, ct);
-        response.EnsureSuccessStatusCode();
+        try
+        {
+            response = await client.GetAsync(SpotsUrl, ct);
+            response.EnsureSuccessStatusCode();
+        }
+        catch (Exception)
+        {
+            return [];
+        }
 
         var content = await response.Content.ReadAsStringAsync(ct);
         var spots = JsonSerializer.Deserialize<List<PotaSpot>>(content, _jsonOptions);
