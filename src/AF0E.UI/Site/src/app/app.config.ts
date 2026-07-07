@@ -67,8 +67,8 @@ export const appConfig: ApplicationConfig = {
             httpMethod: 'PUT',
           },
           {
-            // Clone activation - require authentication
-            uri: '/api/v1/pota/activations/clone',
+            // Copy, clone activation - require authentication
+            uri: '/api/v1/pota/activations/*',
             httpMethod: 'POST',
           },
           {
