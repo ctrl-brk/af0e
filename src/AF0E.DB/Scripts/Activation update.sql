@@ -1,4 +1,4 @@
-/* 
+/*
   Activation Update Script Start
   (some of this is duplicated lower in the file, but this is the one to use with new activations
   Don't forget to run QrzLookup and PotaLookup
@@ -85,7 +85,7 @@ begin tran
 
 declare @activationId int
 insert into [HamLog].[dbo].[PotaActivations](ParkId, Grid, City, County, State, StartDate, EndDate, LogSubmittedDate, Comments, Lat, Long) values (@parkId, @grid, @city, @county, @state, @startDate , @endDate, @submitDate, null, @lat, @long)
-select @activationId = max(activationid) from [HamLog].[dbo].[PotaActivations]
+select @activationId = convert(int, scope_identity())
 --print 'Activation ID: ' + convert(varchar, @activationId)
 insert into [HamLog].[dbo].[PotaContacts](ActivationId, LogId) select @activationId, id from #tmp
 
