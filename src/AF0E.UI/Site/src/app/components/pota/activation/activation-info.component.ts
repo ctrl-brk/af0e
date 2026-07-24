@@ -28,10 +28,13 @@ export class PotaActivationInfoComponent {
       : this.spotHistory().filter(s => s.source !== 'RBN')
   );
 
-  public activation = input.required<PotaActivationModel>();
+  public activation = input<PotaActivationModel | null>(null);
 
   public refresh() {
-    this._potaAppSvc.getSpotHistory(this.activation().stationCallsign, this.activation().parkNum).subscribe({
+    const activation = this.activation();
+    if (!activation) return;
+
+    this._potaAppSvc.getSpotHistory(activation.stationCallsign, activation.parkNum).subscribe({
       next: r => this.spotHistory.set(r),
       error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
     })

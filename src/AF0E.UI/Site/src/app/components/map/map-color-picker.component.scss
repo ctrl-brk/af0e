@@ -1,0 +1,16 @@
+.inputcolor-popover {
+  width: 14rem;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  input[pInputColorInput] {
+    width: 100%;
+  }
+}
+
+.p-inputcolor-swatch {
+  width: 1.5rem;
+  height: 1.5rem;
+}

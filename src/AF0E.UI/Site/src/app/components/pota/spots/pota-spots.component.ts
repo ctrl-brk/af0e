@@ -21,7 +21,7 @@ import {PotaActivityStatsModel} from '../../../models/pota-activity-stats.model'
 import {TableModule} from 'primeng/table';
 import {Tag} from 'primeng/tag';
 import {ModeSeverityPipe, QsoModePipe, TimeAgoPipe} from '../../../shared/pipes';
-import {Button} from 'primeng/button';
+import {ButtonDirective} from 'primeng/button';
 import {Checkbox} from 'primeng/checkbox';
 import {FormsModule} from '@angular/forms';
 import {DatePipe, NgClass} from '@angular/common';
@@ -32,6 +32,8 @@ import {Badge} from 'primeng/badge';
 import {PotaAppService} from '../../../services/pota-app.service';
 import {QsoEditMode} from '../../../shared/qso-edit-mode.enum';
 import {defaultTitle} from '../../../shared/constants';
+import {Refresh} from '@primeicons/angular/refresh';
+import {Plus} from '@primeicons/angular/plus';
 
 @Component({
   templateUrl: './pota-spots.component.html',
@@ -43,7 +45,7 @@ import {defaultTitle} from '../../../shared/constants';
     QsoModePipe,
     ModeSeverityPipe,
     TimeAgoPipe,
-    Button,
+    ButtonDirective,
     Checkbox,
     FormsModule,
     NgClass,
@@ -52,6 +54,8 @@ import {defaultTitle} from '../../../shared/constants';
     ParkHuntingStatsComponent,
     Badge,
     DatePipe,
+    Refresh,
+    Plus,
   ]
 })
 export class PotaSpotsComponent implements OnInit, OnDestroy {

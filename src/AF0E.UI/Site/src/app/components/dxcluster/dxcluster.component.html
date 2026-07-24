@@ -8,11 +8,13 @@
   scrollHeight="flex"
   class="tbl-dxcluster">
 
-  <ng-template pTemplate="caption">
+  <ng-template #caption>
     <div class="dxcluster-caption">
       <div class="caption-row">
         <div class="caption-left">
-          <p-button severity="primary" size="small" icon="pi pi-refresh" [disabled]="loading() || statusLoading()" (onClick)="refresh()" />
+          <button pButton type="button" severity="primary" size="small" [disabled]="loading() || statusLoading()" (click)="refresh()" aria-label="Refresh spots">
+            <svg data-p-icon="refresh" aria-hidden="true"></svg>
+          </button>
           <p-tag [severity]="statusSeverity()" [value]="isConnected() ? 'Live' : 'Offline'"></p-tag>
 
           @if (primaryServer(); as server) {
@@ -44,14 +46,14 @@
       </div>
 
       @if (selectedFilterSummary(); as summary) {
-        <p-fieldset legend="{{selectedFilterName()}}" [toggleable]="true" collapsed="true">
+        <p-fieldset legend="{{selectedFilterName()}}" [toggleable]="true" [collapsed]="true">
           <div class="caption-filter">{{ summary }}</div>
         </p-fieldset>
       }
     </div>
   </ng-template>
 
-  <ng-template pTemplate="header">
+  <ng-template #header>
     <tr>
       <th>UTC</th>
       <th>DX</th>
@@ -64,7 +66,7 @@
     </tr>
   </ng-template>
 
-  <ng-template pTemplate="body" let-spot>
+  <ng-template #body let-spot>
     <tr [ngClass]="getSpotRowClasses(spot)">
       <td class="dxcluster-time">{{ spot.spotTimeUtc | date:'HH:mm':'UTC' }}</td>
       <td class="dxcluster-call"><a href="https://www.qrz.com/db/{{spot.dxCallsign}}" target="_blank">{{spot.dxCallsign}}</a></td>
@@ -83,7 +85,7 @@
     </tr>
   </ng-template>
 
-  <ng-template pTemplate="emptymessage">
+  <ng-template #emptymessage>
     <tr>
       <td colspan="7" class="dxcluster-empty">
         <div class="dxcluster-empty-content">

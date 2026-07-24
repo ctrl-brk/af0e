@@ -1,6 +1,8 @@
 import {Component, inject, signal, ViewEncapsulation} from '@angular/core';
 import {FormsModule} from '@angular/forms';
-import {Button} from 'primeng/button';
+import {ButtonDirective} from 'primeng/button';
+import {Calculator} from '@primeicons/angular/calculator';
+import {Copy} from '@primeicons/angular/copy';
 import {Card} from 'primeng/card';
 import {FloatLabel} from 'primeng/floatlabel';
 import {InputText} from 'primeng/inputtext';
@@ -15,7 +17,7 @@ import {NotificationMessageModel, NotificationMessageSeverity} from '../../share
   templateUrl: './utils-grid.component.html',
   styleUrl: './utils-grid.component.scss',
   encapsulation: ViewEncapsulation.None,
-  imports: [Card, FloatLabel, InputText, FormsModule, Button, Tooltip],
+  imports: [Card, FloatLabel, InputText, FormsModule, ButtonDirective, Calculator, Copy, Tooltip],
 })
 export class UtilsGridComponent {
   private _ntfSvc = inject(NotificationService);

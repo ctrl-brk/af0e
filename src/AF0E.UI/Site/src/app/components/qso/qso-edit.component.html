@@ -4,7 +4,7 @@
       <form id="qsoForm" [formGroup]="qsoForm" (ngSubmit)="onSave()">
         <div class="qso-form-fields" style="margin-left: -1rem">
           <p-floatlabel class="w-datetime" variant="on">
-            <p-datePicker
+            <p-datepicker
               formControlName="date"
               inputId="date"
               dateFormat="yy-mm-dd"
@@ -19,19 +19,22 @@
             <label for="date">UTC Date/Time *</label>
           </p-floatlabel>
           &nbsp;
-          <p-button
-            icon="pi pi-angle-double-left"
+          <button
+            pButton
+            type="button"
             [text]="true"
             [rounded]="true"
             size="small"
             severity="info"
-            (onClick)="setCurrentDateTime()"
+            (click)="setCurrentDateTime()"
             class="date-now-btn"
             tabindex="-1"
-          />
+            aria-label="Set current UTC date/time">
+            <svg data-p-icon="angle-double-left" aria-hidden="true"></svg>
+          </button>
 
           <p-floatlabel class="w-freq" variant="on">
-            <p-inputNumber
+            <p-inputnumber
               mode="decimal"
               formControlName="freq"
               inputId="freq"
@@ -73,15 +76,18 @@
           </p-floatlabel>
           @if (rigReady()) {
           &nbsp;
-          <p-button
-            icon="pi pi-angle-double-left"
+          <button
+            pButton
+            type="button"
             [text]="true"
             [rounded]="true"
             size="small"
             severity="info"
-            (onClick)="getRadioStatus()"
+            (click)="getRadioStatus()"
             class="date-now-btn"
-          />
+            aria-label="Load radio status">
+            <svg data-p-icon="angle-double-left" aria-hidden="true"></svg>
+          </button>
           }
 
           <div class="line-break"></div>
@@ -222,7 +228,7 @@
           </div>
         </p-fieldset>
 
-        <p-fieldset legend="QSL" [toggleable]="true" collapsed="true">
+        <p-fieldset legend="QSL" [toggleable]="true" [collapsed]="true">
           <div class="qso-form-fields inner">
             <p-floatlabel variant="on">
               <p-select
@@ -236,7 +242,7 @@
             </p-floatlabel>
 
             <p-floatlabel class="w-date" variant="on">
-              <p-datePicker
+              <p-datepicker
                 formControlName="qslSentDate"
                 inputId="qslSentDate"
                 dateFormat="yy-mm-dd"
@@ -268,7 +274,7 @@
             </p-floatlabel>
 
             <p-floatlabel class="w-date" variant="on">
-              <p-datePicker
+              <p-datepicker
                 formControlName="qslRcvdDate"
                 inputId="qslRcvdDate"
                 dateFormat="yy-mm-dd"
@@ -289,7 +295,7 @@
           </div>
         </p-fieldset>
 
-        <p-fieldset legend="DE" [toggleable]="true" collapsed="true">
+        <p-fieldset legend="DE" [toggleable]="true" [collapsed]="true">
           <div class="qso-form-fields inner">
             <p-floatlabel class="w-grid" variant="on">
               <input
@@ -356,7 +362,7 @@
         [size]="'small'"
         [scrollHeight]="'10rem'"
         class="tbl-qso-history" >
-        <ng-template pTemplate="body" let-qso>
+        <ng-template #body let-qso>
           <tr>
             <td class="qso-edit-hist-date">{{ qso.date | date:'yy-MM-dd HH:mm' }}</td>
             <td class="qso-edit-hist-bm">{{ qso.band }}</td>
@@ -383,21 +389,32 @@
         <div class="form-actions-left">
           @if (qsoMode() == 'CW' && keyerReady() && (editMode() === QsoEditMode.Add || editMode() === QsoEditMode.PotaHuntingAdd || editMode() === QsoEditMode.PotaActivatingAdd)) {
             @if (editMode() === QsoEditMode.PotaActivatingAdd) {
-              <p-button label="F1&middot;CQ" [severity]="cqSending() ? 'danger' : 'success'" (onClick)="sendPotaCq(true)" title="{{f1Title}}" />
-              <p-button label="F2&middot;TU" severity="help" (onClick)="sendCw('R 73 de AF|0|E')" title="{{f2Title}}" />
+              <button pButton type="button" [severity]="cqSending() ? 'danger' : 'success'" (click)="sendPotaCq(true)" title="{{f1Title}}">F1&middot;CQ</button>
+              <button pButton type="button" severity="help" (click)="sendCw('R 73 de AF|0|E')" title="{{f2Title}}">F2&middot;TU</button>
             }
-            <p-button label="F3&middot;Exch" severity="info" (onClick)="sendCw(f3CwMsg().def, true)" [disabled]="cwCallLabel() === '???'" [title]="f3Title()" />
-            <p-button label="x2" severity="info" size="small" class="x2-btn" (onClick)="sendCw(f3CwMsg().ctl, true)" [disabled]="cwCallLabel() === '???'" title="{{f3CwMsg().ctl}}" />
-            <p-button label="F4&middot;{{stationInfo.stationCall.replace('0', 'Ø')}}" severity="contrast" (onClick)="sendCw(stationInfo.cwCall)" />
-            <p-button label="F5&middot;{{cwCallLabel().replace('0', 'Ø')}}" severity="warn" (onClick)="sendCw(cwCallLabel())" [disabled]="cwCallLabel() === '???'" />
-            <p-button label="F8&middot;?" severity="secondary" (onClick)="sendCw('?')" title="{{f8Title}}" />
-            <p-inputNumber [(ngModel)]="cwSpeed" [showButtons]="true" inputId="minmax-buttons" [min]="10" [max]="32" size="small" class="cw-speed" />
+            <button pButton type="button" severity="info" (click)="sendCw(f3CwMsg().def, true)" [disabled]="cwCallLabel() === '???'" [title]="f3Title()">F3&middot;Exch</button>
+            <button pButton type="button" severity="info" size="small" class="x2-btn" (click)="sendCw(f3CwMsg().ctl, true)" [disabled]="cwCallLabel() === '???'" title="{{f3CwMsg().ctl}}">x2</button>
+            <button pButton type="button" severity="contrast" (click)="sendCw(stationInfo.cwCall)">F4&middot;{{stationInfo.stationCall.replace('0', 'Ø')}}</button>
+            <button pButton type="button" severity="warn" (click)="sendCw(cwCallLabel())" [disabled]="cwCallLabel() === '???'">F5&middot;{{cwCallLabel().replace('0', 'Ø')}}</button>
+            <button pButton type="button" severity="secondary" (click)="sendCw('?')" title="{{f8Title}}">F8&middot;?</button>
+            <p-inputnumber [(ngModel)]="cwSpeed" [showButtons]="true" inputId="minmax-buttons" [min]="10" [max]="32" size="small" class="cw-speed" />
   <!--          <p-button label="Stop" severity="danger" class="stop-btn" (onClick)="stopCw()" [disabled]="!cwSending()" />-->
           }
         </div>
       <div class="form-actions-right">
-        <p-button label="F9&middot;Clr" icon="pi pi-times" severity="secondary" (onClick)="onClear(false)" title="Clear" />
-        <p-button [label]="isEditMode ? 'Save' : 'Add'" [icon]="isEditMode ? 'pi pi-check' : 'pi pi-plus'" type="submit" [disabled]="qsoForm.pristine" (onClick)="onSave()" title="Ctrl-Enter" />
+        <button pButton type="button" severity="secondary" (click)="onClear(false)" title="Clear">
+          <svg data-p-icon="times" aria-hidden="true"></svg>
+          <span>F9&middot;Clr</span>
+        </button>
+        <button pButton type="submit" [disabled]="qsoForm.pristine" (click)="onSave()" title="Ctrl-Enter">
+          @if (isEditMode) {
+            <svg data-p-icon="check" aria-hidden="true"></svg>
+            <span>Save</span>
+          } @else {
+            <svg data-p-icon="plus" aria-hidden="true"></svg>
+            <span>Add</span>
+          }
+        </button>
       </div>
     </div>
   </div>

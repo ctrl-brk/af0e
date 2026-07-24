@@ -29,11 +29,15 @@ import {InputText} from 'primeng/inputtext';
 import {InputNumber} from 'primeng/inputnumber';
 import {DatePicker} from 'primeng/datepicker';
 import {Select} from 'primeng/select';
-import {Button} from 'primeng/button';
+import {ButtonDirective} from 'primeng/button';
 import {RadioButton} from 'primeng/radiobutton';
 import {Textarea} from 'primeng/textarea';
 import {Fieldset} from 'primeng/fieldset';
 import {Tooltip} from 'primeng/tooltip';
+import {AngleDoubleLeft} from '@primeicons/angular/angle-double-left';
+import {Check} from '@primeicons/angular/check';
+import {Plus} from '@primeicons/angular/plus';
+import {Times} from '@primeicons/angular/times';
 import {callSignValidator} from '../../shared/validators';
 import {BAND_OPTIONS, MODE_OPTIONS, QSL_OPTIONS, QSL_VIA_OPTIONS} from '../../shared/qso-options';
 import {QrzDetailsModel} from '../../models/qrz-details.model';
@@ -73,10 +77,14 @@ export interface QsoEditParams {
     InputNumber,
     DatePicker,
     Select,
-    Button,
+    ButtonDirective,
     Textarea,
     Fieldset,
     Tooltip,
+    AngleDoubleLeft,
+    Check,
+    Plus,
+    Times,
     SpaceAsTabDirective,
     FormsModule,
     TableModule,

@@ -22,14 +22,17 @@
             <label for="macro-{{$index}}">Text to Send</label>
           </p-floatlabel>
 
-          <p-button
-            label="Send"
-            icon="pi pi-send"
+          <button
+            pButton
+            type="button"
             severity="primary"
             [disabled]="!row.text.trim()"
             [pTooltip]="row.shortcut ? ('Shortcut: ' + row.shortcut) : 'No shortcut selected'"
             tooltipPosition="top"
-            (onClick)="sendCw($index)" />
+            (click)="sendCw($index)">
+            <svg data-p-icon="send" aria-hidden="true"></svg>
+            <span>Send</span>
+          </button>
         </div>
       }
     </div>

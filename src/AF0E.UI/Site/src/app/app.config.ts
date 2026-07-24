@@ -102,6 +102,7 @@ export const appConfig: ApplicationConfig = {
           cssLayer: false
         }
       },
+      license: environment.primeuiLicense,
       ripple: true
     }),
     MessageService,

@@ -1,11 +1,12 @@
 .tbl-act-log {
   font-family: var(--mono-font);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
 
   table {
-    tr td {
+    tr > td {
       cursor: pointer;
       white-space: nowrap;
+      font-size: 0.8rem;
       &.time {width: 3rem;}
       &.call {width: 12rem;}
       &.band {width: 2rem;}

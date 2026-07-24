@@ -4,19 +4,19 @@ import {FormsModule} from '@angular/forms';
 import * as mapbox from 'mapbox-gl';
 import {environment} from "../../../environments/environment";
 import {Fieldset} from 'primeng/fieldset';
-import {ColorPicker} from 'primeng/colorpicker';
 import {debounceTime, fromEvent, Subject, Subscription} from 'rxjs';
 import {Utils} from '../../shared/utils';
 import {PotaService} from '../../services/pota.service';
 import {NotificationService} from '../../shared/notification.service';
 import {LogService} from '../../shared/log.service';
 import {Checkbox} from 'primeng/checkbox';
-import {AutoComplete} from 'primeng/autocomplete';
+import {AutoComplete, AutoCompleteCompleteEvent, AutoCompleteSelectEvent} from 'primeng/autocomplete';
 import {PotaParkModel} from '../../models/pota-park.model';
 import {BreakpointObserver} from '@angular/cdk/layout';
 import {defaultTitle} from '../../shared/constants';
 import {Popover} from 'primeng/popover';
 import {Slider} from 'primeng/slider';
+import {MapColorPickerComponent} from './map-color-picker.component';
 
 @Component({
   templateUrl: './map.component.html',
@@ -24,7 +24,7 @@ import {Slider} from 'primeng/slider';
   encapsulation: ViewEncapsulation.None,
   imports: [
     Fieldset,
-    ColorPicker,
+    MapColorPickerComponent,
     FormsModule,
     Checkbox,
     AutoComplete,
@@ -409,14 +409,15 @@ export class MapComponent implements OnInit {
     this.hydrateAndUpdateLayers(false);
   }
 
-  parkSearch(searchString: string) {
-    this._potaSvc.searchPark(searchString).subscribe({
+  parkSearch(event: AutoCompleteCompleteEvent) {
+    this._potaSvc.searchPark(event.query).subscribe({
       next: r => this.parksFound = r,
       error: e=> Utils.showErrorMessage(e, this._ntfSvc, this._log),
     })
   }
 
-  onParkSearchSelect(p: PotaParkModel) {
+  onParkSearchSelect(event: AutoCompleteSelectEvent) {
+    const p = event.value as PotaParkModel;
     this.searchName = '';
 
     const coordinates = [p.long, p.lat];
