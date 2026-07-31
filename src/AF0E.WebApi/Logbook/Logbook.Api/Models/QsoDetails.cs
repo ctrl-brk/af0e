@@ -55,7 +55,9 @@ public sealed class QsoDetails
         SatMode = log.ColSatMode;
         Contest = log.ColContestId;
         SiteComment = log.SiteComment;
+        // Admin-only fields
         Comment = isAdmin ? log.ColComment : null;
+        QslVia = isAdmin ? log.ColQslVia : null;
     }
 
     public int Id { get; set; }
@@ -100,6 +102,8 @@ public sealed class QsoDetails
     public string? SiteComment { get; set; }
     // Admin-only fields
     public string? Comment { get; set; }
+    public string? QslVia { get; set; }
+
 
     /// <summary>
     /// Converts this QsoDetails to a new HrdLog entity
@@ -141,7 +145,8 @@ public sealed class QsoDetails
             ColQslrdate = QslRcvdDate,
             ColQslRcvdVia = N(QslRcvdVia, "D"),
             SiteComment = N(SiteComment),
-            ColComment = includeAdminFields ? N(Comment) : null
+            ColComment = includeAdminFields ? N(Comment) : null,
+            ColQslVia = includeAdminFields ? N(QslVia) : null,
         };
     }
 

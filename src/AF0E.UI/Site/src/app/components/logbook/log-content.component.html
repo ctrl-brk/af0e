@@ -1,10 +1,10 @@
-<p-contextMenu #cm [model]="cmItems()"></p-contextMenu>
+<p-contextmenu #cm [model]="cmItems()"></p-contextmenu>
 <p-table
   [value]="logEntries()"
   dataKey="id"
   [contextMenu]="_authSvc.isAdmin ? cm : null"
   [(contextMenuSelection)]="selectedQso"
-  sortField="date"
+  [sortField]="'date'"
   [sortOrder]="-1"
   [paginator]="true"
   [showCurrentPageReport]="true"
@@ -21,10 +21,10 @@
   class="tbl-log"
   stripedRows>
 
-  <ng-template pTemplate="caption">
+  <ng-template #caption>
     <div class='log-caption'>
       <p-floatlabel variant="on">
-        <p-datePicker
+        <p-datepicker
           selectionMode="range"
           [(ngModel)]="qsoDateRange"
           [minDate]="qsoMinDate()"
@@ -37,19 +37,30 @@
         />
         <label for="daterange">{{dateRangeTitle()}}</label>
       </p-floatlabel>
-      <p-button severity="secondary" icon="pi pi-search" (onClick)="onDateRangeSearch()" />
+      <button pButton type="button" severity="secondary" class="header-btn" (click)="onDateRangeSearch()" aria-label="Search by date range">
+        <svg data-p-icon="search" aria-hidden="true"></svg>
+      </button>
       <div style="flex: 1;"></div>
       @if (_authSvc.isAdmin) {
-        <p-button severity="primary" label="QSO" icon="pi pi-plus" (onClick)="onAddQso({})" />
-        <p-button severity="info" label="LOTW" icon="pi pi-file-import" (onClick)="lotwDlgVisible.set(true)" title="Download LOTW QSLs" />
+        <button pButton type="button" severity="primary" class="header-btn" (click)="onAddQso({})">
+          <svg data-p-icon="plus" aria-hidden="true"></svg>
+          <span>QSO</span>
+        </button>
+        <button pButton type="button" severity="info" class="header-btn" (click)="lotwDlgVisible.set(true)" title="Download LOTW QSLs">
+          <svg data-p-icon="file-import" aria-hidden="true"></svg>
+          <span>LOTW</span>
+        </button>
       }
-      <p-button severity="secondary" label="ADIF" icon="pi pi-download" [loading]="exportingAdif()" [disabled]="totalRecords() === 0 || exportingAdif()" (onClick)="onExportAdif()" title="Download ADIF for listed QSOs" />
+      <button pButton type="button" severity="secondary" class="header-btn" [loading]="exportingAdif()" [disabled]="totalRecords() === 0 || exportingAdif()" (click)="onExportAdif()" title="Download ADIF for listed QSOs">
+        <svg data-p-icon="download" aria-hidden="true"></svg>
+        <span>ADIF</span>
+      </button>
     </div>
   </ng-template>
 
-  <ng-template pTemplate="header">
+  <ng-template #header>
     <tr>
-      <th pSortableColumn="date">UTC (ymd) <p-sortIcon field="date" /></th>
+      <th pSortableColumn="date">UTC (ymd) <p-sorticon field="date" /></th>
       <th>Call</th>
       <th>Band</th>
       <th>Mode</th>
@@ -61,7 +72,7 @@
     </tr>
   </ng-template>
 
-  <ng-template pTemplate="body" let-qso>
+  <ng-template #body let-qso>
     <tr (click)="onQsoSelect(qso)" [pContextMenuRow]="qso">
       <td>{{ qso.date | date:'yy-MM-dd HH:mm' }}</td>
       <td>{{ qso.call }}</td>
@@ -85,7 +96,7 @@
     <app-qso [logId]="qsoEditParams().logId!" />
   }
   <div class="qsl">
-    <p-button label="Close" severity="secondary" (click)="qsoDetailsVisible.set(false)" />
+    <button pButton type="button" severity="secondary" (click)="qsoDetailsVisible.set(false)">Close</button>
   </div>
 </p-dialog>
 
@@ -99,7 +110,7 @@
   <p-dialog [modal]="true" [showHeader]="false" [(visible)]="lotwDlgVisible" [focusOnShow]="true" [style]="{ width: '20rem' }">
     <div style="padding-top: 1rem">
       <p-floatlabel variant="on">
-        <p-datePicker
+        <p-datepicker
           [(ngModel)]="lotwDate"
           inputId="date"
           dateFormat="yy-mm-dd"
@@ -110,7 +121,10 @@
         <label for="date">Download since UTC *</label>
       </p-floatlabel>
       <div style="display:flex; justify-content:flex-end; margin-top:0.5rem;">
-        <p-button label="Download" icon="pi pi-file-import" [loading]="lotwLoading()" (onClick)="onLotwDownload()" />
+        <button pButton type="button" [loading]="lotwLoading()" (click)="onLotwDownload()">
+          <svg data-p-icon="file-import" aria-hidden="true"></svg>
+          <span>Download</span>
+        </button>
       </div>
     </div>
   </p-dialog>

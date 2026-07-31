@@ -6,12 +6,12 @@
         <a href="https://pota.app/#/park/{{activation()!.parkNum}}">{{activation()?.stationCallsign !== 'AF0E' ? activation()?.stationCallsign + ' / ' : '' }}{{activation()?.parkNum}} - {{activation()?.parkName}}</a>
         @if (_authSvc.isAdmin) {
           <p-confirmpopup />
-          &nbsp;&nbsp;<p-button severity="info" icon="pi pi-pencil" size="small" title="Edit" outlined="true" (onClick)="editActivationVisible.set(true)" />
-          &nbsp;<p-button severity="warn" icon="pi pi-copy" size="small" title="Copy with contacts (n-fer)" outlined="true" (onClick)="copyDlgVisible.set(true)" />
-          &nbsp;<p-button severity="warn" icon="pi pi-clone" size="small" title="New activation, same location" outlined="true" (onClick)="onCloneActivation()" />
-          &nbsp;<p-button severity="success" icon="pi pi-upload" size="small" title="Merge ADIF" outlined="true" (onClick)="adifFileInput.click()" />
+          &nbsp;&nbsp;<button pButton type="button" severity="info" size="small" title="Edit" [outlined]="true" (click)="editActivationVisible.set(true)" aria-label="Edit activation"><svg data-p-icon="pencil" aria-hidden="true"></svg></button>
+          &nbsp;<button pButton type="button" severity="warn" size="small" title="Copy with contacts (n-fer)" [outlined]="true" (click)="copyDlgVisible.set(true)" aria-label="Copy activation"><svg data-p-icon="copy" aria-hidden="true"></svg></button>
+          &nbsp;<button pButton type="button" severity="warn" size="small" title="New activation, same location" [outlined]="true" (click)="onCloneActivation()" aria-label="Clone activation"><svg data-p-icon="clone" aria-hidden="true"></svg></button>
+          &nbsp;<button pButton type="button" severity="success" size="small" title="Merge ADIF" [outlined]="true" (click)="adifFileInput.click()" aria-label="Merge ADIF"><svg data-p-icon="upload" aria-hidden="true"></svg></button>
           <input #adifFileInput type="file" accept=".adi,.adif" style="display:none" (change)="onMergeAdifFileSelected($event)" />
-          &nbsp;<p-button severity="danger" icon="pi pi-trash" size="small" title="Delete" outlined="true" (onClick)="onConfirmDelete($event)" />
+          &nbsp;<button pButton type="button" severity="danger" size="small" title="Delete" [outlined]="true" (click)="onConfirmDelete($event)" aria-label="Delete activation"><svg data-p-icon="trash" aria-hidden="true"></svg></button>
         }
       </h3>
       <p>
@@ -35,15 +35,24 @@
     <div class="card-actions">
       <div class="card-actions-row">
         @if (_authSvc.isAdmin) {
-          <p-button severity="help" label="Spot" icon="pi pi-megaphone" [disabled]="activation().endDate" (onClick)="onSpotShow()" />
-          <p-button severity="success" label="QSO" icon="pi pi-plus" (onClick)="onAddQso()" />
+          <button pButton type="button" severity="help" [disabled]="activation()!.endDate" (click)="onSpotShow()">
+            <svg data-p-icon="megaphone" aria-hidden="true"></svg>
+            <span>Spot</span>
+          </button>
+          <button pButton type="button" severity="success" (click)="onAddQso()">
+            <svg data-p-icon="plus" aria-hidden="true"></svg>
+            <span>QSO</span>
+          </button>
         }
-        <p-button severity="secondary" label="ADIF" icon="pi pi-download" (onClick)="onExportAdif()" />
+        <button pButton type="button" severity="secondary" (click)="onExportAdif()">
+          <svg data-p-icon="download" aria-hidden="true"></svg>
+          <span>ADIF</span>
+        </button>
       </div>
       @if (_authSvc.isAdmin) {
         <div class="last-call">
           @if (lastQso()) {
-            {{lastQso()!.call}} | {{lastQso()!.date | date:'HH:mm'}} | {{lastQso()!.band}} {{lastQso()!.mode}}
+            {{lastQso()!.call}}|{{lastQso()!.date | date:'HH:mm'}}|{{lastQso()!.band}} {{lastQso()!.mode}}
           }
         </div>
       }
@@ -61,15 +70,15 @@
     <p-tabpanel value="log">
       <div class="log-container">
         <div>
-          <app-activation-log [activation]="activation()"  [logEntries]="logEntries()" (qsoSelected)="onQsoSelected($event)" (qsoDeleted)="onQsoDeleted()"></app-activation-log>
+          <app-activation-log [activation]="activation()!"  [logEntries]="logEntries()" (qsoSelected)="onQsoSelected($event)" (qsoDeleted)="onQsoDeleted()"></app-activation-log>
         </div>
         <div>
-          <app-activation-info [activation]="activation()"></app-activation-info>
+          <app-activation-info [activation]="activation()!"></app-activation-info>
         </div>
       </div>
     </p-tabpanel>
     <p-tabpanel value="map">
-      <app-activation-map #map [activation]="activation()" [logEntries]="logEntries()"></app-activation-map>
+      <app-activation-map #map [activation]="activation()!" [logEntries]="logEntries()"></app-activation-map>
     </p-tabpanel>
   </p-tabpanels>
 </p-tabs>
@@ -98,7 +107,10 @@
           <label for="cmt">Comment</label>
         </p-floatlabel>
         <br>
-        <p-button severity="success" label="Spot" icon="pi pi-megaphone" (onClick)="onSpot()" />
+        <button pButton type="button" severity="success" (click)="onSpot()">
+          <svg data-p-icon="megaphone" aria-hidden="true"></svg>
+          <span>Spot</span>
+        </button>
       </div>
     }
   </p-dialog>
@@ -128,7 +140,7 @@
             <input id="lon" pInputText [formField]="$any(activationForm.long)" />
             <label for="lon">Longitude</label>
           </p-floatlabel>
-          <p-button icon="pi pi-globe" severity="secondary" [rounded]="true" (onClick)="onOpenGoogleMaps()" pTooltip="Open in Google Maps" />
+          <button pButton type="button" severity="secondary" [rounded]="true" (click)="onOpenGoogleMaps()" pTooltip="Open in Google Maps" aria-label="Open in Google Maps"><svg data-p-icon="globe" aria-hidden="true"></svg></button>
         </div>
 
         <p-floatlabel class="field">
@@ -152,8 +164,8 @@
         </p-floatlabel>
 
         <p-floatlabel class="field">
-          <p-datePicker
-            [(ngModel)]="activation().startDate"
+          <p-datepicker
+            [(ngModel)]="editableActivation().startDate"
             inputId="startDate"
             name="startDate"
             dateFormat="yy-mm-dd"
@@ -167,8 +179,8 @@
 
         <div class="field end-field">
           <p-floatlabel>
-            <p-datePicker
-              [(ngModel)]="activation().endDate"
+            <p-datepicker
+              [(ngModel)]="editableActivation().endDate"
               inputId="endDate"
               name="endDate"
               dateFormat="yy-mm-dd"
@@ -179,20 +191,23 @@
             />
             <label for="endDate">End date</label>
           </p-floatlabel>
-          <p-button
-            icon="pi pi-angle-double-left"
+          <button
+            pButton
+            type="button"
             [text]="true"
             [rounded]="true"
             size="small"
             severity="info"
-            (onClick)="setEndTimeAndStatus()"
+            (click)="setEndTimeAndStatus()"
             class="date-now-btn"
-          />
+            aria-label="Set current end time">
+            <svg data-p-icon="angle-double-left" aria-hidden="true"></svg>
+          </button>
         </div>
 
         <p-floatlabel class="field">
-          <p-datePicker
-            [(ngModel)]="activation().logSubmittedDate"
+          <p-datepicker
+            [(ngModel)]="editableActivation().logSubmittedDate"
             inputId="submitDate"
             name="sbmitDate"
             dateFormat="yy-mm-dd"
@@ -210,7 +225,10 @@
         </p-floatlabel>
 
         <div class="form-actions">
-          <p-button label="Save" icon="pi pi-save" (onClick)="onSaveActivation()" [disabled]="activationForm().invalid()" />
+          <button pButton type="button" (click)="onSaveActivation()" [disabled]="activationForm().invalid()">
+            <svg data-p-icon="save" aria-hidden="true"></svg>
+            <span>Save</span>
+          </button>
         </div>
       </form>
     </p-dialog>
@@ -223,7 +241,10 @@
         <label for="parkNum">Park</label>
       </p-floatlabel>
       <div style="display:flex; justify-content:flex-end; margin-top:0.5rem;">
-        <p-button label="Copy" icon="pi pi-copy" title="Copy with contacts (n-fer)" (onClick)="onCopyActivation()" [disabled]="!copyParkNum()" />
+        <button pButton type="button" title="Copy with contacts (n-fer)" (click)="onCopyActivation()" [disabled]="!copyParkNum()">
+          <svg data-p-icon="copy" aria-hidden="true"></svg>
+          <span>Copy</span>
+        </button>
       </div>
     </div>
   </p-dialog>

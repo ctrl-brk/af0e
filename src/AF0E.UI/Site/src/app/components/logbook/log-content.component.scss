@@ -6,19 +6,15 @@ app-log-content {
   }
 }
 
-p-table {
-  font-family: var(--mono-font);
-  font-size: 0.85rem;
-  table {
-    min-width: 33rem;
-  }
-}
-
 .tbl-log {
   table {
-    tr td {
+    font-family: var(--mono-font);
+    font-size: 0.8rem;
+    min-width: 33rem;
+    tr > td {
       cursor: pointer;
-      white-space: nowrap
+      white-space: nowrap;
+      font-size: 0.8rem;
     }
     .p-tag-label {
       width: 2.5rem;
@@ -26,6 +22,7 @@ p-table {
     }
   }
   .log-caption {display: flex; align-items: center; width: 100%;}
+  .header-btn {margin-left: 5px}
 }
 
 .qsl {

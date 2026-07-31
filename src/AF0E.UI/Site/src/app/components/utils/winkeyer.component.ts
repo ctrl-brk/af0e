@@ -3,7 +3,8 @@ import {Card} from 'primeng/card';
 import {FloatLabel} from 'primeng/floatlabel';
 import {InputText} from 'primeng/inputtext';
 import {FormsModule} from '@angular/forms';
-import {Button} from 'primeng/button';
+import {ButtonDirective} from 'primeng/button';
+import {Send} from '@primeicons/angular/send';
 import {Tooltip} from 'primeng/tooltip';
 import {Select} from 'primeng/select';
 import {InfraService} from '../../services/infra.service';
@@ -23,7 +24,7 @@ interface WinkeyerMacro {
   templateUrl: './winkeyer.component.html',
   styleUrl: './winkeyer.component.scss',
   encapsulation: ViewEncapsulation.None,
-  imports: [Card, FloatLabel, InputText, FormsModule, Button, Tooltip, Select],
+  imports: [Card, FloatLabel, InputText, FormsModule, ButtonDirective, Send, Tooltip, Select],
 })
 export class WinkeyerComponent {
   private _infraSvc = inject(InfraService);

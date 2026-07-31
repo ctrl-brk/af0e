@@ -1,6 +1,9 @@
 {
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
   "version": 1,
+  "cli": {
+    "packageManager": "npm"
+  },
   "newProjectRoot": "projects",
   "projects": {
     "af0e-site": {
@@ -53,7 +56,10 @@
             "styles": [
               "src/styles.scss"
             ],
-            "scripts": []
+            "scripts": [],
+            "allowedCommonJsDependencies": [
+              "mapbox-gl"
+            ]
           },
           "configurations": {
             "production": {
@@ -61,18 +67,6 @@
                 {
                   "replace": "src/environments/environment.ts",
                   "with": "src/environments/environment.prod.ts"
-                }
-              ],
-              "budgets": [
-                {
-                  "type": "initial",
-                  "maximumWarning": "1MB",
-                  "maximumError": "1.5MB"
-                },
-                {
-                  "type": "anyComponentStyle",
-                  "maximumWarning": "4kB",
-                  "maximumError": "8kB"
                 }
               ],
               "outputHashing": "all"

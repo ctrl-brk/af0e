@@ -29,7 +29,7 @@ import {
   QsoDetailsToActivationQsoModel
 } from '../../../models/activation-qso.model';
 import {PotaActivationMapComponent} from './activation-map.component';
-import {Button} from 'primeng/button';
+import {ButtonDirective} from 'primeng/button';
 import {AppAuthService} from '../../../services/auth.service';
 import {Dialog} from 'primeng/dialog';
 import {QsoEditComponent, QsoEditParams} from '../../qso/qso-edit.component';
@@ -50,6 +50,17 @@ import {LogUpdatesService} from '../../../services/log-updates.service';
 import {QsoDetailModel} from '../../../models/qso-detail.model';
 import {ActivationStatusService} from '../../../services/activation-status.service';
 import {defaultTitle} from '../../../shared/constants';
+import {Pencil} from '@primeicons/angular/pencil';
+import {Copy} from '@primeicons/angular/copy';
+import {Clone} from '@primeicons/angular/clone';
+import {Upload} from '@primeicons/angular/upload';
+import {Trash} from '@primeicons/angular/trash';
+import {Megaphone} from '@primeicons/angular/megaphone';
+import {Plus} from '@primeicons/angular/plus';
+import {Download} from '@primeicons/angular/download';
+import {Globe} from '@primeicons/angular/globe';
+import {AngleDoubleLeft} from '@primeicons/angular/angle-double-left';
+import {Save} from '@primeicons/angular/save';
 
 @Component({
   templateUrl: './activation.component.html',
@@ -69,7 +80,7 @@ import {defaultTitle} from '../../../shared/constants';
     Tag,
     DatePipe,
     PotaActivationMapComponent,
-    Button,
+    ButtonDirective,
     Dialog,
     QsoEditComponent,
     PotaActivationInfoComponent,
@@ -78,6 +89,17 @@ import {defaultTitle} from '../../../shared/constants';
     DatePicker,
     ReactiveFormsModule,
     ConfirmPopup,
+    Pencil,
+    Copy,
+    Clone,
+    Upload,
+    Trash,
+    Megaphone,
+    Plus,
+    Download,
+    Globe,
+    AngleDoubleLeft,
+    Save,
   ],
   providers: [
     ConfirmationService
@@ -104,7 +126,8 @@ export class PotaActivationComponent implements OnInit {
   protected _authSvc = inject(AppAuthService);
   protected activationId = signal(0);
   //protected logId = signal(-1);
-  protected activation = signal<PotaActivationModel>(null!);
+  protected activation = signal<PotaActivationModel | null>(null);
+  protected editableActivation = signal<PotaActivationModel>(this.createEmptyActivation());
   protected logEntries = signal<ActivationQsoModel[]>([]);
   protected qsoDlgHeader = signal('');
   protected qsoEditVisible = model(false);
@@ -113,7 +136,7 @@ export class PotaActivationComponent implements OnInit {
   protected spotFreq = signal('14048.00');
   protected spotComment = signal('CQ');
   protected qsoStats = {total: 1, cw: 0, digi: 0, phone: 0};
-  protected activationForm = form(this.activation, activationSchema)
+  protected activationForm = form(this.editableActivation, activationSchema)
   protected qsoEditMode = QsoEditMode.View;
   protected copyDlgVisible = signal(false);
   protected copyParkNum = signal('');
@@ -169,6 +192,7 @@ export class PotaActivationComponent implements OnInit {
     this._potaSvc.getActivation(id).subscribe({
       next: (r: PotaActivationModel) => {
         this.activation.set(r);
+        this.editableActivation.set({...r});
         this.qsoStats.total = r.count;
         this.qsoStats.cw = r.cwCount;
         this.qsoStats.digi = r.digiCount;
@@ -212,12 +236,12 @@ export class PotaActivationComponent implements OnInit {
 
   }
 
-  onTabChange(tab: unknown) {
-
-  }
 
   protected onAddQso() {
-    this.qsoEditParams.set({potaActivation: this.activation()});
+    const activation = this.activation();
+    if (!activation) return;
+
+    this.qsoEditParams.set({potaActivation: activation});
     this.qsoEditMode = QsoEditMode.PotaActivatingAdd
     this.qsoDlgHeader.set('Add QSO');
     this.qsoEditVisible.set(true);
@@ -230,7 +254,10 @@ export class PotaActivationComponent implements OnInit {
   }
 
   protected onQsoSelected(logId: number) {
-    this.qsoEditParams.set({logId, potaActivation: this.activation()});
+    const activation = this.activation();
+    if (!activation) return;
+
+    this.qsoEditParams.set({logId, potaActivation: activation});
     this.qsoEditMode = QsoEditMode.Edit
     this.qsoDlgHeader.set('Edit QSO');
     this.qsoEditVisible.set(true);
@@ -241,13 +268,15 @@ export class PotaActivationComponent implements OnInit {
   }
 
   protected onSaveActivation() {
+    const editedActivation = this.editableActivation();
+
     const act = {
-      ...this.activation(),
-      startDate: Utils.dateToUtcString(this.activation().startDate),
-      endDate: Utils.dateToUtcString(this.activation().endDate),
-      logSubmittedDate: Utils.dateToUtcString(this.activation().logSubmittedDate),
-      lat: parseFloat(this.activation().lat as any),
-      long: parseFloat(this.activation().long as any),
+      ...editedActivation,
+      startDate: Utils.dateToUtcString(editedActivation.startDate),
+      endDate: Utils.dateToUtcString(editedActivation.endDate),
+      logSubmittedDate: Utils.dateToUtcString(editedActivation.logSubmittedDate),
+      lat: parseFloat(editedActivation.lat as any),
+      long: parseFloat(editedActivation.long as any),
     };
 
     this._potaSvc.updateActivation(act as any).subscribe({
@@ -277,7 +306,10 @@ export class PotaActivationComponent implements OnInit {
   }
 
   protected onSpot() {
-    this._potaAppSvc.addSpot(this.activation().stationCallsign, this.activation().parkNum, this.spotFreq(), Utils.frequencyToMode(this.spotFreq()), this.spotComment()).subscribe({
+    const activation = this.activation();
+    if (!activation) return;
+
+    this._potaAppSvc.addSpot(activation.stationCallsign, activation.parkNum, this.spotFreq(), Utils.frequencyToMode(this.spotFreq()), this.spotComment()).subscribe({
       next: () => this.spotDlgVisible.set(false),
       error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log)
     });
@@ -298,13 +330,43 @@ export class PotaActivationComponent implements OnInit {
   }
 
   protected setEndTimeAndStatus() {
+    const editedActivation = this.editableActivation();
+
     const endDate = this.logEntries().reduce((latest, entry) => {
       const entryDate = new Date(entry.date);
       return entryDate > latest ? entryDate : latest;
     }, new Date(0));
 
-    this.activation().endDate = new Date(Math.ceil(endDate.getTime() / 60_000) * 60_000);
+    editedActivation.endDate = new Date(Math.ceil(endDate.getTime() / 60_000) * 60_000);
     this.activationForm.status().value.set('C');
+  }
+
+  private createEmptyActivation(): PotaActivationModel {
+    const now = new Date();
+
+    return {
+      id: 0,
+      parkNum: '',
+      parkName: '',
+      city: '',
+      county: '',
+      state: '',
+      grid: '',
+      lat: 0,
+      long: 0,
+      startDate: now,
+      endDate: null,
+      stationCallsign: '',
+      operatorCallsign: '',
+      siteComments: '',
+      status: '',
+      count: 0,
+      cwCount: 0,
+      digiCount: 0,
+      phoneCount: 0,
+      p2pCount: 0,
+      logSubmittedDate: null,
+    };
   }
 
   protected onOpenGoogleMaps(): void {

@@ -2,7 +2,8 @@
 import {Component, computed, DestroyRef, inject, OnInit, output, signal, ViewEncapsulation} from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {FormsModule} from '@angular/forms';
-import {Button} from 'primeng/button';
+import {ButtonDirective} from 'primeng/button';
+import {Refresh} from '@primeicons/angular/refresh';
 import {Select} from 'primeng/select';
 import {TableModule} from 'primeng/table';
 import {Tag} from 'primeng/tag';
@@ -28,7 +29,8 @@ interface DxClusterFilterOption {
   encapsulation: ViewEncapsulation.None,
   imports: [
     TableModule,
-    Button,
+    ButtonDirective,
+    Refresh,
     Select,
     Tag,
     FormsModule,

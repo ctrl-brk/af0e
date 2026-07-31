@@ -29,15 +29,20 @@ import {InputText} from 'primeng/inputtext';
 import {InputNumber} from 'primeng/inputnumber';
 import {DatePicker} from 'primeng/datepicker';
 import {Select} from 'primeng/select';
-import {Button} from 'primeng/button';
+import {ButtonDirective} from 'primeng/button';
 import {RadioButton} from 'primeng/radiobutton';
 import {Textarea} from 'primeng/textarea';
 import {Fieldset} from 'primeng/fieldset';
 import {Tooltip} from 'primeng/tooltip';
+import {AngleDoubleLeft} from '@primeicons/angular/angle-double-left';
+import {Check} from '@primeicons/angular/check';
+import {Plus} from '@primeicons/angular/plus';
+import {Times} from '@primeicons/angular/times';
 import {callSignValidator} from '../../shared/validators';
 import {BAND_OPTIONS, MODE_OPTIONS, QSL_OPTIONS, QSL_VIA_OPTIONS} from '../../shared/qso-options';
 import {QrzDetailsModel} from '../../models/qrz-details.model';
 import {SpaceAsTabDirective} from '../../shared/directives/space-as-tab.directive';
+import {SignedNumberInputDirective} from '../../shared/directives/signed-number-input.directive';
 import {PotaActivityModel} from '../../models/pota-activity.model';
 import {GridTrackerLookupModel} from '../../models/gridtracker-lookup.model';
 import {TableModule} from 'primeng/table';
@@ -73,11 +78,16 @@ export interface QsoEditParams {
     InputNumber,
     DatePicker,
     Select,
-    Button,
+    ButtonDirective,
     Textarea,
     Fieldset,
     Tooltip,
+    AngleDoubleLeft,
+    Check,
+    Plus,
+    Times,
     SpaceAsTabDirective,
+    SignedNumberInputDirective,
     FormsModule,
     TableModule,
     DatePipe,
@@ -268,6 +278,7 @@ export class QsoEditComponent implements OnInit {
       qslRcvd: [defaults.qslRcvd],
       qslRcvdDate: [defaults.qslRcvdDate],
       qslRcvdVia: [defaults.qslRcvdVia],
+      qslVia: [defaults.qslVia],
       comment: [defaults.comment, Validators.maxLength(4000)],
       siteComment: [defaults.siteComment, Validators.maxLength(64)],
       radioFilter: [defaults.radioFilter],
@@ -840,6 +851,7 @@ export class QsoEditComponent implements OnInit {
       qslRcvd: 'N',
       qslRcvdDate: null,
       qslRcvdVia: null,
+      qslVia: null,
       comment: act?.parkNum ? `POTA activation ${act.parkNum} (${Utils.abbreviateParkName(act.parkName)})` : '',
       siteComment: '',
       radioFilter: {value: '1', disabled: true}
@@ -890,6 +902,7 @@ export class QsoEditComponent implements OnInit {
       if (fieldName === 'county') return `County exceeds ${limit} characters.`;
       if (fieldName === 'state') return `State exceeds ${limit} characters.`;
       if (fieldName === 'country') return `Country exceeds ${limit} characters.`;
+      if (fieldName === 'qslVia') return `QSL info exceeds ${limit} characters.`;
       if (fieldName === 'siteComment') return `Site Comment exceeds ${limit} characters.`;
       if (fieldName === 'comment') return `Comment exceeds ${limit} characters.`;
       return `Maximum length is ${limit} characters.`;

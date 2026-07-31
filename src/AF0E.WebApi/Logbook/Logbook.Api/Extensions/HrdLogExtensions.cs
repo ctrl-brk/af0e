@@ -49,10 +49,10 @@ public static class HrdLogExtensions
             log.ColQslRcvdVia = N(qso.QslRcvdVia);
             log.SiteComment = N(qso.SiteComment);
 
-            if (includeAdminFields)
-            {
-                log.ColComment = qso.Comment;
-            }
+            if (!includeAdminFields) return;
+
+            log.ColComment = qso.Comment;
+            log.ColQslVia = qso.QslVia;
         }
 
         public void UpdateFromQrzLookup(QrzResponse qrz)

@@ -1,8 +1,9 @@
 .tbl-activations {
   font-family: var(--mono-font);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   table {
     tr {
+      font-size: 0.8rem;
       cursor: pointer; white-space: nowrap;
       &.top {
         th {text-align: center}

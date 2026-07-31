@@ -18,6 +18,9 @@ import {Tooltip} from 'primeng/tooltip';
 import {MapboxService} from '../../../services/mapbox.service';
 import {activationSchema, initialActivationData, NewActivationFormData} from './new-activation-form-data';
 import {defaultTitle} from '../../../shared/constants';
+import {Plus} from '@primeicons/angular/plus';
+import {MapMarker} from '@primeicons/angular/map-marker';
+import {Globe} from '@primeicons/angular/globe';
 
 @Component({
   templateUrl: './activations.component.html',
@@ -32,6 +35,9 @@ import {defaultTitle} from '../../../shared/constants';
     Dialog,
     FormField,
     Tooltip,
+    Plus,
+    MapMarker,
+    Globe,
   ],
 })
 export class PotaActivationsComponent implements OnInit {

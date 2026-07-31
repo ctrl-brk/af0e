@@ -16,17 +16,17 @@
   class="tbl-activations"
   stripedRows>
 
-  <ng-template pTemplate="header">
+  <ng-template #header>
     <tr>
-      <th pSortableColumn="date">UTC (ymd) <p-sortIcon field="date" /></th>
-      <th pSortableColumn="call">Call <p-sortIcon field="call" /></th>
-      <th pSortableColumn="band">Band <p-sortIcon field="band" /></th>
+      <th pSortableColumn="date">UTC (ymd) <p-sorticon field="date" /></th>
+      <th pSortableColumn="call">Call <p-sorticon field="call" /></th>
+      <th pSortableColumn="band">Band <p-sorticon field="band" /></th>
       <th>Mode</th>
       <th>Park</th>
     </tr>
   </ng-template>
 
-  <ng-template pTemplate="body" let-qso>
+  <ng-template #body let-qso>
     <tr>
       <td>{{ qso.date | date:'yy-MM-dd HH:mm' }}</td>
       <td>{{ qso.call }}</td>
