@@ -4,8 +4,15 @@
         [class.status-urgent]="_activationStatusSvc.status() === 'in-progress' && nearMidnight()">
   <div>
     @if (isLessThan1000px()) {
-      <p-button severity="secondary" (click)="popupMenu.toggle($event)" icon="pi pi-bars" />
-      <p-tieredMenu #popupMenu [model]="menuItems()" [popup]="true" />
+      <button
+        pButton
+        type="button"
+        severity="secondary"
+        (click)="popupMenu.toggle($event)"
+        aria-label="Open menu">
+        <svg data-p-icon="bars" aria-hidden="true"></svg>
+      </button>
+      <p-tieredmenu #popupMenu [model]="menuItems()" [popup]="true" />
     }
     <a href="/"><img src="logo.svg" alt="AFØE"></a>
   </div>
@@ -17,7 +24,7 @@
   </nav>
 
   <p-floatlabel variant="on">
-    <p-autoComplete [(ngModel)]="searchCall" [suggestions]="callsFound()" [showClear]="true" (completeMethod)="search($event)" (onFocus)="onSearchFocus(true)" (onBlur)="onSearchFocus(false)" autofocus="false" emptyMessage="not in log" id="call-search" (onSelect)="onSelect($event)" />
+    <p-autocomplete [(ngModel)]="searchCall" [suggestions]="callsFound()" [showClear]="true" (completeMethod)="search($event)" (onFocus)="onSearchFocus(true)" (onBlur)="onSearchFocus(false)" autofocus="false" emptyMessage="not in log" id="call-search" (onSelect)="onSelect($event)" />
     <label for="call-search">{{searchTitle()}}</label>
   </p-floatlabel>
 </header>

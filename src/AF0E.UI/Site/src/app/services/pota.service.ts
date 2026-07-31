@@ -9,6 +9,7 @@ import {QsoSummaryModel} from '../models/qso-summary.model';
 import {PotaActivityModel} from '../models/pota-activity.model';
 import {PotaActivityStatsModel} from '../models/pota-activity-stats.model';
 import {NewActivationFormData} from '../components/pota/activations/new-activation-form-data';
+import {Utils} from '../shared/utils';
 
 @Injectable({providedIn: 'root'})
 export class PotaService {
@@ -164,6 +165,8 @@ export class PotaService {
         return x.map((m) => {
           if (m.activity.freqKhz)
             m.activity.freqHz = parseFloat(m.activity.freqKhz) * 1000;
+          if (!m.activity.mode)
+            m.activity.mode = Utils.frequencyToMode(m.activity.freqHz);
           return m;
         })
       })

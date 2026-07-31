@@ -10,9 +10,9 @@
   scrollHeight="calc(100vh - 9.6rem)"
   class="tbl-activity">
 
-  <ng-template pTemplate="caption">
+  <ng-template #caption>
     <div class='spots-caption'>
-      <p-button severity="primary" icon="pi pi-refresh" [disabled]="isRefreshing()" (onClick)="refreshSpots()" />&nbsp;
+      <button pButton type="button" severity="primary" [disabled]="isRefreshing()" (click)="refreshSpots()" aria-label="Refresh spots"><svg data-p-icon="refresh" aria-hidden="true"></svg></button>&nbsp;
       <p-checkbox
         inputId="autoRefresh"
         [ngModel]="autoRefresh()"
@@ -70,15 +70,15 @@
           {{lastQso().call}} |{{lastQso().date | date:'HH:mm':'UTC'}}|{{lastQso().band}} {{lastQso().mode}}|{{lastQso().comment}}
         }
       </div>
-      <p-button severity="primary" icon="pi pi-plus" (onClick)="onAddQso()" />
+      <button pButton type="button" severity="primary" (click)="onAddQso()" aria-label="Add QSO"><svg data-p-icon="plus" aria-hidden="true"></svg></button>
     </div>
   </ng-template>
 
-  <ng-template pTemplate="header">
+  <ng-template #header>
     <tr>
-      <th pSortableColumn="activity.lastSpotTime">Time <p-sortIcon field="activity.lastSpotTime" /></th>
-      <th pSortableColumn="activity.band">Band <p-sortIcon field="activity.band" /></th>
-      <th pSortableColumn="activity.mode">Mode <p-sortIcon field="activity.mode" /></th>
+      <th pSortableColumn="activity.lastSpotTime">Time <p-sorticon field="activity.lastSpotTime" /></th>
+      <th pSortableColumn="activity.band">Band <p-sorticon field="activity.band" /></th>
+      <th pSortableColumn="activity.mode">Mode <p-sorticon field="activity.mode" /></th>
       <th>Call</th>
       <th>Park</th>
       <th>Freq</th>
@@ -87,7 +87,7 @@
     </tr>
   </ng-template>
 
-  <ng-template pTemplate="body" let-act>
+  <ng-template #body let-act>
     <tr [ngClass]="getRowClass(act)">
       <td class="act-time">
         @if (act.activity.callSign === this.qsoEditParams().callSign) {&#9654;}
@@ -118,7 +118,7 @@
       <td class="act-grid">{{ act.activity.grid }}</td>
     </tr>
   </ng-template>
-  <ng-template pTemplate="emptymessage">
+  <ng-template #emptymessage>
     <tr>
       <td colspan="7" style="text-align: center;">
         NO ACTIVITY

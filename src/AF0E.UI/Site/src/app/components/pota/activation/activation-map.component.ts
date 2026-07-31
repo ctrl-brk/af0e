@@ -23,6 +23,7 @@ export class PotaActivationMapComponent {
   logEntries = input.required<ActivationQsoModel[]>();
   activation = input.required<PotaActivationModel>();
 
+  // noinspection JSUnusedGlobalSymbols
   public onTabChange() {
     if (!this._firstLoad)
       return;
@@ -128,12 +129,23 @@ export class PotaActivationMapComponent {
       closeOnClick: false
     });
 
-    this.map.on('mouseenter', ['hunters-layer', 'activators-layer'], (e) => {
+    this.map.on('mouseenter', ['hunters-layer', 'activators-layer'], (e: mapbox.MapMouseEvent) => {
       clearTimeout(this._popupTimeout);
       this.map.getCanvas().style.cursor = 'default';
-      //@ts-ignore
-      const coordinates = e.features![0].geometry.coordinates.slice();
-      const qso: any = JSON.parse(e.features![0].properties!['qso']);
+      const feature = e.features?.[0];
+      if (!feature)
+        return;
+
+      const featureJson = feature.toJSON();
+      if (featureJson.geometry.type !== 'Point' || !featureJson.properties)
+        return;
+
+      const coordinates: [number, number] = [featureJson.geometry.coordinates[0], featureJson.geometry.coordinates[1]];
+      const rawQso = featureJson.properties['qso'];
+      if (!rawQso)
+        return;
+
+      const qso = (typeof rawQso === 'string' ? JSON.parse(rawQso) : rawQso) as { call: string; band: string; mode: string; p2p: string };
 
       popup.setLngLat(coordinates)
         .setHTML(`<a href='/logbook/${qso.call}' target='_blank'>${qso.call}</a> ${qso.band} ${qso.mode} ${qso.p2p}`) //qso.p2p array somehow gets split by comma

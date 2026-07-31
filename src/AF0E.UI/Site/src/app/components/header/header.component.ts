@@ -1,17 +1,17 @@
 import {Component, DestroyRef, inject, model, OnDestroy, OnInit, output, signal, ViewEncapsulation} from '@angular/core';
 import {FormsModule} from '@angular/forms';
-import {AutoCompleteCompleteEvent, AutoCompleteModule, AutoCompleteSelectEvent} from 'primeng/autocomplete';
-import {FloatLabelModule} from 'primeng/floatlabel';
+import {AutoComplete, AutoCompleteCompleteEvent, AutoCompleteSelectEvent} from 'primeng/autocomplete';
+import {FloatLabel} from 'primeng/floatlabel';
 import {LogbookService} from '../../services/logbook.service';
 import {Utils} from '../../shared/utils';
 import {NotificationService} from '../../shared/notification.service';
 import {LogService} from '../../shared/log.service';
 import {NavigationEnd, Router} from '@angular/router';
-import {MenubarModule} from 'primeng/menubar';
+import {Menubar} from 'primeng/menubar';
 import {MenuItem} from 'primeng/api';
 import {BreakpointObserver} from '@angular/cdk/layout';
-import {ButtonModule} from 'primeng/button';
-import {MenuModule} from 'primeng/menu';
+import {ButtonDirective} from 'primeng/button';
+import {Bars} from '@primeicons/angular/bars';
 import {filter} from 'rxjs';
 import {TieredMenu} from 'primeng/tieredmenu';
 import {AppAuthService} from '../../services/auth.service';
@@ -24,12 +24,12 @@ import {ActivationStatusService} from '../../services/activation-status.service'
   styleUrl: './header.component.scss',
   encapsulation: ViewEncapsulation.None,
   imports: [
-    AutoCompleteModule,
-    ButtonModule,
-    FloatLabelModule,
+    AutoComplete,
+    Bars,
+    ButtonDirective,
+    FloatLabel,
     FormsModule,
-    MenuModule,
-    MenubarModule,
+    Menubar,
     TieredMenu,
   ],
 })

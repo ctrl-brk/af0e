@@ -2,10 +2,12 @@
   .p-datatable-thead > tr > th {
     white-space: nowrap;
     padding: 0.5rem;
+    font-size: 0.8rem;
   }
   .p-datatable-tbody > tr > td {
     white-space: nowrap;
     padding: 0.5rem;
+    font-size: 0.8rem;
     a {color: var(--text-color);}
     &.dxcluster-time { width: 3rem;}
     &.dxcluster-entity { width: 12rem; }

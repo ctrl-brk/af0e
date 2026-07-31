@@ -3,19 +3,19 @@
   @if (!isLessThan1000px) {
     <p-fieldset legend="Total activations" styleClass="circle-color">
       <div class="color-row">
-        <p-color-picker [(ngModel)]="pointColors.first" (onChange)="onColorSelected()" />
+        <app-map-color-picker [(color)]="pointColors.first" (colorChange)="onColorSelected()" />
         <span class="thresh-label" (click)="op1.toggle($event)">≤{{thresholds.t1}}</span>
 
-        <p-color-picker [(ngModel)]="pointColors.second" (onChange)="onColorSelected()" />
+        <app-map-color-picker [(color)]="pointColors.second" (colorChange)="onColorSelected()" />
         <span class="thresh-label" (click)="op2.toggle($event)">{{thresholds.t1+1}}&ndash;{{thresholds.t2}}</span>
 
-        <p-color-picker [(ngModel)]="pointColors.third" (onChange)="onColorSelected()" />
+        <app-map-color-picker [(color)]="pointColors.third" (colorChange)="onColorSelected()" />
         <span class="thresh-label" (click)="op3.toggle($event)">{{thresholds.t2+1}}&ndash;{{thresholds.t3}}</span>
 
-        <p-color-picker [(ngModel)]="pointColors.fourth" (onChange)="onColorSelected()" />
+        <app-map-color-picker [(color)]="pointColors.fourth" (colorChange)="onColorSelected()" />
         <span class="thresh-label" (click)="op4.toggle($event)">{{thresholds.t3+1}}&ndash;{{thresholds.t4}}</span>
 
-        <p-color-picker [(ngModel)]="pointColors.default" (onChange)="onColorSelected()" />
+        <app-map-color-picker [(color)]="pointColors.default" (colorChange)="onColorSelected()" />
         <span class="thresh-label" (click)="op4.toggle($event)">&gt;{{thresholds.t4}}</span>
       </div>
 
@@ -48,16 +48,18 @@
       </p-popover>
     </p-fieldset>
   }
-  <p-fieldset legend="Map style"  styleClass="map-style">
+  <p-fieldset legend="Map style" styleClass="map-style">
     <img src="map-out.png" alt="Outdoors" title="Outdoors" (click)="onMapStyle('outdoors')">
     <img src="map-sat.png" alt="Satellite" title="Satellite" (click)="onMapStyle('satellite-streets')">
   </p-fieldset>
-  <p-fieldset legend="Options"  styleClass="options">
-    <p-checkbox inputId="activations" [(ngModel)]="showActivations" [binary]="true" (onChange)="onActivationsChecked()" />
-    <label for="activations"> AFØE activations</label>
+  <p-fieldset legend="Options" styleClass="options">
+    <div class="options-row">
+      <p-checkbox inputId="activations" [(ngModel)]="showActivations" [binary]="true" (onChange)="onActivationsChecked()" />
+      <label for="activations">AFØE activations</label>
+    </div>
   </p-fieldset>
-  <p-fieldset legend="Park search"  styleClass="search">
-    <p-autoComplete [(ngModel)]="searchName" [suggestions]="parksFound" (completeMethod)="parkSearch($event.query)" (onSelect)="onParkSearchSelect($event.value)" delay="500" optionLabel="parkDesc" />
+  <p-fieldset legend="Park search" styleClass="search">
+    <p-autocomplete [(ngModel)]="searchName" [suggestions]="parksFound" (completeMethod)="parkSearch($event)" (onSelect)="onParkSearchSelect($event)" delay="500" optionLabel="parkDesc" />
   </p-fieldset>
 </div>
 <div id='parks-map' style="height: calc(100vh - 11.4rem)">

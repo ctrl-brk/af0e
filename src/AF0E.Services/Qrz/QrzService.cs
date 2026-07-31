@@ -38,10 +38,11 @@ public sealed class QrzService : IQrzService
         if (string.IsNullOrEmpty(_sessionKey))
             return (null, false);
 
-        var response = await _httpClient.GetAsync($"?s={_sessionKey};callsign={HttpUtility.UrlEncode(callSign)};agent={Agent}", ct);
-
-        await using (var stream = await response.Content.ReadAsStreamAsync(ct))
+        try
         {
+            var response = await _httpClient.GetAsync($"?s={_sessionKey};callsign={HttpUtility.UrlEncode(callSign)};agent={Agent}", ct);
+
+            await using var stream = await response.Content.ReadAsStreamAsync(ct);
             using var reader = XmlReader.Create(stream);
             var serializer = new XmlSerializer(typeof(QrzDatabase), "http://xmldata.qrz.com");
             try
@@ -53,6 +54,11 @@ public sealed class QrzService : IQrzService
                 _logger.LogInvalidXmlResponse(await response.Content.ReadAsStringAsync(ct), e);
                 return (null, false);
             }
+        }
+        catch (Exception e)
+        {
+            _logger.LogQrzApiError(e.Message, e.ToString());
+            return (null, false);
         }
 
         if (result?.Session.Error is null)
@@ -83,28 +89,36 @@ public sealed class QrzService : IQrzService
             return;
         }
 
-        var response = await _httpClient.GetAsync($"?username={_settings.Username};password={_settings.Password};agent={Agent}", ct);
-        var body = await response.Content.ReadAsStringAsync(ct);
-        var xmlDoc = new XmlDocument();
-        xmlDoc.LoadXml(body);
-        var node = xmlDoc.SelectSingleNode("/*[local-name()='QRZDatabase']/*[local-name()='Session']");
-
-        if (node is null)
+        try
         {
+            var response = await _httpClient.GetAsync($"?username={_settings.Username};password={_settings.Password};agent={Agent}", ct);
+            var body = await response.Content.ReadAsStringAsync(ct);
+            var xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(body);
+            var node = xmlDoc.SelectSingleNode("/*[local-name()='QRZDatabase']/*[local-name()='Session']");
+
+            if (node is null)
+            {
+                _sessionKey = null;
+                _logger.LogInvalidQrzResponse(body);
+                return;
+            }
+
+            var key = node["Key"]?.InnerText;
+            if (!string.IsNullOrEmpty(key))
+            {
+                _sessionKey = key;
+                return;
+            }
+
+            _logger.LogQrzApiError(node["Error"]?.InnerText, node["Message"]?.InnerText);
             _sessionKey = null;
-            _logger.LogInvalidQrzResponse(body);
-            return;
         }
-
-        var key = node["Key"]?.InnerText;
-        if (!string.IsNullOrEmpty(key))
+        catch (Exception e)
         {
-            _sessionKey = key;
-            return;
+            _logger.LogQrzApiError(e.Message, e.ToString());
+            _sessionKey = null;
         }
-
-        _logger.LogQrzApiError(node["Error"]?.InnerText, node["Message"]?.InnerText);
-        _sessionKey = null;
     }
 
     public void Dispose()

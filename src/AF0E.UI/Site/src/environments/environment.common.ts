@@ -5,6 +5,7 @@ import {environmentSecrets} from "./environment-secrets";
  */
 export const commonEnvironment = {
   mapBoxKey: environmentSecrets.mapBoxKey,
+  primeuiLicense: environmentSecrets.primeuiLicense,
   claimType: 'https://af0e.org/claims',
   auth0domain: 'dev-4l6joodw0kczibgl.us.auth0.com',
   auth0clientId: 'sNpxyLre7xkR55bd6kHXURvJSGLkzaRX',

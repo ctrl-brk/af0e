@@ -6,5 +6,6 @@
  */
 export const environmentSecrets = {
   mapBoxKey: 'YOUR_MAPBOX_API_KEY_HERE',
+  primeuiLicense: 'YOUR_PRIMEUI_LICENSE_KEY_HERE',
 }
 

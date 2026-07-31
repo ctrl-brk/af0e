@@ -7,15 +7,15 @@ import {adifDetailsToAdifFile} from '../../models/adif-details.model';
 import {QsoSummaryModel} from '../../models/qso-summary.model';
 import {NotificationService} from '../../shared/notification.service';
 import {LogService} from '../../shared/log.service';
-import {TagModule} from 'primeng/tag';
+import {Tag} from 'primeng/tag';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
-import {FloatLabelModule} from 'primeng/floatlabel';
+import {FloatLabel} from 'primeng/floatlabel';
 import {SortDirection} from '../../shared/sort-direction.enum';
-import {DatePickerModule} from 'primeng/datepicker';
-import {DialogModule} from 'primeng/dialog';
+import {DatePicker} from 'primeng/datepicker';
+import {Dialog} from 'primeng/dialog';
 import {QsoComponent} from '../qso/qso.component';
 import {TooltipModule} from 'primeng/tooltip';
-import {Button} from 'primeng/button';
+import {ButtonDirective} from 'primeng/button';
 import {ModeSeverityPipe, QsoModePipe} from '../../shared/pipes';
 import {DatePipe} from '@angular/common';
 import {AppAuthService} from '../../services/auth.service';
@@ -23,6 +23,10 @@ import {QsoEditComponent, QsoEditParams} from '../qso/qso-edit.component';
 import {QsoEditMode} from '../../shared/qso-edit-mode.enum';
 import {LogUpdatesService} from '../../services/log-updates.service';
 import {ContextMenu} from 'primeng/contextmenu';
+import {Download} from '@primeicons/angular/download';
+import {FileImport} from '@primeicons/angular/file-import';
+import {Plus} from '@primeicons/angular/plus';
+import {Search} from '@primeicons/angular/search';
 import {MenuItem} from 'primeng/api';
 
 @Component({
@@ -31,20 +35,24 @@ import {MenuItem} from 'primeng/api';
   styleUrl: './log-content.component.scss',
   encapsulation: ViewEncapsulation.None,
   imports: [
-    Button,
-    DatePickerModule,
+    ButtonDirective,
+    DatePicker,
     DatePipe,
-    DialogModule,
-    FloatLabelModule,
+    Dialog,
+    FloatLabel,
     FormsModule,
     QsoComponent,
     TableModule,
-    TagModule,
+    Tag,
     TooltipModule,
     ModeSeverityPipe,
     QsoModePipe,
     QsoEditComponent,
     ContextMenu,
+    Download,
+    FileImport,
+    Plus,
+    Search,
     ReactiveFormsModule,
   ],
 })
