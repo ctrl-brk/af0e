@@ -116,27 +116,53 @@ export class MapComponent implements OnInit {
       this.map.getCanvas().style.cursor = '';
     });
 
-    this.map.on('click', 'activations-layer', (e) => {
-      // @ts-ignore
-      const coordinates = e.features[0].geometry.coordinates.slice();
-      let html = '';
-      let i;
-      for (i = 0; ; i++) {
-        // @ts-ignore
-        let p = e.features[0].properties[i];
-        if (!p) break;
-        p = JSON.parse(p);
-        html += `<li><a href='/pota/activations/${p.activationId}' target='_blank' title='View log'>${p.startDate.substring(2, 10)}</a> <a href='https://pota.app/#/park/${p.parkNum}' target="_blank" title='${p.parkName}'>${p.parkNum}</a></li>`;
-      }
-      html = `<h4>${i} my activation${i > 1 ? 's' : ''}</h4><ul class='map-popup-list'>${html}</ul>`;
+    this.map.on('click', 'activations-layer', (e: mapbox.MapMouseEvent) => {
+      const feature = e.features?.[0];
+      if (!feature)
+        return;
 
+      const featureJson = feature.toJSON();
+      if (featureJson.geometry.type !== 'Point' || !featureJson.properties)
+        return;
+
+      const coordinates = [...(featureJson.geometry.coordinates as [number, number])];
+      const props = featureJson.properties as Record<string, unknown>;
+      let html = '';
+      let i = 0;
+
+      for (;; i++) {
+        const raw = props[i.toString()];
+        if (typeof raw !== 'string')
+          break;
+
+        try {
+          const p = JSON.parse(raw) as { activationId: number; startDate: string; parkNum: string; parkName: string };
+          html += `<li><a href='/pota/activations/${p.activationId}' target='_blank' title='View log'>${p.startDate.substring(2, 10)}</a> <a href='https://pota.app/#/park/${p.parkNum}' target="_blank" title='${p.parkName}'>${p.parkNum}</a></li>`;
+        }
+        catch {
+          // Ignore malformed feature property entries and continue rendering what we can.
+        }
+      }
+
+      html = `<h4>${i} my activation${i > 1 ? 's' : ''}</h4><ul class='map-popup-list'>${html}</ul>`;
       this.showPopup(coordinates, html, e);
     });
 
-    this.map.on('click', ['activated-parks-layer', 'na-parks-dynamic-layer', 'highlight-layer'], (e) => {
-      //@ts-ignore
-      const coordinates = e.features![0].geometry.coordinates.slice();
-      this.showPopup(coordinates, this.getParkTooltipHtml(<PotaParkModel>e.features![0].properties), e);
+    const onParkLayerClick = (e: mapbox.MapMouseEvent) => {
+      const feature = e.features?.[0];
+      if (!feature)
+        return;
+
+      const featureJson = feature.toJSON();
+      if (featureJson.geometry.type !== 'Point' || !featureJson.properties)
+        return;
+
+      const coordinates = [...(featureJson.geometry.coordinates as [number, number])];
+      this.showPopup(coordinates, this.getParkTooltipHtml(featureJson.properties as unknown as PotaParkModel), e);
+    };
+
+    (['activated-parks-layer', 'na-parks-dynamic-layer', 'highlight-layer'] as const).forEach(layerId => {
+      this.map.on('click', layerId, onParkLayerClick);
     });
 
     this.map.addControl(new mapbox.NavigationControl());
@@ -212,7 +238,6 @@ export class MapComponent implements OnInit {
         'circle-radius': 5,
         'circle-stroke-width': 1,
         'circle-stroke-color': '#333',
-        // @ts-ignore
         'circle-color': this.getCirclePaintProperty()
       }
     });
@@ -225,7 +250,6 @@ export class MapComponent implements OnInit {
         'circle-radius': 5,
         'circle-stroke-width': 1,
         'circle-stroke-color': '#333',
-        // @ts-ignore
         'circle-color': this.getCirclePaintProperty()
       }
     });
@@ -239,7 +263,6 @@ export class MapComponent implements OnInit {
         'circle-radius': 10,
         'circle-stroke-width': 1,
         'circle-stroke-color': '#333',
-        // @ts-ignore
         'circle-color': this.getCirclePaintProperty()
       }
     });
@@ -268,8 +291,8 @@ export class MapComponent implements OnInit {
 
     //when map style changes, boundary is the same - no reason to reload
     if (this._state.notActivatedParks.swLong === swLong && this._state.notActivatedParks.swLat === swLat && this._state.notActivatedParks.neLong === neLong && this._state.notActivatedParks.neLat === neLat) {
-      //@ts-ignore
-      this.map.getSource('not-activated-parks-dynamic').setData(this._state.notActivatedParks.data);
+      if (this._state.notActivatedParks.data)
+        this.setGeoJsonSourceData('not-activated-parks-dynamic', this._state.notActivatedParks.data);
       this._state.notActivatedParks.hydrated = true;
       return;
     }
@@ -286,8 +309,7 @@ export class MapComponent implements OnInit {
     this._notActivatedParksSub = this._potaSvc.getGeoJsonByBoundary(swLong, swLat, neLong, neLat).subscribe({
       next: (r) => {
         this._state.notActivatedParks.data = r;
-        //@ts-ignore
-        this.map.getSource('not-activated-parks-dynamic').setData(r);
+        this.setGeoJsonSourceData('not-activated-parks-dynamic', r);
         this._state.notActivatedParks.hydrated = true;
       },
       error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log),
@@ -301,8 +323,7 @@ export class MapComponent implements OnInit {
 
     if (this._state.activatedParks.data)
     {
-      //@ts-ignore
-      this.map.getSource('activated-parks').setData(this._state.activatedParks.data);
+      this.setGeoJsonSourceData('activated-parks', this._state.activatedParks.data);
       this._state.activatedParks.hydrated = true;
       return;
     }
@@ -310,8 +331,7 @@ export class MapComponent implements OnInit {
     this._potaSvc.getActivatedParksGeoJson().subscribe({
       next: (r) => {
         this._state.activatedParks.data = r;
-        //@ts-ignore
-        this.map.getSource('activated-parks').setData(r);
+        this.setGeoJsonSourceData('activated-parks', r);
         this._state.activatedParks.hydrated = true;
       },
       error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log),
@@ -324,8 +344,7 @@ export class MapComponent implements OnInit {
 
     if (this._state.activations.data)
     {
-      //@ts-ignore
-      this.map.getSource('activations').setData(this._state.activations.data);
+      this.setGeoJsonSourceData('activations', this._state.activations.data);
       this._state.activations.hydrated = true;
       return;
     }
@@ -333,8 +352,7 @@ export class MapComponent implements OnInit {
     this._potaSvc.getActivationsGeoJson().subscribe({
       next: (r) => {
         this._state.activations.data = r;
-        //@ts-ignore
-        this.map.getSource('activations')!.setData(r);
+        this.setGeoJsonSourceData('activations', r);
         this._state.activations.hydrated = true;
       },
       error: e => Utils.showErrorMessage(e, this._ntfSvc, this._log),
@@ -348,15 +366,12 @@ export class MapComponent implements OnInit {
 
   private changePointColor() {
     const paint = this.getCirclePaintProperty();
-    // @ts-ignore
     this.map.setPaintProperty('na-parks-dynamic-layer', 'circle-color', paint);
-    // @ts-ignore
     this.map.setPaintProperty('activated-parks-layer', 'circle-color', paint);
-    // @ts-ignore
     this.map.setPaintProperty('highlight-layer', 'circle-color', paint);
   }
 
-  private getCirclePaintProperty() {
+  private getCirclePaintProperty(): mapbox.ExpressionSpecification {
     const { t1, t2, t3, t4 } = this.thresholds;
     return [
       'case',
@@ -387,6 +402,14 @@ export class MapComponent implements OnInit {
       .setLngLat(coordinates)
       .setHTML(html)
       .addTo(this.map);
+  }
+
+  private setGeoJsonSourceData(sourceId: string, data: unknown): void {
+    const source = this.map.getSource(sourceId);
+    if (!source || source.type !== 'geojson')
+      return;
+
+    (source as mapbox.GeoJSONSource).setData(data as Parameters<mapbox.GeoJSONSource['setData']>[0]);
   }
 
   onColorSelected() {
@@ -420,7 +443,10 @@ export class MapComponent implements OnInit {
     const p = event.value as PotaParkModel;
     this.searchName = '';
 
-    const coordinates = [p.long, p.lat];
+    if (p.long === undefined || p.lat === undefined)
+      return;
+
+    const coordinates: [number, number] = [p.long, p.lat];
     const highlightPoint = {
       'type': 'FeatureCollection',
       'features': [{
@@ -438,10 +464,9 @@ export class MapComponent implements OnInit {
       }]
     };
 
-    // @ts-ignore
-    this.map.getSource('highlight').setData(highlightPoint);
+    this.setGeoJsonSourceData('highlight', highlightPoint);
     this.map.setLayoutProperty('highlight-layer', 'visibility', 'visible');
-    this.map.flyTo({center: <mapbox.LngLatLike>coordinates, essential: true});
+    this.map.flyTo({center: coordinates as mapbox.LngLatLike, essential: true});
     this.showPopup(coordinates, this.getParkTooltipHtml(p));
   }
 }

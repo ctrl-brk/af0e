@@ -103,7 +103,6 @@
               (keydown)="onCallKeyDown($event)"
               [class.ng-invalid]="isFieldInvalid('call')"
               [class.ng-dirty]="isFieldInvalid('call')"
-              style="text-transform: uppercase"
               [pTooltip]="isFieldInvalid('call') ? getErrorMessage('call') : ''"
               tooltipPosition="top"
               autocomplete="off"
@@ -117,7 +116,9 @@
               pInputText
               formControlName="rstSent"
               id="rstSent"
+              signedNumberInput
               spaceAsTab
+              maxlength="3"
               [class.ng-invalid]="isFieldInvalid('rstSent')"
               [class.ng-dirty]="isFieldInvalid('rstSent')"
               [pTooltip]="isFieldInvalid('rstSent') ? getErrorMessage('rstSent') : ''"
@@ -134,7 +135,9 @@
               pInputText
               formControlName="rstRcvd"
               id="rstRcvd"
+              signedNumberInput
               spaceAsTab
+              maxlength="3"
               [class.ng-invalid]="isFieldInvalid('rstRcvd')"
               [class.ng-dirty]="isFieldInvalid('rstRcvd')"
               [pTooltip]="isFieldInvalid('rstRcvd') ? getErrorMessage('rstRcvd') : ''"
@@ -260,6 +263,22 @@
               />
               <label for="qslSentVia">Sent Via</label>
             </p-floatlabel>
+
+            <p-floatlabel class="w-qslVia" variant="on">
+              <input
+                pInputText
+                formControlName="qslVia"
+                id="qslVia"
+                [class.ng-invalid]="isFieldInvalid('qslVia')"
+                [class.ng-dirty]="isFieldInvalid('qslVia')"
+                [pTooltip]="isFieldInvalid('qslVia') ? getErrorMessage('qslVia') : ''"
+                tooltipPosition="top"
+              />
+              <label for="qslVia">Info</label>
+            </p-floatlabel>
+
+
+            <div class="line-break"></div>
 
             <p-floatlabel variant="on">
               <p-select

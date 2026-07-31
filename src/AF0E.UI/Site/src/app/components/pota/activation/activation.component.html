@@ -52,7 +52,7 @@
       @if (_authSvc.isAdmin) {
         <div class="last-call">
           @if (lastQso()) {
-            {{lastQso()!.call}} | {{lastQso()!.date | date:'HH:mm'}} | {{lastQso()!.band}} {{lastQso()!.mode}}
+            {{lastQso()!.call}}|{{lastQso()!.date | date:'HH:mm'}}|{{lastQso()!.band}} {{lastQso()!.mode}}
           }
         </div>
       }

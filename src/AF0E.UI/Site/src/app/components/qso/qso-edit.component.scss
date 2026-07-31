@@ -81,6 +81,11 @@
 
     &.inner { margin-top: -0.5rem; } // base -2rem overridden to add extra 0.5rem space below legends
 
+    #call {
+      text-transform: uppercase;
+      font-family: var(--mono-font);
+    }
+
     > p-floatlabel,
     > .flex,
     > .field-hint,
@@ -112,6 +117,7 @@
       &.w-grid { width: 6rem; }
       &.w-zone { width: 4rem; }
       &.w-comment { min-width: 18rem; }
+      &.w-qslVia { min-width: 16rem; }
       &.w-auto { width: auto; }
 
       label {
@@ -187,6 +193,9 @@
     }
     > p-floatlabel.w-comment {
       textarea { min-width: 18rem }
+    }
+    > p-floatlabel.w-qslVia {
+      .p-inputtext { width: 16rem }
     }
   }
 

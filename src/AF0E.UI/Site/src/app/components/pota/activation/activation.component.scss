@@ -29,6 +29,8 @@
         gap: 0.4rem;
       }
       .last-call {
+        display: flex;
+        align-items: center;
         border: 1px #ccc solid;
         border-radius: 4px;
         background: var(--p-tag-info-background);
@@ -36,6 +38,7 @@
         color: var(--p-tag-info-color);
         min-width: 27rem;
         height: 1.5rem;
+        font-family: var(--mono-font);
       }
     }
   }

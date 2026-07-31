@@ -43,6 +43,7 @@ export interface QsoDetailModel {
   contest: string;
   siteComment: string;
   comment: string;
+  qslVia: string;
 }
 
 export function qsoDetailToAdif(qso: QsoDetailModel): string {
@@ -52,7 +53,7 @@ export function qsoDetailToAdif(qso: QsoDetailModel): string {
   rec += adifField('BAND', qso.band);
   rec += adifField('CALL', qso.call);
   rec += adifField('CNTY', qso.county);
-  rec += adifField('COMMENT', qso.comment);
+  //rec += adifField('COMMENT', qso.comment); Admin only? Do I need to export this at all? Or siteComment?
   rec += adifField('CQZ', qso.cqZone);
   rec += adifField('DXCC', qso.dxcc);
   rec += adifField('FREQ', qso.freq ? (qso.freq / 1_000_000).toFixed(6) : null);

@@ -409,9 +409,12 @@ export class Utils {
    * Returns the typical mode (CW or SSB) for a given frequency in kHz
    * based on standard amateur radio band plans.
    */
-  public static frequencyToMode(freqKhz: number | string): 'CW' | 'SSB' {
+  public static frequencyToMode(freqKhz: number | string | null): 'CW' | 'SSB' {
+    if (!freqKhz) return 'CW';
+
     const freq = typeof freqKhz === 'string' ? parseFloat(freqKhz) : freqKhz;
     if (isNaN(freq)) return 'CW';
+
     // CW band segments (in kHz): [start, end]
     const cwSegments: [number, number][] = [
       [1800, 1880],    // 160m CW
