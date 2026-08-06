@@ -80,7 +80,7 @@ public static partial class PotaHandlers
         return activation.ActivationId;
      }
 
-    public static async Task UpdateActivation(UpdateActivationRequest req, HrdDbContext dbContext)
+    public static async Task<PotaActivationDetails?> UpdateActivation(UpdateActivationRequest req, HrdDbContext dbContext)
     {
         UpdateActivationValidator.ValidateAndThrow(req);
 
@@ -103,6 +103,8 @@ public static partial class PotaHandlers
         activation.Status = req.Status.Length > 0 ? req.Status[0] : activation.Status;
 
         await dbContext.SaveChangesAsync();
+
+        return await GetActivation(activation.ActivationId, dbContext);
     }
 
     /// <summary>
