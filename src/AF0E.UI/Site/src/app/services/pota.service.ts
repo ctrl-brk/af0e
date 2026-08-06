@@ -79,8 +79,15 @@ export class PotaService {
     return this._http.post(Configuration.potaUrl(`activations`), form);
   }
 
-  public updateActivation(activation: PotaActivationModel): Observable<void>  {
-    return this._http.put(Configuration.potaUrl(`activations`), activation);
+  public updateActivation(activation: PotaActivationModel): Observable<PotaActivationModel>  {
+    return this._http.put(Configuration.potaUrl(`activations`), activation).pipe(
+      map((m: PotaActivationModel) => {
+        m.startDate = new Date(m.startDate);
+        if (m.endDate) m.endDate = new Date(m.endDate);
+        if (m.logSubmittedDate) m.logSubmittedDate = new Date(m.logSubmittedDate);
+        return m;
+      })
+    );
   }
 
   /**

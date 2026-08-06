@@ -190,20 +190,22 @@ export class PotaActivationComponent implements OnInit {
 
   private onActivationChange(id: number) {
     this._potaSvc.getActivation(id).subscribe({
-      next: (r: PotaActivationModel) => {
-        this.activation.set(r);
-        this.editableActivation.set({...r});
-        this.qsoStats.total = r.count;
-        this.qsoStats.cw = r.cwCount;
-        this.qsoStats.digi = r.digiCount;
-        this.qsoStats.phone = r.phoneCount;
-        if (!r.endDate)
-          this._activationStatusSvc.set(r.count);
-      },
+      next: (r: PotaActivationModel) => this.setActivationState(r),
       error: e=> Utils.showErrorMessage(e, this._ntfSvc, this._log),
     });
 
     this.loadActivationLog(id)
+  }
+
+  private setActivationState(activation: PotaActivationModel) {
+    this.activation.set(activation);
+    this.editableActivation.set({...activation});
+    this.qsoStats.total = activation.count;
+    this.qsoStats.cw = activation.cwCount;
+    this.qsoStats.digi = activation.digiCount;
+    this.qsoStats.phone = activation.phoneCount;
+    if (!activation.endDate)
+      this._activationStatusSvc.set(activation.count);
   }
 
   private loadActivationLog(activationId: number) {
@@ -280,7 +282,7 @@ export class PotaActivationComponent implements OnInit {
     };
 
     this._potaSvc.updateActivation(act as any).subscribe({
-      next: () => { this.editActivationVisible.set(false); },
+      next: (r) => { this.setActivationState(r); this.editActivationVisible.set(false); },
       error: (e) => Utils.showErrorMessage(e, this._ntfSvc, this._log)
     });
   }

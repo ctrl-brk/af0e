@@ -198,12 +198,12 @@ public static class V1Endpoints
             .WithName("CreateActivation")
             .RequireAuthorization(Policies.AdminOnly);
 
-        builder.MapPut("activations", async Task<Results<BadRequest<string>, NoContent>> (UpdateActivationRequest req, HrdDbContext dbContext) =>
+        builder.MapPut("activations", async Task<Results<BadRequest<string>, Ok<PotaActivationDetails>>> (UpdateActivationRequest req, HrdDbContext dbContext) =>
             {
                 try
                 {
-                    await PotaHandlers.UpdateActivation(req, dbContext);
-                    return TypedResults.NoContent();
+                    var result = await PotaHandlers.UpdateActivation(req, dbContext);
+                    return TypedResults.Ok(result);
                 }
                 catch (ArgumentException e)
                 {
