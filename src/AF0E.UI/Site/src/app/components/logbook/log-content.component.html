@@ -46,6 +46,11 @@
           <svg data-p-icon="plus" aria-hidden="true"></svg>
           <span>QSO</span>
         </button>
+        <button pButton type="button" severity="secondary" class="header-btn" title="Merge ADIF" (click)="adifFileInput.click()">
+          <svg data-p-icon="upload" aria-hidden="true"></svg>
+          <span>ADIF</span>
+        </button>
+        <input #adifFileInput type="file" accept=".adi,.adif" style="display:none" (change)="onMergeAdifFileSelected($event)" />
         <button pButton type="button" severity="info" class="header-btn" (click)="lotwDlgVisible.set(true)" title="Download LOTW QSLs">
           <svg data-p-icon="file-import" aria-hidden="true"></svg>
           <span>LOTW</span>

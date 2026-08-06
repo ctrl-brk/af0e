@@ -28,6 +28,9 @@ import {FileImport} from '@primeicons/angular/file-import';
 import {Plus} from '@primeicons/angular/plus';
 import {Search} from '@primeicons/angular/search';
 import {MenuItem} from 'primeng/api';
+import {AdifImportResponseModel} from '../../models/adif-import-response.model';
+import {NotificationMessageModel, NotificationMessageSeverity} from '../../shared/notification-message.model';
+import {Upload} from '@primeicons/angular/upload';
 
 @Component({
   selector: 'app-log-content',
@@ -53,6 +56,7 @@ import {MenuItem} from 'primeng/api';
     FileImport,
     Plus,
     Search,
+    Upload,
     ReactiveFormsModule,
   ],
 })
@@ -215,6 +219,30 @@ export class LogContentComponent implements OnInit {
         Utils.showErrorMessage(e, this._ntfSvc, this._log);
       }
     });
+  }
+
+  protected onMergeAdifFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files?.length) return;
+    const file = input.files[0];
+
+    this._lbSvc.uploadAdif(null, file).subscribe({
+      next: (r: AdifImportResponseModel) => {
+        const severity = r.skipped.length > 0 ? NotificationMessageSeverity.Warn : NotificationMessageSeverity.Success;
+        let title = 'ADIF';
+        if (r.skipped.length > 0) {
+          title += ' (see console)';
+          this._log.warn(`ADIF import result: Total:${r.received} Accepted:${r.accepted} Skipped:${r.skipped} Qrz:${r.qrz}`);
+        }
+        this._ntfSvc.addMessage(new NotificationMessageModel(severity, title, `Total:${r.received} Accepted:${r.accepted} Skipped:${r.skipped.length} Qrz:${r.qrz}`, true));
+        this.reloadLog();
+      },
+      error: (e) => {
+        Utils.showErrorMessage(e, this._ntfSvc, this._log);
+      }
+    });
+
+    input.value = '';
   }
 
   protected onLotwDownload() {
