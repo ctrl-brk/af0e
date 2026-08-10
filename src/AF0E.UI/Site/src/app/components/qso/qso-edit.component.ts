@@ -94,7 +94,6 @@ export interface QsoEditParams {
     Dialog,
     RadioButton,
     Checkbox,
-
   ],
 })
 export class QsoEditComponent implements OnInit {
@@ -558,7 +557,7 @@ export class QsoEditComponent implements OnInit {
     if (updateUi)
       timeToSend = Utils.calculateMorseTime(text, this.cwSpeed());
 
-    this._infraSvc.sendCw(text, this._rigReady(), this.cwSpeed(), repeat, repeatDelaySeconds).subscribe({
+    this._infraSvc.sendCw(this.escapeCw(text), this._rigReady(), this.cwSpeed(), repeat, repeatDelaySeconds).subscribe({
       next: (r) => {
         if (r.split && !r.sent) {
           Utils.showWarningMessage('SPLIT ON!', "Split is on. Send again.", this._ntfSvc);
@@ -972,7 +971,7 @@ export class QsoEditComponent implements OnInit {
         handled = true;
         $event.preventDefault();
         if (this.cwCallLabel() !== '???')
-          this.sendCw(this.cwCallLabel()?.replaceAll('/', '//'));
+          this.sendCw(this.cwCallLabel());
         break;
       case 'F6':
         handled = true;
@@ -1087,7 +1086,7 @@ export class QsoEditComponent implements OnInit {
     const stationCall = act.stationCallsign?.trim() || p.huntingStationCall?.trim() || 'AF0E';
     const operatorCall = act.operatorCallsign?.trim() || stationCall;
 
-    this.stationInfo = {stationCall, cwCall: stationCall === 'AF0E' ? 'AF|0|E' : stationCall.replace('/', '//'), operatorCall};
+    this.stationInfo = {stationCall, cwCall: stationCall === 'AF0E' ? 'AF|0|E' : this.escapeCw(stationCall), operatorCall};
 
     this.qsoForm.patchValue({
       stationCallsign: stationCall,
@@ -1111,6 +1110,10 @@ export class QsoEditComponent implements OnInit {
 
      this.checkKeyerStatus(true)
      this.getRadioStatus(true);
+   }
+
+   private escapeCw(text: string): string {
+    return text.replaceAll('/', '//');
    }
 
    protected onQslRcvdChange() {
