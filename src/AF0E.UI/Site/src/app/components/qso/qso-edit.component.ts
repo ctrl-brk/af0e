@@ -52,6 +52,9 @@ import {Checkbox, CheckboxChangeEvent} from 'primeng/checkbox';
 import {PotaActivationModel} from '../../models/pota-activation.model';
 import {NewActivationFormData} from '../pota/activations/new-activation-form-data';
 import {QsoEditMode} from '../../shared/qso-edit-mode.enum';
+import {HamEventsService} from '../../services/ham-events.service';
+import {HamEventSummaryModel} from '../../models/ham-event-summary.model';
+import {Listbox} from 'primeng/listbox';
 
 export interface QsoEditParams {
   logId?: number;
@@ -94,6 +97,7 @@ export interface QsoEditParams {
     Dialog,
     RadioButton,
     Checkbox,
+    Listbox,
   ],
 })
 export class QsoEditComponent implements OnInit {
@@ -105,6 +109,7 @@ export class QsoEditComponent implements OnInit {
   private _potaSvc = inject(PotaService);
   private _qrzSvc = inject(QrzService);
   private _infraSvc = inject(InfraService);
+  private _hamEventsSvc = inject(HamEventsService);
   private _callInput = viewChild<ElementRef>('callInput');
   private _rstSentInput = viewChild<ElementRef>('rstSentInput');
   private _rstRcvdInput = viewChild<ElementRef>('rstRcvdInput');
@@ -135,6 +140,9 @@ export class QsoEditComponent implements OnInit {
   protected cqSending = signal(false);
   protected cwSpeed = signal(22);
   protected callHistory = signal<GridTrackerLookupModel[]>([]);
+  protected hamEvents = signal<HamEventSummaryModel[]>([]);
+  protected hamEventsLoading = signal(false);
+  private _hamEventsLoaded = false;
   protected cwTextVisible = signal(false);
   protected readonly QsoEditMode = QsoEditMode; //so we can use the enum value in html
 
@@ -280,6 +288,7 @@ export class QsoEditComponent implements OnInit {
       qslVia: [defaults.qslVia],
       comment: [defaults.comment, Validators.maxLength(4000)],
       siteComment: [defaults.siteComment, Validators.maxLength(64)],
+      hamEventIds: [defaults.hamEventIds],
       radioFilter: [defaults.radioFilter],
     });
   }
@@ -676,6 +685,24 @@ export class QsoEditComponent implements OnInit {
     })
   }
 
+  protected onEventsCollapsedChange(collapsed: boolean) {
+    if (collapsed || this._hamEventsLoaded || this.hamEventsLoading())
+      return;
+
+    this.hamEventsLoading.set(true);
+    this._hamEventsSvc.getEvents(null).subscribe({
+      next: events => {
+        this.hamEvents.set(events);
+        this._hamEventsLoaded = true;
+        this.hamEventsLoading.set(false);
+      },
+      error: e => {
+        this.hamEventsLoading.set(false);
+        Utils.showErrorMessage(e, this._ntfSvc, this._log);
+      }
+    });
+  }
+
   onSave() {
     if (this.qsoForm.invalid) {
       const errors = Object.keys(this.qsoForm.controls).map(key => {
@@ -853,6 +880,7 @@ export class QsoEditComponent implements OnInit {
       qslVia: null,
       comment: act?.parkNum ? `POTA activation ${act.parkNum} (${Utils.abbreviateParkName(act.parkName)})` : '',
       siteComment: '',
+      hamEventIds: [],
       radioFilter: {value: '1', disabled: true}
     };
   }

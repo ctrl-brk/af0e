@@ -56,6 +56,7 @@ public sealed class QsoDetails
         Contest = log.ColContestId;
         SiteComment = log.SiteComment;
         // Admin-only fields
+        HamEventIds = isAdmin ? [.. log.HamEventContacts.Select(x => x.HamEventId).Order()] : [];
         Comment = isAdmin ? log.ColComment : null;
         QslVia = isAdmin ? log.ColQslVia : null;
     }
@@ -100,6 +101,7 @@ public sealed class QsoDetails
     public string? SatMode { get; set; }
     public string? Contest { get; set; }
     public string? SiteComment { get; set; }
+    public List<int> HamEventIds { get; set; } = [];
     // Admin-only fields
     public string? Comment { get; set; }
     public string? QslVia { get; set; }

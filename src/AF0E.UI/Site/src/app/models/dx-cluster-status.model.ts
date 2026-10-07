@@ -25,5 +25,6 @@ export interface DxClusterStatusModel {
   inactivityTimeout: string;
   reconnectDelay: string;
   filters: DxClusterFilterModel[];
+  primaryServer: DxClusterServerStatusModel | null;
   servers: DxClusterServerStatusModel[];
 }

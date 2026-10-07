@@ -84,7 +84,7 @@ export class DxClusterComponent implements OnInit {
   protected readonly loading = signal(false);
   protected readonly statusLoading = signal(false);
   protected readonly selectedFilterName = signal<string | null>(this.readSelectedFilterName());
-  protected readonly primaryServer = computed(() => this.status()?.servers?.[0] ?? null);
+  protected readonly primaryServer = computed(() => this.status()?.primaryServer ?? this.status()?.servers?.[0] ?? null);
   protected readonly isConnected = computed(() => this.primaryServer()?.connected ?? false);
   tune = output<DxClusterSpotModel>();
 

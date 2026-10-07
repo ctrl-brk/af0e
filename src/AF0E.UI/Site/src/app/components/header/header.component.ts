@@ -206,7 +206,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     const userMenu = this.menuItems()!.find(item => item.label === 'User');
     const toolsMenu = this.menuItems()!.find(item => item.label === 'Tools');
 
-    if (potaMenu && isAuthenticated) { //TODO: remove menu whe not authenticated?
+    if (potaMenu && isAuthenticated) {
       const spotsItem = potaMenu.items!.find(item => item.label === 'Spots');
       if (!spotsItem) {
         potaMenu.items = [

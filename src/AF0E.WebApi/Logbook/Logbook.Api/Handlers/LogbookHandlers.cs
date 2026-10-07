@@ -17,7 +17,7 @@ using AF0E.Services.Qrz;
 
 namespace Logbook.Api.Handlers;
 
-public static class LogbookHandlers
+public static partial class LogbookHandlers
 {
     public static async Task<List<QsoSummary>> GetLogByCall(string call, HrdDbContext dbContext)
     {
@@ -125,6 +125,7 @@ public static class LogbookHandlers
             .Include(x => x.PotaContacts)
             .ThenInclude(c => c.Activation)
             .ThenInclude(p => p.Park)
+            .Include(x => x.HamEventContacts)
             .SingleOrDefaultAsync(x => x.ColPrimaryKey == logId);
 
         if (log == null)
@@ -172,6 +173,8 @@ public static class LogbookHandlers
         if (activation is not null)
             AddActivationComment(log, activation.Park);
 
+        await SyncHamEventContacts(log, qso.HamEventIds, dbContext, ct);
+
         dbContext.Log.Add(log);
         await dbContext.SaveChangesAsync(ct);
 
@@ -190,13 +193,14 @@ public static class LogbookHandlers
         return (await GetQsoDetails(log.ColPrimaryKey, dbContext, authSvc, httpContext))!;
     }
 
-    public static async Task<QsoDetails?> UpdateQsoDetails(QsoDetails qso, HrdDbContext dbContext, IAuthorizationService authSvc, IHttpContextAccessor httpContext, ILogEventsPublisher eventsPublisher)
+    public static async Task<QsoDetails?> UpdateQsoDetails(QsoDetails qso, HrdDbContext dbContext, IAuthorizationService authSvc, IHttpContextAccessor httpContext, ILogEventsPublisher eventsPublisher, CancellationToken ct)
     {
         QsoDetailsValidator.ValidateAndThrow(qso);
 
         var log = await dbContext.Log
             .AsTracking()
-            .SingleOrDefaultAsync(x => x.ColPrimaryKey == qso.Id);
+            .Include(x => x.HamEventContacts)
+            .SingleOrDefaultAsync(x => x.ColPrimaryKey == qso.Id, ct);
 
         if (log == null)
             return null;
@@ -205,8 +209,9 @@ public static class LogbookHandlers
 
         qso.Band = RadioHelper.NormalizeBand(qso.Band)!;
         log.UpdateFromQsoDetails(qso, includeAdminFields: isAdmin);
+        await SyncHamEventContacts(log, qso.HamEventIds, dbContext, ct);
 
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(ct);
 
         await eventsPublisher.PublishAsync(new LogChangedEvent(
             Operation: "updated",
@@ -215,7 +220,7 @@ public static class LogbookHandlers
             Call: log.ColCall,
             Source: ResolveSource(httpContext.HttpContext),
             OccurredUtc: DateTime.UtcNow,
-            Version: CreateEventVersion()));
+            Version: CreateEventVersion()), ct);
 
         return await GetQsoDetails(log.ColPrimaryKey, dbContext, authSvc, httpContext);
     }
@@ -231,12 +236,15 @@ public static class LogbookHandlers
         await dbContext.PotaContacts
             .Where(x => x.LogId == log.ColPrimaryKey)
             .ExecuteDeleteAsync(ct);
+        await dbContext.HamEventContacts
+            .Where(x => x.LogId == log.ColPrimaryKey)
+            .ExecuteDeleteAsync(ct);
 
         dbContext.Log.Remove(log);
         await dbContext.SaveChangesAsync(ct);
     }
 
-    public static async Task<AdifImportResponse> UploadAdif(IFormFile file, int? activationId, IQrzService qrzSvc, HrdDbContext dbContext, ILogEventsPublisher eventsPublisher, CancellationToken ct)
+    public static async Task<AdifImportResponse> UploadAdif(IFormFile file, int? activationId, IQrzService qrzSvc, HrdDbContext dbContext, ILogEventsPublisher eventsPublisher, ILogger logger, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(file);
 
@@ -265,11 +273,12 @@ public static class LogbookHandlers
         var uploadedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var skipped = new List<string>();
 
+        var i = 1;
         foreach (var record in records)
         {
             ct.ThrowIfCancellationRequested();
 
-            if (!TryCreateLogEntry(record, activation, out var log))
+            if (!TryCreateLogEntry(logger, i++, record, activation, out var log))
             {
                 var skippedCall = record["CALL"]?.Trim().ToUpperInvariant();
                 if (!string.IsNullOrWhiteSpace(skippedCall))
@@ -281,6 +290,7 @@ public static class LogbookHandlers
             if (!uploadedKeys.Add(key))
             {
                 skipped.Add(log.ColCall);
+                LogDupAdifRecord(logger, log.ColCall);
                 continue;
             }
 
@@ -316,6 +326,10 @@ public static class LogbookHandlers
         var duplicateLogs = importedLogs
             .Where(log => existingKeys.Contains(CreateLogDedupKey(log)))
             .ToList();
+
+        foreach (var log in duplicateLogs)
+            LogDupLogRecord(logger, log.ColCall, log.ColTimeOn!.Value, log.ColBand, log.ColMode);
+
         skipped.AddRange(duplicateLogs.Select(log => log.ColCall));
 
         if (activation is not null)
@@ -330,6 +344,9 @@ public static class LogbookHandlers
                 .ToList();
             skipped.AddRange(outOfActivationDateLogs.Select(log => log.ColCall));
 
+            foreach (var log in outOfActivationDateLogs)
+                LogOutOfActivationDateRecord(logger, log.ColCall, log.ColTimeOn!.Value);
+
             //keep only the latest qso (remove dups) for each call/band/mode combination
             var deduplicatedLogs = logsOnActivationDate
                 .GroupBy(log => (log.ColCall, log.ColBand, log.ColMode))
@@ -342,6 +359,9 @@ public static class LogbookHandlers
                 .ToList();
             skipped.AddRange(duplicateByCallBandMode.Select(log => log.ColCall));
             newLogs = deduplicatedLogs;
+
+            foreach (var log in duplicateByCallBandMode)
+                LogDupActivationRecord(logger, log.ColCall);
         }
 
         if (newLogs.Count == 0)
@@ -405,7 +425,34 @@ public static class LogbookHandlers
     private static List<string> SortSkipped(List<string> skipped)
         => [.. skipped.OrderBy(call => call, StringComparer.OrdinalIgnoreCase)];
 
-    private static bool TryCreateLogEntry(AdifRecord record, PotaActivation? activation, out HrdLog log)
+    private static async Task SyncHamEventContacts(HrdLog log, IEnumerable<int>? requestedIds, HrdDbContext dbContext, CancellationToken ct)
+    {
+        var eventIds = requestedIds?.Distinct().ToArray() ?? [];
+        var validIds = await dbContext.HamEvents
+            .Where(x => eventIds.Contains(x.HamEventId))
+            .Select(x => x.HamEventId)
+            .ToListAsync(ct);
+
+        var invalidIds = eventIds.Except(validIds).Order().ToArray();
+        if (invalidIds.Length > 0)
+            throw new ArgumentException($"Invalid Ham Event IDs: {string.Join(", ", invalidIds)}", nameof(requestedIds));
+
+        var requested = validIds.ToHashSet();
+        var removed = log.HamEventContacts.Where(x => !requested.Contains(x.HamEventId)).ToList();
+        dbContext.HamEventContacts.RemoveRange(removed);
+
+        var existing = log.HamEventContacts.Select(x => x.HamEventId).ToHashSet();
+        foreach (var eventId in requested.Except(existing))
+        {
+            log.HamEventContacts.Add(new HamEventContact
+            {
+                HamEventId = eventId,
+                Log = log
+            });
+        }
+    }
+
+    private static bool TryCreateLogEntry(ILogger logger, int idx, AdifRecord record, PotaActivation? activation, out HrdLog log)
     {
         log = null!;
 
@@ -414,10 +461,16 @@ public static class LogbookHandlers
         var mode = NormalizeUpper(record["MODE"]);
 
         if (string.IsNullOrWhiteSpace(call) || string.IsNullOrWhiteSpace(band) || string.IsNullOrWhiteSpace(mode))
+        {
+            LogMissingAdifInfo(logger, idx, call, band, mode);
             return false;
+        }
 
         if (!TryParseAdifDateTime(record["QSO_DATE"], record["TIME_ON"], out var timeOn))
+        {
+            LogInvalidAdifData(logger, idx, record["QSO_DATE"], record["TIME_ON"]);
             return false;
+        }
 
         DateTime? timeOff = null;
         if (TryParseAdifDateTime(record["QSO_DATE_OFF"] ?? record["QSO_DATE"], record["TIME_OFF"], out var parsedTimeOff))
@@ -447,12 +500,12 @@ public static class LogbookHandlers
             ColComment = NormalizeText(record["COMMENT"]),
             ColNotes = NormalizeText(record["NOTES"]),
             ColMyCity = NormalizeText(record["MY_CITY"]),
-            ColMyCnty = NormalizeText(record["MY_CNTY"]),
-            ColMyState = NormalizeUpper(record["MY_STATE"]),
+            ColMyCnty = NormalizeText(activation?.County ?? record["MY_CNTY"]),
+            ColMyState = NormalizeUpper(activation?.State ?? record["MY_STATE"]),
             ColMyCountry = NormalizeText(record["MY_COUNTRY"], "United States"),
             ColMyCqZone = ParseDouble(record["MY_CQ_ZONE"], 4),
             ColMyItuZone = ParseDouble(record["MY_ITU_ZONE"], 7),
-            ColMyGridsquare = NormalizeUpper(record["MY_GRIDSQUARE"]),
+            ColMyGridsquare = NormalizeUpper(activation?.Grid ?? record["MY_GRIDSQUARE"]),
             ColQslSent = NormalizeQslStatus(record["QSL_SENT"]),
             ColQslsdate = ParseAdifDate(record["QSLSDATE"]),
             ColQslSentVia = NormalizeQslVia(record["QSL_SENT_VIA"]) ?? "D",
@@ -720,4 +773,22 @@ public static class LogbookHandlers
 
         return string.Join(" ", parts);
     }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Dup in the ADIF file: {Call}")]
+    private static partial void LogDupAdifRecord(ILogger logger, string call);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Invalid ADIF line {Idx}: Call={Call}, Band={Band}, Mode={Mode}")]
+    private static partial void LogMissingAdifInfo(ILogger logger, int idx, string? call, string? band, string? mode);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Invalid ADIF line {Idx}: QSO_DATE={QsoDate}, TIME_ON={TimeOn}")]
+    private static partial void LogInvalidAdifData(ILogger logger, int idx, string? qsoDate, string? timeOn);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Dup in the log: {Call} at {TimeOn:O} on {Band}/{Mode}")]
+    private static partial void LogDupLogRecord(ILogger logger, string call, DateTime timeOn, string? band, string? mode);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Dup in the activation: {Call}")]
+    private static partial void LogDupActivationRecord(ILogger logger, string call);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "QSO for {Call} at {ColTimeOn:O} is outside the activation date")]
+    private static partial void LogOutOfActivationDateRecord(ILogger logger, string call, DateTime colTimeOn);
 }

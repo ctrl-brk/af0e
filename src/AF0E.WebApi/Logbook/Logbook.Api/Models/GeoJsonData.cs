@@ -1,7 +1,10 @@
-﻿namespace Logbook.Api.Models;
+﻿using System.Diagnostics.CodeAnalysis;
 
+namespace Logbook.Api.Models;
+
+[SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
 public sealed class GeoJsonData
 {
-    public string Type { get; set; } = null!;
-    public IEnumerable<object> Features { get; set; } = [];
+    public required string Type { get; init; }
+    public required IEnumerable<object> Features { get; init; }
 }
