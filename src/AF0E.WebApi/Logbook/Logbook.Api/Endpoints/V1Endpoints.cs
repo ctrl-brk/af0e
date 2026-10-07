@@ -30,6 +30,7 @@ public static class V1Endpoints
         RegisterGridTrackerEndpoints(builder);
         RegisterDxClusterEndpoints(builder);
         RegisterQrzEndpoints(builder);
+        RegisterHamEventsEndpoints(builder);
         RegisterToolsEndpoints(builder);
     }
 
@@ -60,11 +61,11 @@ public static class V1Endpoints
             })
             .WithName("QsoDetails");
 
-        builder.MapPut("qso", async Task<Results<BadRequest<string>, NotFound, Ok<QsoDetails>>> (QsoDetails qso, HrdDbContext dbContext, IAuthorizationService authSvc, IHttpContextAccessor httpContext, ILogEventsPublisher eventsPublisher) =>
+        builder.MapPut("qso", async Task<Results<BadRequest<string>, NotFound, Ok<QsoDetails>>> (QsoDetails qso, HrdDbContext dbContext, IAuthorizationService authSvc, IHttpContextAccessor httpContext, ILogEventsPublisher eventsPublisher, CancellationToken ct) =>
             {
                 try
                 {
-                    var res = await LogbookHandlers.UpdateQsoDetails(qso, dbContext, authSvc, httpContext, eventsPublisher);
+                    var res = await LogbookHandlers.UpdateQsoDetails(qso, dbContext, authSvc, httpContext, eventsPublisher, ct);
                     return res is null ? TypedResults.NotFound() : TypedResults.Ok(res);
                 }
                 catch (ArgumentException ex)
@@ -139,7 +140,7 @@ public static class V1Endpoints
                 TypedResults.Ok(await LogbookHandlers.GetLog(call, skip, take, sort, orderBy, begin, end, dbContext, authSvc, httpContext)))
             .WithName("Logbook");
 
-        builder.MapPost("upload", async Task<Results<BadRequest<string>, Ok<AdifImportResponse>>> ([FromForm] UploadAdifRequest request, IQrzService qrzSvc, HrdDbContext dbContext, ILogEventsPublisher eventsPublisher, CancellationToken ct) =>
+        builder.MapPost("upload", async Task<Results<BadRequest<string>, Ok<AdifImportResponse>>> ([FromForm] UploadAdifRequest request, IQrzService qrzSvc, HrdDbContext dbContext, ILogEventsPublisher eventsPublisher, ILoggerFactory loggerFactory, CancellationToken ct) =>
             {
                 if (request.File is null || request.File.Length == 0)
                     return TypedResults.BadRequest("A non-empty .adif file is required");
@@ -150,7 +151,8 @@ public static class V1Endpoints
 
                 try
                 {
-                    return TypedResults.Ok(await LogbookHandlers.UploadAdif(request.File, request.ActivationId, qrzSvc, dbContext, eventsPublisher, ct));
+                    var logger = loggerFactory.CreateLogger(typeof(LogbookHandlers).FullName!);
+                    return TypedResults.Ok(await LogbookHandlers.UploadAdif(request.File, request.ActivationId, qrzSvc, dbContext, eventsPublisher, logger, ct));
                 }
                 catch (ArgumentException ex)
                 {
@@ -378,6 +380,21 @@ public static class V1Endpoints
         })
         .RequireAuthorization(Policies.AdminOnly)
         .WithName("QrzCallLookup");
+    }
+
+    private static void RegisterHamEventsEndpoints(IEndpointRouteBuilder v1Builder)
+    {
+        var builder = v1Builder.MapGroup("hamevents").WithTags("HAM events");
+
+        builder.MapGet("list", async ([FromQuery]DateTimeOffset? since, HrdDbContext dbContext, CancellationToken ct) =>
+                TypedResults.Ok(await HamEventHandlers.GetEvents(since, dbContext, ct)))
+            .RequireAuthorization(Policies.AdminOnly)
+            .WithName("HamEvents");
+
+        builder.MapGet("active", async (HrdDbContext dbContext, CancellationToken ct) =>
+                TypedResults.Ok(await HamEventHandlers.GetActiveEvents(dbContext, ct)))
+            .RequireAuthorization(Policies.AdminOnly)
+            .WithName("ActiveHamEvents");
     }
 
     private static void RegisterToolsEndpoints(IEndpointRouteBuilder v1Builder)

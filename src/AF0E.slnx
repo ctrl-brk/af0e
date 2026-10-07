@@ -33,11 +33,17 @@
     <Project Path="AF0E.App/QslLabel/QslLabel.csproj">
       <BuildType Solution="Development|*" Project="Debug" />
     </Project>
+    <Project Path="AF0E.App/QslDueWatcher/QslDueWatcher.csproj">
+      <BuildType Solution="Development|*" Project="Debug" />
+    </Project>
     <Project Path="AF0E.App/RigCommander/RigCommander.csproj">
       <BuildType Solution="Development|*" Project="Release" />
     </Project>
   </Folder>
   <Folder Name="/Tests/">
+    <Project Path="../tests/AF0E.App.QslDueWatcher.Tests/AF0E.App.QslDueWatcher.Tests.csproj">
+      <BuildType Solution="Development|*" Project="Debug" />
+    </Project>
     <Project Path="../tests/AF0E.Common.Tests/AF0E.Common.Tests.csproj">
       <BuildType Solution="Development|*" Project="Debug" />
     </Project>

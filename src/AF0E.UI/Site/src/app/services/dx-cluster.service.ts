@@ -138,14 +138,19 @@ export class DxClusterService {
           maxFrequencyKhz: window.maxFrequencyKhz ?? null,
         })),
       })),
-      servers: (status.servers ?? []).map(server => ({
-        ...server,
-        lastConnectUtc: this.parseDate(server.lastConnectUtc),
-        lastDisconnectUtc: this.parseDate(server.lastDisconnectUtc),
-        lastLineUtc: this.parseDate(server.lastLineUtc),
-        lastSpotUtc: this.parseDate(server.lastSpotUtc),
-        lastErrorUtc: this.parseDate(server.lastErrorUtc)
-      }))
+      primaryServer: status.primaryServer ? this.normalizeServer(status.primaryServer) : null,
+      servers: (status.servers ?? []).map(server => this.normalizeServer(server))
+    };
+  }
+
+  private normalizeServer(server: DxClusterStatusModel['servers'][number]): DxClusterStatusModel['servers'][number] {
+    return {
+      ...server,
+      lastConnectUtc: this.parseDate(server.lastConnectUtc),
+      lastDisconnectUtc: this.parseDate(server.lastDisconnectUtc),
+      lastLineUtc: this.parseDate(server.lastLineUtc),
+      lastSpotUtc: this.parseDate(server.lastSpotUtc),
+      lastErrorUtc: this.parseDate(server.lastErrorUtc)
     };
   }
 

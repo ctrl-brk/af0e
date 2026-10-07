@@ -44,6 +44,7 @@ export interface QsoDetailModel {
   siteComment: string;
   comment: string;
   qslVia: string;
+  hamEventIds: number[];
 }
 
 export function qsoDetailToAdif(qso: QsoDetailModel): string {
