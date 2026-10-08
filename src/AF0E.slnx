@@ -65,12 +65,6 @@
       <BuildType Solution="Development|*" Project="Debug" />
     </Project>
   </Folder>
-  <Folder Name="/ETL/">
-    <Project Path="AF0E.ETL/POTA parks import/POTA parks import.dtproj" Type="c9674dcb-5085-4a16-b785-4c70dd1589bd">
-      <BuildType Project="Development" />
-      <Platform Project="?" />
-    </Project>
-  </Folder>
   <Project Path="AF0E.Common/AF0E.Common.csproj">
     <BuildType Solution="Development|*" Project="Debug" />
   </Project>
