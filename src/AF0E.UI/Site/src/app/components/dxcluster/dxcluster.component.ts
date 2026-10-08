@@ -50,6 +50,7 @@ export class DxClusterComponent implements OnInit {
   private static readonly TimeOnlyCommentRegex = /^\d{3,4}Z$/i;
   private static readonly PotaTagRegex = /(?:_pota_|\bpota\b)/i;
   private static readonly PotaTagReplaceRegex = /(?:_pota_|\bpota\b)/gi;
+  private static readonly ThreeLetterCallsignRegex = /^[A-Z]{3}$/i;
   private static readonly PotaCommentPrefix = '🌲';
   private static readonly DigitalModes = new Set([
     'DIGI',
@@ -285,7 +286,9 @@ export class DxClusterComponent implements OnInit {
     const modes = filter.modes ?? [];
 
     const regexes = this.getCallsignRegexes(callsignPatterns);
-    if (regexes.length > 0 && !regexes.some(regex => regex.test(spot.dxCallsign)))
+    if (regexes.length > 0
+      && !this.isThreeLetterCallsign(spot.dxCallsign)
+      && !regexes.some(regex => regex.test(spot.dxCallsign)))
       return false;
 
     if (frequencyWindows.length > 0 && !frequencyWindows.some(window => this.matchesFrequencyWindow(window, spot.frequencyKhz)))
@@ -324,6 +327,13 @@ export class DxClusterComponent implements OnInit {
 
     this._callsignRegexCache.set(cacheKey, regexes);
     return regexes;
+  }
+
+  private isThreeLetterCallsign(callsign: string | null | undefined): boolean {
+    if (!callsign)
+      return false;
+
+    return DxClusterComponent.ThreeLetterCallsignRegex.test(callsign.trim());
   }
 
   private matchesFrequencyWindow(window: DxClusterFrequencyWindowModel, frequencyKhz: number): boolean {

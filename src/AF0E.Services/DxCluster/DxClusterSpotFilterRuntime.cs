@@ -8,6 +8,7 @@ namespace AF0E.Services.DxCluster;
 internal sealed class DxClusterSpotFilterRuntime
 {
     private static readonly TimeSpan RegexTimeout = TimeSpan.FromMilliseconds(250);
+    private static readonly Regex ThreeLetterCallsignRegex = new("^[A-Z]{3}$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, RegexTimeout);
 
     private readonly Regex[] _callsignRegexes;
     private readonly HashSet<string> _modes;
@@ -76,7 +77,9 @@ internal sealed class DxClusterSpotFilterRuntime
     {
         ArgumentNullException.ThrowIfNull(spot);
 
-        if (_callsignRegexes.Length > 0 && !_callsignRegexes.Any(regex => IsRegexMatch(regex, spot.DxCallsign)))
+        if (_callsignRegexes.Length > 0
+            && !IsThreeLetterCallsign(spot.DxCallsign)
+            && !_callsignRegexes.Any(regex => IsRegexMatch(regex, spot.DxCallsign)))
             return false;
 
         if (_frequencyWindows.Length > 0 && !_frequencyWindows.Any(window => window.Contains(spot.FrequencyKhz)))
@@ -99,6 +102,14 @@ internal sealed class DxClusterSpotFilterRuntime
         {
             return false;
         }
+    }
+
+    private static bool IsThreeLetterCallsign(string? callsign)
+    {
+        if (string.IsNullOrWhiteSpace(callsign))
+            return false;
+
+        return IsRegexMatch(ThreeLetterCallsignRegex, callsign.Trim());
     }
 
     private static string[] SplitPipeDelimited(string? value)
