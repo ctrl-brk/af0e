@@ -79,7 +79,7 @@ export class DxClusterService {
             return '';
 
           try {
-            return await firstValueFrom(this._auth.getAccessTokenSilently());
+            return (await firstValueFrom(this._auth.getAccessTokenSilently())) ?? '';
           } catch (err) {
             this._log.warn('DX cluster SignalR token acquisition failed; connecting without token', err);
             return '';
