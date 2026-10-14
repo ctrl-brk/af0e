@@ -98,6 +98,10 @@ export class MapComponent implements OnInit {
       //projection: 'mercator'
     });
 
+    this.map.on('error', (e) => {
+      this._log.warn('Mapbox map error', e.error ?? e);
+    });
+
     this.map.on('load', () => {
       this.map.fitBounds([[-109.05, 37.0], [-102.05, 41.0]], {padding: 10}); //CO bounds - SW, NE
     });
@@ -165,7 +169,7 @@ export class MapComponent implements OnInit {
       this.map.on('click', layerId, onParkLayerClick);
     });
 
-    this.map.addControl(new mapbox.NavigationControl());
+    this.safeAddControl(new mapbox.NavigationControl());
 
     const moveEnd$ = fromEvent(this.map, 'moveend');
     const moveEndSub = moveEnd$.pipe(debounceTime(250)).subscribe({ //need to debounce when resizing a browser window
@@ -184,7 +188,7 @@ export class MapComponent implements OnInit {
   }
 
   private setupMapSourcesAndLayers() {
-    this.map!.addSource('activations', {
+    this.safeAddSource('activations', {
       type: 'geojson',
       data: {
         type: 'FeatureCollection',
@@ -192,7 +196,7 @@ export class MapComponent implements OnInit {
       }
     });
 
-    this.map!.addSource('activated-parks', {
+    this.safeAddSource('activated-parks', {
       type: 'geojson',
       data: {
         type: 'FeatureCollection',
@@ -200,7 +204,7 @@ export class MapComponent implements OnInit {
       }
     });
 
-    this.map.addSource('not-activated-parks-dynamic', {
+    this.safeAddSource('not-activated-parks-dynamic', {
       type: 'geojson',
       data: {
         type: 'FeatureCollection',
@@ -208,7 +212,7 @@ export class MapComponent implements OnInit {
       }
     });
 
-    this.map.addSource('highlight', {
+    this.safeAddSource('highlight', {
       type: 'geojson',
       data: {
         type: 'FeatureCollection',
@@ -216,7 +220,7 @@ export class MapComponent implements OnInit {
       }
     });
 
-    this.map.addLayer({
+    this.safeAddLayer({
       'id': 'activations-layer',
       'type': 'circle',
       'source': 'activations',
@@ -229,7 +233,7 @@ export class MapComponent implements OnInit {
       }
     });
 
-    this.map.addLayer({
+    this.safeAddLayer({
       'id': 'activated-parks-layer',
       'type': 'circle',
       'source': 'activated-parks',
@@ -242,7 +246,7 @@ export class MapComponent implements OnInit {
       }
     });
 
-    this.map.addLayer({
+    this.safeAddLayer({
       id: 'na-parks-dynamic-layer',
       type: 'circle',
       source: 'not-activated-parks-dynamic',
@@ -254,7 +258,7 @@ export class MapComponent implements OnInit {
       }
     });
 
-    this.map.addLayer({
+    this.safeAddLayer({
       id: 'highlight-layer',
       type: 'circle',
       source: 'highlight',
@@ -412,6 +416,119 @@ export class MapComponent implements OnInit {
     (source as mapbox.GeoJSONSource).setData(data as Parameters<mapbox.GeoJSONSource['setData']>[0]);
   }
 
+  private safeAddSource(sourceId: string, source: mapbox.AnySourceData): void {
+    if (this.map.getSource(sourceId))
+      return;
+
+    try {
+      this.map.addSource(sourceId, source);
+    }
+    catch (e) {
+      this._log.warn(`Failed to add source '${sourceId}'`, e);
+    }
+  }
+
+  private safeAddLayer(layer: mapbox.AnyLayer): void {
+    const validation = this.validateLayerConfig(layer);
+    if (!validation.ok) {
+      this.logLayerDiagnostic({
+        stage: 'validate',
+        reason: validation.reason,
+        layerId: validation.layerId,
+        layerType: validation.layerType,
+        layerSource: validation.layerSource,
+        sourceExists: validation.layerSource ? !!this.map.getSource(validation.layerSource) : undefined,
+      });
+      return;
+    }
+
+    const { layerId, layerSource } = validation;
+
+    if (this.map.getLayer(layerId))
+      return;
+
+    if (layerSource && !this.map.getSource(layerSource)) {
+      this.logLayerDiagnostic({
+        stage: 'validate',
+        reason: 'source-not-found',
+        layerId,
+        layerType: validation.layerType,
+        layerSource,
+        sourceExists: false,
+      });
+      return;
+    }
+
+    try {
+      this.map.addLayer(layer);
+    }
+    catch (e) {
+      this.logLayerDiagnostic({
+        stage: 'add',
+        reason: 'add-layer-threw',
+        layerId,
+        layerType: validation.layerType,
+        layerSource,
+        sourceExists: layerSource ? !!this.map.getSource(layerSource) : undefined,
+        error: e,
+      });
+    }
+  }
+
+  private validateLayerConfig(layer: mapbox.AnyLayer): { ok: true; layerId: string; layerType: mapbox.AnyLayer['type']; layerSource?: string } | { ok: false; reason: string; layerId?: string; layerType?: mapbox.AnyLayer['type']; layerSource?: string } {
+    if (!layer)
+      return { ok: false, reason: 'layer-missing' };
+
+    const layerId = typeof layer.id === 'string' ? layer.id : undefined;
+    if (!layerId)
+      return { ok: false, reason: 'layer-id-missing' };
+
+    const layerType = layer.type;
+    if (!layerType)
+      return { ok: false, reason: 'layer-type-missing', layerId };
+
+    const layerSource = 'source' in layer && typeof layer.source === 'string' ? layer.source : undefined;
+    const sourceRequired = layerType !== 'background' && layerType !== 'sky' && layerType !== 'slot';
+    if (sourceRequired && !layerSource)
+      return { ok: false, reason: 'layer-source-missing', layerId, layerType };
+
+    return { ok: true, layerId, layerType, layerSource };
+  }
+
+  private logLayerDiagnostic(diag: {
+    stage: 'validate' | 'add';
+    reason: string;
+    layerId?: string;
+    layerType?: mapbox.AnyLayer['type'];
+    layerSource?: string;
+    sourceExists?: boolean;
+    error?: unknown;
+  }): void {
+    const structuredDiagnostic = {
+      scope: 'mapbox-layer-guard',
+      component: 'MapComponent',
+      stage: diag.stage,
+      reason: diag.reason,
+      layerId: diag.layerId,
+      layerType: diag.layerType,
+      layerSource: diag.layerSource,
+      sourceExists: diag.sourceExists,
+      mapStyle: this._state.mapStyle,
+      error: diag.error,
+    };
+
+    this._log.warn(structuredDiagnostic);
+  }
+
+  private safeAddControl(control: mapbox.IControl): void {
+    try {
+      this.map.addControl(control);
+    }
+    catch (e) {
+      this._log.warn('Failed to add map control', e);
+    }
+  }
+
   onColorSelected() {
     this._colorChanges$.next();
   }
@@ -470,3 +587,4 @@ export class MapComponent implements OnInit {
     this.showPopup(coordinates, this.getParkTooltipHtml(p));
   }
 }
+
