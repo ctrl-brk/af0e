@@ -53,7 +53,7 @@ export class PotaActivationMapComponent {
     this.map.on('load', () => {
       this.addContactsSource('hunters', hunters);
       this.addContactsSource('activators', activators);
-      this.map.addSource('my-park', {
+      this.safeAddSource('my-park', {
         'type': 'geojson',
         'data': {
           'type': 'Feature',
@@ -64,7 +64,7 @@ export class PotaActivationMapComponent {
           'properties': {}
         }
       });
-      this.map.addSource('lines', {
+      this.safeAddSource('lines', {
         'type': 'geojson',
         'data': {
           'type': 'FeatureCollection',
@@ -77,7 +77,7 @@ export class PotaActivationMapComponent {
         }
       });
 
-      this.map.addLayer({
+      this.safeAddLayer({
         'id': 'lines-layer',
         'source': 'lines',
         'type': 'line',
@@ -87,7 +87,7 @@ export class PotaActivationMapComponent {
           'line-width': 0.5
         }
       });
-      this.map.addLayer({
+      this.safeAddLayer({
         'id': 'my-park-layer',
         'source': 'my-park',
         'type': 'circle',
@@ -98,7 +98,7 @@ export class PotaActivationMapComponent {
           'circle-stroke-color': 'white'
         }
       });
-      this.map.addLayer({
+      this.safeAddLayer({
         'id': 'hunters-layer',
         'source': 'hunters',
         'type': 'circle',
@@ -109,7 +109,7 @@ export class PotaActivationMapComponent {
           'circle-stroke-color': 'black'
         }
       });
-      this.map.addLayer({
+      this.safeAddLayer({
         'id': 'activators-layer',
         'source': 'activators',
         'type': 'circle',
@@ -163,12 +163,12 @@ export class PotaActivationMapComponent {
       this._popupTimeout = setTimeout(() => popup.remove(), 50); // Allows for quick mouse re-entry
     });
 
-    this.map.addControl(new mapbox.NavigationControl());
+    this.safeAddControl(new mapbox.NavigationControl());
     this._destroyRef.onDestroy(() => this.map.remove());
   }
 
   private addContactsSource(id: string, contacts: ActivationQsoModel[]) {
-    this.map.addSource(id, {
+    this.safeAddSource(id, {
       'type': 'geojson',
       'data': {
         'type': 'FeatureCollection',
@@ -182,5 +182,117 @@ export class PotaActivationMapComponent {
         }))
       }
     });
+  }
+
+  private safeAddSource(sourceId: string, source: mapbox.AnySourceData): void {
+    if (this.map.getSource(sourceId))
+      return;
+
+    try {
+      this.map.addSource(sourceId, source);
+    }
+    catch (e) {
+      console.warn(`Failed to add source '${sourceId}'`, e);
+    }
+  }
+
+  private safeAddLayer(layer: mapbox.AnyLayer): void {
+    const validation = this.validateLayerConfig(layer);
+    if (!validation.ok) {
+      this.logLayerDiagnostic({
+        stage: 'validate',
+        reason: validation.reason,
+        layerId: validation.layerId,
+        layerType: validation.layerType,
+        layerSource: validation.layerSource,
+        sourceExists: validation.layerSource ? !!this.map.getSource(validation.layerSource) : undefined,
+      });
+      return;
+    }
+
+    const { layerId, layerSource } = validation;
+
+    if (this.map.getLayer(layerId))
+      return;
+
+    if (layerSource && !this.map.getSource(layerSource)) {
+      this.logLayerDiagnostic({
+        stage: 'validate',
+        reason: 'source-not-found',
+        layerId,
+        layerType: validation.layerType,
+        layerSource,
+        sourceExists: false,
+      });
+      return;
+    }
+
+    try {
+      this.map.addLayer(layer);
+    }
+    catch (e) {
+      this.logLayerDiagnostic({
+        stage: 'add',
+        reason: 'add-layer-threw',
+        layerId,
+        layerType: validation.layerType,
+        layerSource,
+        sourceExists: layerSource ? !!this.map.getSource(layerSource) : undefined,
+        error: e,
+      });
+    }
+  }
+
+  private validateLayerConfig(layer: mapbox.AnyLayer): { ok: true; layerId: string; layerType: mapbox.AnyLayer['type']; layerSource?: string } | { ok: false; reason: string; layerId?: string; layerType?: mapbox.AnyLayer['type']; layerSource?: string } {
+    if (!layer)
+      return { ok: false, reason: 'layer-missing' };
+
+    const layerId = typeof layer.id === 'string' ? layer.id : undefined;
+    if (!layerId)
+      return { ok: false, reason: 'layer-id-missing' };
+
+    const layerType = layer.type;
+    if (!layerType)
+      return { ok: false, reason: 'layer-type-missing', layerId };
+
+    const layerSource = 'source' in layer && typeof layer.source === 'string' ? layer.source : undefined;
+    const sourceRequired = layerType !== 'background' && layerType !== 'sky' && layerType !== 'slot';
+    if (sourceRequired && !layerSource)
+      return { ok: false, reason: 'layer-source-missing', layerId, layerType };
+
+    return { ok: true, layerId, layerType, layerSource };
+  }
+
+  private logLayerDiagnostic(diag: {
+    stage: 'validate' | 'add';
+    reason: string;
+    layerId?: string;
+    layerType?: mapbox.AnyLayer['type'];
+    layerSource?: string;
+    sourceExists?: boolean;
+    error?: unknown;
+  }): void {
+    const structuredDiagnostic = {
+      scope: 'mapbox-layer-guard',
+      component: 'PotaActivationMapComponent',
+      stage: diag.stage,
+      reason: diag.reason,
+      layerId: diag.layerId,
+      layerType: diag.layerType,
+      layerSource: diag.layerSource,
+      sourceExists: diag.sourceExists,
+      error: diag.error,
+    };
+
+    console.warn(structuredDiagnostic);
+  }
+
+  private safeAddControl(control: mapbox.IControl): void {
+    try {
+      this.map.addControl(control);
+    }
+    catch (e) {
+      console.warn('Failed to add map control', e);
+    }
   }
 }

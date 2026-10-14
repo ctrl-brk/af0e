@@ -328,20 +328,23 @@ export class QsoEditComponent implements OnInit {
     const cwText = {...untracked(() => this.f3CwMsg())};
 
     if (this.editMode() === QsoEditMode.PotaHuntingAdd) {
-      cwText.def = `R TU ${rst} C|O`;
-      cwText.alt = `R ${greet} UR ${rst} C|O`;
-      cwText.ctl = `R TU ${rst} ${rst} C|O C|O`;
+      const state = 'C|O';
+      cwText.def = `R TU ${rst} ${state}`;
+      cwText.alt = `R ${greet} UR ${rst} ${state}`;
+      cwText.ctl = `R TU ${rst} ${rst} ${state} ${state}`;
       cwText.f6 = '';
 
       this.f3CwMsg.set(cwText);
     }
     else if (this.editMode() === QsoEditMode.PotaActivatingAdd) {
       const call = this.cwCallLabel() ? this.cwCallLabel() : '';
+      let state = this.params().potaActivation?.state || 'CO';
+      state = `${state.charAt(0)}|${state.charAt(1)}`;
 
-      cwText.def = `${call} TU ${rst} C|O`;
-      cwText.alt = `${call} ${greet} UR ${rst} C|O`;
-      cwText.ctl = `${call} TU ${rst} ${rst} C|O C|O`;
-      cwText.f6 = `TU ${rst} C|O`;
+      cwText.def = `${call} TU ${rst} ${state}`;
+      cwText.alt = `${call} ${greet} UR ${rst} ${state}`;
+      cwText.ctl = `${call} TU ${rst} ${rst} ${state} ${state}`;
+      cwText.f6 = `TU ${rst} ${state}`;
 
       this.f3CwMsg.set(cwText);
     }
@@ -1043,9 +1046,15 @@ export class QsoEditComponent implements OnInit {
         }
         break;
       case 'Escape':
-        if (!this.cwSending() && !this.cqSending()) return;
-        handled = true;
-        this.stopCw();
+        if (this.cwSending() || this.cqSending()) {
+          handled = true;
+          this.stopCw();
+        }
+
+        if (this.editMode() === QsoEditMode.PotaActivatingAdd && this.qsoForm.get('call')?.value !== '')
+          handled = true;
+
+        if (!handled) return;
         break;
       case 'PageDown':
         handled = true;
