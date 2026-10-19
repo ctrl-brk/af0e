@@ -81,6 +81,16 @@ export const appConfig: ApplicationConfig = {
             uri: '/api/v1/qrz/*',
             httpMethod: 'GET',
           },
+          {
+            // HAM events list - require authentication
+            uri: '/api/v1/hamevents/list',
+            httpMethod: 'GET',
+          },
+          {
+            // Active HAM events - require authentication
+            uri: '/api/v1/hamevents/active',
+            httpMethod: 'GET',
+          },
           // {
           //   // POTA unconfirmed log - requires authentication
           //   uri: '/api/v1/pota/log/unconfirmed*',

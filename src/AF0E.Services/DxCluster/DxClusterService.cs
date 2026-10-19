@@ -492,7 +492,18 @@ public sealed partial class DxClusterService : IDxClusterService, IAsyncDisposab
             : _filterSnapshot.ByName.GetValueOrDefault(filterName.Trim());
 
     private DxClusterStatus CreateStatusSnapshotUnsafe()
-        => new()
+    {
+        var servers = _servers.Values
+            .OrderBy(static runtime => runtime.Options.Name, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(static runtime => runtime.Options.Host, StringComparer.OrdinalIgnoreCase)
+            .Select(static runtime => runtime.ToStatus())
+            .ToArray();
+
+        var primaryServer = servers.FirstOrDefault(static server => server.Enabled && server.Connected)
+                            ?? servers.FirstOrDefault(static server => server.Enabled)
+                            ?? servers.FirstOrDefault(static server => server.Connected);
+
+        return new DxClusterStatus
         {
             Configured = _servers.Values.Any(static runtime => runtime.Options.Enabled),
             Running = IsSessionActiveUnsafe(),
@@ -503,12 +514,10 @@ public sealed partial class DxClusterService : IDxClusterService, IAsyncDisposab
             InactivityTimeout = _inactivityTimeout,
             ReconnectDelay = _reconnectDelay,
             Filters = _filterSnapshot.Runtimes.Select(static runtime => runtime.Definition).ToArray(),
-            Servers = _servers.Values
-                .OrderBy(static runtime => runtime.Options.Name, StringComparer.OrdinalIgnoreCase)
-                .ThenBy(static runtime => runtime.Options.Host, StringComparer.OrdinalIgnoreCase)
-                .Select(static runtime => runtime.ToStatus())
-                .ToArray()
+            PrimaryServer = primaryServer,
+            Servers = servers
         };
+    }
 
     private async ValueTask PublishSpotSafeAsync(DxClusterSpot spot, CancellationToken cancellationToken)
     {

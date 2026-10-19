@@ -33,11 +33,17 @@
     <Project Path="AF0E.App/QslLabel/QslLabel.csproj">
       <BuildType Solution="Development|*" Project="Debug" />
     </Project>
+    <Project Path="AF0E.App/QslDueWatcher/QslDueWatcher.csproj">
+      <BuildType Solution="Development|*" Project="Debug" />
+    </Project>
     <Project Path="AF0E.App/RigCommander/RigCommander.csproj">
       <BuildType Solution="Development|*" Project="Release" />
     </Project>
   </Folder>
   <Folder Name="/Tests/">
+    <Project Path="../tests/AF0E.App.QslDueWatcher.Tests/AF0E.App.QslDueWatcher.Tests.csproj">
+      <BuildType Solution="Development|*" Project="Debug" />
+    </Project>
     <Project Path="../tests/AF0E.Common.Tests/AF0E.Common.Tests.csproj">
       <BuildType Solution="Development|*" Project="Debug" />
     </Project>
@@ -57,12 +63,6 @@
     </Project>
     <Project Path="AF0E.WebApi/Logbook/Logbook.Api/Logbook.Api.csproj">
       <BuildType Solution="Development|*" Project="Debug" />
-    </Project>
-  </Folder>
-  <Folder Name="/ETL/">
-    <Project Path="AF0E.ETL/POTA parks import/POTA parks import.dtproj" Type="c9674dcb-5085-4a16-b785-4c70dd1589bd">
-      <BuildType Project="Development" />
-      <Platform Project="?" />
     </Project>
   </Folder>
   <Project Path="AF0E.Common/AF0E.Common.csproj">

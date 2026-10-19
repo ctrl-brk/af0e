@@ -12,6 +12,7 @@ public sealed record DxClusterStatus
     public TimeSpan InactivityTimeout { get; init; }
     public TimeSpan ReconnectDelay { get; init; }
     public IReadOnlyList<DxClusterSpotFilter> Filters { get; init; } = [];
+    public DxClusterServerStatus? PrimaryServer { get; init; }
     public IReadOnlyList<DxClusterServerStatus> Servers { get; init; } = [];
 }
 

@@ -6,6 +6,7 @@ export class Configuration {
   private static _gridtrackerUrl = `${Configuration._apiUrl}/gridtracker`;
   private static _potaUrl = `${Configuration._apiUrl}/pota`;
   private static _qrzUrl = `${Configuration._apiUrl}/qrz`;
+  private static _hamEventsUrl = `${Configuration._apiUrl}/hamevents`;
   private static _utilsUrl = `${Configuration._apiUrl}/tools`;
   private static _notificationUrl = `${Configuration._apiUrl}/notification`;
   private static _hubRootUrl = Configuration._apiUrl.replace(/\/v\d+$/i, '');
@@ -41,6 +42,10 @@ export class Configuration {
 
   public static qrzUrl(url?: string): string {
     return url === undefined ? this._qrzUrl : `${this._qrzUrl}/${url}`;
+  }
+
+  public static hamEventsUrl(url?: string): string {
+    return url === undefined ? this._hamEventsUrl : `${this._hamEventsUrl}/${url}`;
   }
 
   public static utilsUrl(url?: string): string {

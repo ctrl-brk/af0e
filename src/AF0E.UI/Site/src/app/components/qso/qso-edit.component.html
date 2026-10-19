@@ -371,7 +371,29 @@
             </p-floatlabel>
           </div>
         </p-fieldset>
+
+        <p-fieldset
+          legend="Events"
+          [toggleable]="true"
+          [collapsed]="true"
+          (collapsedChange)="onEventsCollapsedChange($event)">
+          <div class="qso-form-fields inner">
+            <p-listbox
+              formControlName="hamEventIds"
+              [options]="hamEvents()"
+              optionLabel="name"
+              optionValue="id"
+              [multiple]="true"
+              [checkmark]="true"
+              [metaKeySelection]="false"
+              [filter]="true"
+              [fluid]="true"
+              [emptyMessage]="hamEventsLoading() ? 'Loading events...' : 'No events found'"
+              ariaLabel="Ham events" />
+          </div>
+        </p-fieldset>
       </form>
+
       <p-table
         [value]="callHistory()"
         dataKey="id"

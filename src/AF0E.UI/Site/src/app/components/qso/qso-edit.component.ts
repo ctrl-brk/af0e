@@ -52,6 +52,9 @@ import {Checkbox, CheckboxChangeEvent} from 'primeng/checkbox';
 import {PotaActivationModel} from '../../models/pota-activation.model';
 import {NewActivationFormData} from '../pota/activations/new-activation-form-data';
 import {QsoEditMode} from '../../shared/qso-edit-mode.enum';
+import {HamEventsService} from '../../services/ham-events.service';
+import {HamEventSummaryModel} from '../../models/ham-event-summary.model';
+import {Listbox} from 'primeng/listbox';
 
 export interface QsoEditParams {
   logId?: number;
@@ -94,7 +97,7 @@ export interface QsoEditParams {
     Dialog,
     RadioButton,
     Checkbox,
-
+    Listbox,
   ],
 })
 export class QsoEditComponent implements OnInit {
@@ -106,6 +109,7 @@ export class QsoEditComponent implements OnInit {
   private _potaSvc = inject(PotaService);
   private _qrzSvc = inject(QrzService);
   private _infraSvc = inject(InfraService);
+  private _hamEventsSvc = inject(HamEventsService);
   private _callInput = viewChild<ElementRef>('callInput');
   private _rstSentInput = viewChild<ElementRef>('rstSentInput');
   private _rstRcvdInput = viewChild<ElementRef>('rstRcvdInput');
@@ -136,6 +140,9 @@ export class QsoEditComponent implements OnInit {
   protected cqSending = signal(false);
   protected cwSpeed = signal(22);
   protected callHistory = signal<GridTrackerLookupModel[]>([]);
+  protected hamEvents = signal<HamEventSummaryModel[]>([]);
+  protected hamEventsLoading = signal(false);
+  private _hamEventsLoaded = false;
   protected cwTextVisible = signal(false);
   protected readonly QsoEditMode = QsoEditMode; //so we can use the enum value in html
 
@@ -281,6 +288,7 @@ export class QsoEditComponent implements OnInit {
       qslVia: [defaults.qslVia],
       comment: [defaults.comment, Validators.maxLength(4000)],
       siteComment: [defaults.siteComment, Validators.maxLength(64)],
+      hamEventIds: [defaults.hamEventIds],
       radioFilter: [defaults.radioFilter],
     });
   }
@@ -320,20 +328,23 @@ export class QsoEditComponent implements OnInit {
     const cwText = {...untracked(() => this.f3CwMsg())};
 
     if (this.editMode() === QsoEditMode.PotaHuntingAdd) {
-      cwText.def = `R TU ${rst} C|O`;
-      cwText.alt = `R ${greet} UR ${rst} C|O`;
-      cwText.ctl = `R TU ${rst} ${rst} C|O C|O`;
+      const state = 'C|O';
+      cwText.def = `R TU ${rst} ${state}`;
+      cwText.alt = `R ${greet} UR ${rst} ${state}`;
+      cwText.ctl = `R TU ${rst} ${rst} ${state} ${state}`;
       cwText.f6 = '';
 
       this.f3CwMsg.set(cwText);
     }
     else if (this.editMode() === QsoEditMode.PotaActivatingAdd) {
       const call = this.cwCallLabel() ? this.cwCallLabel() : '';
+      let state = this.params().potaActivation?.state || 'CO';
+      state = `${state.charAt(0)}|${state.charAt(1)}`;
 
-      cwText.def = `${call} TU ${rst} C|O`;
-      cwText.alt = `${call} ${greet} UR ${rst} C|O`;
-      cwText.ctl = `${call} TU ${rst} ${rst} C|O C|O`;
-      cwText.f6 = `TU ${rst} C|O`;
+      cwText.def = `${call} TU ${rst} ${state}`;
+      cwText.alt = `${call} ${greet} UR ${rst} ${state}`;
+      cwText.ctl = `${call} TU ${rst} ${rst} ${state} ${state}`;
+      cwText.f6 = `TU ${rst} ${state}`;
 
       this.f3CwMsg.set(cwText);
     }
@@ -558,7 +569,7 @@ export class QsoEditComponent implements OnInit {
     if (updateUi)
       timeToSend = Utils.calculateMorseTime(text, this.cwSpeed());
 
-    this._infraSvc.sendCw(text, this._rigReady(), this.cwSpeed(), repeat, repeatDelaySeconds).subscribe({
+    this._infraSvc.sendCw(this.escapeCw(text), this._rigReady(), this.cwSpeed(), repeat, repeatDelaySeconds).subscribe({
       next: (r) => {
         if (r.split && !r.sent) {
           Utils.showWarningMessage('SPLIT ON!', "Split is on. Send again.", this._ntfSvc);
@@ -675,6 +686,24 @@ export class QsoEditComponent implements OnInit {
         Utils.showErrorMessage(e, this._ntfSvc, this._log);
       }
     })
+  }
+
+  protected onEventsCollapsedChange(collapsed: boolean) {
+    if (collapsed || this._hamEventsLoaded || this.hamEventsLoading())
+      return;
+
+    this.hamEventsLoading.set(true);
+    this._hamEventsSvc.getEvents(null).subscribe({
+      next: events => {
+        this.hamEvents.set(events);
+        this._hamEventsLoaded = true;
+        this.hamEventsLoading.set(false);
+      },
+      error: e => {
+        this.hamEventsLoading.set(false);
+        Utils.showErrorMessage(e, this._ntfSvc, this._log);
+      }
+    });
   }
 
   onSave() {
@@ -854,6 +883,7 @@ export class QsoEditComponent implements OnInit {
       qslVia: null,
       comment: act?.parkNum ? `POTA activation ${act.parkNum} (${Utils.abbreviateParkName(act.parkName)})` : '',
       siteComment: '',
+      hamEventIds: [],
       radioFilter: {value: '1', disabled: true}
     };
   }
@@ -972,7 +1002,7 @@ export class QsoEditComponent implements OnInit {
         handled = true;
         $event.preventDefault();
         if (this.cwCallLabel() !== '???')
-          this.sendCw(this.cwCallLabel()?.replaceAll('/', '//'));
+          this.sendCw(this.cwCallLabel());
         break;
       case 'F6':
         handled = true;
@@ -1016,9 +1046,15 @@ export class QsoEditComponent implements OnInit {
         }
         break;
       case 'Escape':
-        if (!this.cwSending() && !this.cqSending()) return;
-        handled = true;
-        this.stopCw();
+        if (this.cwSending() || this.cqSending()) {
+          handled = true;
+          this.stopCw();
+        }
+
+        if (this.editMode() === QsoEditMode.PotaActivatingAdd && this.qsoForm.get('call')?.value !== '')
+          handled = true;
+
+        if (!handled) return;
         break;
       case 'PageDown':
         handled = true;
@@ -1087,7 +1123,7 @@ export class QsoEditComponent implements OnInit {
     const stationCall = act.stationCallsign?.trim() || p.huntingStationCall?.trim() || 'AF0E';
     const operatorCall = act.operatorCallsign?.trim() || stationCall;
 
-    this.stationInfo = {stationCall, cwCall: stationCall === 'AF0E' ? 'AF|0|E' : stationCall.replace('/', '//'), operatorCall};
+    this.stationInfo = {stationCall, cwCall: stationCall === 'AF0E' ? 'AF|0|E' : this.escapeCw(stationCall), operatorCall};
 
     this.qsoForm.patchValue({
       stationCallsign: stationCall,
@@ -1111,6 +1147,10 @@ export class QsoEditComponent implements OnInit {
 
      this.checkKeyerStatus(true)
      this.getRadioStatus(true);
+   }
+
+   private escapeCw(text: string): string {
+    return text.replaceAll('/', '//');
    }
 
    protected onQslRcvdChange() {

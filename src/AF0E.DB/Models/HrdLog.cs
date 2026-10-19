@@ -146,6 +146,7 @@ public int ColPrimaryKey { get; set; }
     public string? ColSubmode { get; set; }
 
 #pragma warning disable CA2227
+    public ICollection<HamEventContact> HamEventContacts { get; set; } = [];
     public ICollection<PotaContact> PotaContacts { get; set; } = [];
     public ICollection<PotaHunting> PotaHunting { get; set; } = [];
 #pragma warning restore CA2227

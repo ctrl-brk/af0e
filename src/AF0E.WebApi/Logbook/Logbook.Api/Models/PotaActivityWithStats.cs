@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using AF0E.Services.Pota.Models;
 
 namespace Logbook.Api.Models;
@@ -5,20 +6,21 @@ namespace Logbook.Api.Models;
 /// <summary>
 /// POTA activity information enriched with contact statistics
 /// </summary>
-public record PotaActivityWithStats
+[SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
+public sealed record PotaActivityWithStats
 {
     public required PotaActivityInfo Activity { get; init; }
-    
+
     /// <summary>
     /// Number of contacts with this park, grouped by band and mode
     /// </summary>
-    public List<ParkContactStats> ParkContactsByBandMode { get; init; } = [];
-    
+    public IReadOnlyList<ParkContactStats> ParkContactsByBandMode { get; init; } = [];
+
     /// <summary>
     /// Total number of contacts with this park (across all bands/modes)
     /// </summary>
     public int TotalParkContacts { get; init; }
-    
+
     /// <summary>
     /// Total number of contacts with this call sign (across all parks)
     /// </summary>
@@ -28,7 +30,8 @@ public record PotaActivityWithStats
 /// <summary>
 /// Contact statistics for a park grouped by band and mode
 /// </summary>
-public record ParkContactStats
+[SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
+public sealed record ParkContactStats
 {
     public required string Band { get; init; }
     public required string Mode { get; init; }

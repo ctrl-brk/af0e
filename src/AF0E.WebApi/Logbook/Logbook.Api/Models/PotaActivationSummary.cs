@@ -1,19 +1,21 @@
-﻿using AF0E.DB.Models;
+﻿using System.Diagnostics.CodeAnalysis;
+using AF0E.DB.Models;
 
 namespace Logbook.Api.Models;
 
+[SuppressMessage("ReSharper", "UnusedMember.Global")]
 public sealed class PotaActivationSummary(PotaActivation activation)
 {
-    public int Id { get; set; } = activation.ActivationId;
-    public DateTime StartDate { get; set; } = activation.StartDate;
-    public DateTime? EndDate { get; set; } = activation.EndDate;
-    public string ParkNum { get; set; } = activation.Park.ParkNum;
-    public string ParkName { get; set; } = activation.Park.ParkName;
-    public string State { get; set; } = activation.State;
-    public string StationCallsign { get; set; } = activation.StationCallsign;
-    public string OperatorCallsign { get; set; } = activation.OperatorCallsign;
-    public int Count { get; set; } = activation.PotaContacts.Count;
-    public int CwCount { get; set; } = activation.PotaContacts.Count(c => c.Log.ColMode == "CW");
-    public int DigiCount { get; set; } = activation.PotaContacts.Count(c => c.Log.ColMode is "FT8" or "MFSK");
-    public int PhoneCount { get; set; } = activation.PotaContacts.Count(c => c.Log.ColMode is "SSB" or "LSB" or "USB" or "FM" or "AM");
+    public int Id { get; } = activation.ActivationId;
+    public DateTime StartDate { get; } = activation.StartDate;
+    public DateTime? EndDate { get; } = activation.EndDate;
+    public string ParkNum { get; } = activation.Park.ParkNum;
+    public string ParkName { get; } = activation.Park.ParkName;
+    public string State { get; } = activation.State;
+    public string StationCallsign { get; } = activation.StationCallsign;
+    public string OperatorCallsign { get; } = activation.OperatorCallsign;
+    public int Count { get; } = activation.PotaContacts.Count;
+    public int CwCount { get; } = activation.PotaContacts.Count(c => c.Log.ColMode == "CW");
+    public int DigiCount { get; } = activation.PotaContacts.Count(c => c.Log.ColMode is "FT8" or "MFSK");
+    public int PhoneCount { get; } = activation.PotaContacts.Count(c => c.Log.ColMode is "SSB" or "LSB" or "USB" or "FM" or "AM");
 }
