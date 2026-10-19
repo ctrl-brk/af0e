@@ -11,6 +11,9 @@ using Serilog.Events;
 #pragma warning disable CA1848 // Use the LoggerMessage delegates
 #pragma warning disable CA1873
 
+// Shortcuts and Windows startup may use a working directory other than the application folder.
+Directory.SetCurrentDirectory(AppContext.BaseDirectory);
+
 //default config in case appsettings fails
 Log.Logger = new LoggerConfiguration()
     .WriteTo.File(

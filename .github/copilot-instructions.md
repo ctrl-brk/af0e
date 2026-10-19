@@ -1,12 +1,12 @@
 # Project Context
 Ham radio software projects
 
-- **AF0E.UI**: Angular 21 (standalone, SCSS), **PrimeNG** UI.
-- **Logbook.Api**: .NET 9 Minimal APIs + EF Core 9.
+- **AF0E.UI**: Angular (standalone, SCSS), **PrimeNG** UI.
+- **Logbook.Api**: .NET Minimal APIs + EF Core.
 - **App**: Windows Forms and console applications
 - **AF0E.DB**: SQL Server for production & local dev; SQLite (in-memory) for automated tests.
-- **AF0E.Functions**: Azure functions, .NET 9
-- **DX.Api**: .NET 9 Minimal APIs
+- **AF0E.Functions**: Azure functions, .NET
+- **DX.Api**: .NET Minimal APIs
 - **IDE**: Rider (backend), WebStorm (frontend).
 
 ---
