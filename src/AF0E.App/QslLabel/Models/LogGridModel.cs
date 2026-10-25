@@ -100,6 +100,9 @@ internal sealed class LogGridModel : INotifyPropertyChanged
         set => SetField(ref _metadata, value, nameof(Metadata));
     }
 
+    public string? HamEventName { get; init; }
+    public DateTime? QslDueDate { get; init; }
+
     public int ID { get; init; }
 
     [NotMapped]

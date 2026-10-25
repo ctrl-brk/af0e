@@ -19,6 +19,7 @@ public sealed class HamEvent
     public DateTime? QslDueDate { get; set; }
     public string? QslInfo { get; set; }
     public string? Comments { get; set; }
+    public string? CallSigns { get; set; }
 
     public ICollection<HamEventContact> HamEventContacts { get; init; } = new List<HamEventContact>();
 }

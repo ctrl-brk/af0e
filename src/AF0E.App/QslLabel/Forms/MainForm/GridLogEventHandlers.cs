@@ -48,6 +48,7 @@ partial class MainForm
             case "lQSL": curCol = "LoTW"; break;
             case "rQSL": curCol = "RcvQsl"; break;
             case "Metadata": curCol = "Meta"; break;
+            case "QslDueDate": curCol = "QslDueDate"; break;
             default: return;
         }
 
@@ -56,7 +57,7 @@ partial class MainForm
         var lotwStatus = gridLog.Rows[e.RowIndex].Cells[gridLog.Columns["lQSL"]!.Index].Value!.ToString()!;
         var rcvQsl = gridLog.Rows[e.RowIndex].Cells[gridLog.Columns["rQSL"]!.Index].Value!.ToString()!;
         var meta = gridLog.Rows[e.RowIndex].Cells[gridLog.Columns["Metadata"]!.Index].Value as string ?? ""; //value is null when cell is empty
-        var cell = gridLog.Rows[e.RowIndex].Cells[e.ColumnIndex]!;
+        var cell = gridLog.Rows[e.RowIndex].Cells[e.ColumnIndex];
 
         switch (curCol)
         {
@@ -111,51 +112,51 @@ partial class MainForm
                         cell.ToolTipText = "1X1";
                     }
                     else switch (status)
-                        {
-                            case QslStatus.ReceivedBandMode:
-                                cell.Style.BackColor = Color.DarkGreen;
-                                cell.Style.ForeColor = Color.LimeGreen;
-                                cell.ToolTipText = "Rcvd band & mode";
-                                break;
-                            case QslStatus.ReceivedBand:
-                                cell.Style.BackColor = Color.DarkGreen;
-                                cell.Style.ForeColor = Color.Yellow;
-                                cell.ToolTipText = "Rcvd band only";
-                                break;
-                            case QslStatus.ReceivedCountry:
-                                cell.Style.BackColor = Color.DarkGreen;
-                                cell.Style.ForeColor = Color.Red;
-                                cell.ToolTipText = "Rcvd other band";
-                                break;
-                            case QslStatus.SentBandMode:
-                                cell.Style.BackColor = Color.Yellow;
-                                cell.Style.ForeColor = Color.Green;
-                                cell.ToolTipText = "Sent band & mode";
-                                break;
-                            case QslStatus.SentBand:
-                                cell.Style.BackColor = Color.Yellow;
-                                cell.Style.ForeColor = Color.Black;
-                                cell.ToolTipText = "Sent band only";
-                                break;
-                            case QslStatus.SentCountry:
-                                cell.Style.BackColor = Color.Yellow;
-                                cell.Style.ForeColor = Color.Red;
-                                cell.ToolTipText = "Sent other band";
-                                break;
-                            case QslStatus.None:
-                                cell.Style.BackColor = Color.DarkRed;
-                                cell.Style.ForeColor = Color.Yellow;
-                                cell.ToolTipText = "New country";
-                                break;
-                        }
+                    {
+                        case QslStatus.ReceivedBandMode:
+                            cell.Style.BackColor = Color.DarkGreen;
+                            cell.Style.ForeColor = Color.LimeGreen;
+                            cell.ToolTipText = "Rcvd band & mode";
+                            break;
+                        case QslStatus.ReceivedBand:
+                            cell.Style.BackColor = Color.DarkGreen;
+                            cell.Style.ForeColor = Color.Yellow;
+                            cell.ToolTipText = "Rcvd band only";
+                            break;
+                        case QslStatus.ReceivedCountry:
+                            cell.Style.BackColor = Color.DarkGreen;
+                            cell.Style.ForeColor = Color.Red;
+                            cell.ToolTipText = "Rcvd other band";
+                            break;
+                        case QslStatus.SentBandMode:
+                            cell.Style.BackColor = Color.Yellow;
+                            cell.Style.ForeColor = Color.Green;
+                            cell.ToolTipText = "Sent band & mode";
+                            break;
+                        case QslStatus.SentBand:
+                            cell.Style.BackColor = Color.Yellow;
+                            cell.Style.ForeColor = Color.Black;
+                            cell.ToolTipText = "Sent band only";
+                            break;
+                        case QslStatus.SentCountry:
+                            cell.Style.BackColor = Color.Yellow;
+                            cell.Style.ForeColor = Color.Red;
+                            cell.ToolTipText = "Sent other band";
+                            break;
+                        case QslStatus.None:
+                            cell.Style.BackColor = Color.DarkRed;
+                            cell.Style.ForeColor = Color.Yellow;
+                            cell.ToolTipText = "New country";
+                            break;
+                    }
 
                     break;
                 }
-            case "LoTW" when (lotwStatus == "Y" || lotwStatus == "V"):
+            case "LoTW" when lotwStatus is "Y" or "V":
                 cell.Style.BackColor = Color.DarkGreen;
                 cell.Style.ForeColor = Color.LimeGreen;
                 break;
-            case "RcvQsl" when (rcvQsl == "Y" || rcvQsl == "V"):
+            case "RcvQsl" when rcvQsl is "Y" or "V":
                 cell.Style.BackColor = Color.DarkRed;
                 cell.Style.ForeColor = Color.White;
                 break;
@@ -175,12 +176,23 @@ partial class MainForm
                     ColorizeCallSiblings(e.RowIndex, gridLog.Columns["Metadata"]!.Index);
                     break;
                 }
+            case "QslDueDate":
+                {
+                    var qslDueDate = gridLog.Rows[e.RowIndex].Cells[gridLog.Columns["QslDueDate"]!.Index].Value;
+                    if (qslDueDate is DateTime date)
+                    {
+                        if (date <= DateTime.Today)
+                            cell.Style.ForeColor = Color.Firebrick;
+                    }
+                    break;
+                }
         }
     }
 
     private void gridLog_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
     {
-        if (e.ColumnIndex != gridLog.Columns[QslSentColName]!.Index || e.RowIndex < 0)
+        var qslSentColumn = gridLog.Columns[QslSentColName];
+        if (qslSentColumn is null || e.ColumnIndex != qslSentColumn.Index || e.RowIndex < 0)
             return;
 
         e.Paint(e.CellBounds, DataGridViewPaintParts.All & ~DataGridViewPaintParts.ContentForeground);
@@ -199,7 +211,7 @@ partial class MainForm
             e.Graphics!.FillRectangle(backgroundBrush, e.CellBounds.X + 2, e.CellBounds.Y + 2, e.CellBounds.Width - 20, e.CellBounds.Height - 4);
 
         using (var textBrush = new SolidBrush(textColor))
-            e.Graphics!.DrawString(text, e.CellStyle!.Font, textBrush, e.CellBounds.X + 2, e.CellBounds.Y + 2);
+            e.Graphics!.DrawString(text, e.CellStyle!.Font!, textBrush, e.CellBounds.X + 2, e.CellBounds.Y + 2);
 
         e.Handled = true;
     }
@@ -246,7 +258,7 @@ partial class MainForm
     {
         if (e.RowIndex < 0) return; // Ensure it's not the header row
 
-        if (_highlightedRowIndex >= 0)
+        if (_highlightedRowIndex >= 0 && _highlightedRowIndex < gridLog.Rows.Count)
             gridLog.Rows[_highlightedRowIndex].DefaultCellStyle.BackColor = _prevRowColor;
 
         _highlightedRowIndex = e.RowIndex;
@@ -364,14 +376,10 @@ partial class MainForm
         e.DrawFocusRectangle();
     }
 
-    private bool _firstDataBind = true;
     private void gridLog_DataBindingComplete(object sender, DataGridViewBindingCompleteEventArgs e)
     {
-        if (_firstDataBind)
-        {
-            _firstDataBind = false;
+        if (gridLog.Rows.Count == 0)
             return;
-        }
 
         ConvertCallColumnToLink();
         AddCustomColumns();

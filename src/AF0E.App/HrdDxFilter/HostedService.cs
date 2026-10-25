@@ -1,6 +1,8 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Xml.Linq;
+using AF0E.DB;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -51,7 +53,7 @@ public class HostedService(ILogger<HostedService> logger, IHostApplicationLifeti
                 if (results.Count > 0)
                 {
                     var sortedResults = MassageResults(results);
-                    sortedResults.AddRange(GetCustomDx());
+                    sortedResults.AddRange(await GetHamEventDxAsync(cancellationToken));
                     UpdateWebFilter(sortedResults);
                     UpdateHrdFilter(sortedResults);
                     SaveToFile(sortedResults);
@@ -68,21 +70,25 @@ public class HostedService(ILogger<HostedService> logger, IHostApplicationLifeti
         appLifeTime.StopApplication();
     }
 
-    private List<DxInfo> GetCustomDx()
+    private async Task<List<DxInfo>> GetHamEventDxAsync(CancellationToken cancellationToken)
     {
-        var fileName = Path.Combine(AppContext.BaseDirectory, settings.Value.CustomDxFile);
-
-        if (!File.Exists(fileName))
-            return [];
-
-        var json = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, settings.Value.CustomDxFile));
-        var customDx = JsonSerializer.Deserialize<List<CustomDxInfo>>(json);
+        var now = DateTime.UtcNow;
+        await using var dbContext = new HrdDbContext(settings.Value.ConnectionString);
+        var events = await dbContext.HamEvents
+            .Where(x => x.StartDate <= now && x.EndDate > now && x.CallSigns != null && x.CallSigns != "")
+            .Select(x => new
+            {
+                x.CallSigns,
+                BeginDate = x.StartDate!.Value,
+                EndDate = x.EndDate!.Value
+            })
+            .ToListAsync(cancellationToken);
 
         List<DxInfo> res = [];
 
-        foreach (var dx in customDx!.Where(x => x.BeginDate <= DateTime.UtcNow && x.EndDate > DateTime.UtcNow))
+        foreach (var dx in events)
         {
-            res.AddRange(dx.CallSigns.Split('|').Select(x => new DxInfo
+            res.AddRange(dx.CallSigns!.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(x => new DxInfo
             {
                 CallSign = x,
                 BeginDate = dx.BeginDate,

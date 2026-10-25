@@ -39,6 +39,8 @@ partial class MainForm
         btnSearch = new Button();
         tbCall = new TextBox();
         lblCallsign = new Label();
+        lblHamEvent = new Label();
+        cmbHamEvent = new ComboBox();
         btnAnalyze = new Button();
         gbxPdf = new GroupBox();
         btnSelectPrint = new Button();
@@ -72,9 +74,9 @@ partial class MainForm
         gridLog.AllowUserToDeleteRows = false;
         gridLog.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         gridLog.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-        gridLog.Location = new Point(0, 107);
+        gridLog.Location = new Point(0, 153);
         gridLog.Name = "gridLog";
-        gridLog.Size = new Size(1127, 851);
+        gridLog.Size = new Size(1127, 805);
         gridLog.TabIndex = 0;
         gridLog.TabStop = false;
         gridLog.Text = "dataGridView1";
@@ -102,9 +104,11 @@ partial class MainForm
         gbxFilter.Controls.Add(btnSearch);
         gbxFilter.Controls.Add(tbCall);
         gbxFilter.Controls.Add(lblCallsign);
+        gbxFilter.Controls.Add(lblHamEvent);
+        gbxFilter.Controls.Add(cmbHamEvent);
         gbxFilter.Location = new Point(10, 6);
         gbxFilter.Name = "gbxFilter";
-        gbxFilter.Size = new Size(322, 95);
+        gbxFilter.Size = new Size(322, 141);
         gbxFilter.TabIndex = 1;
         gbxFilter.TabStop = false;
         gbxFilter.Text = "Filter";
@@ -118,7 +122,7 @@ partial class MainForm
         dtpEndDate.Name = "dtpEndDate";
         dtpEndDate.ShowCheckBox = true;
         dtpEndDate.Size = new Size(100, 23);
-        dtpEndDate.TabIndex = 2;
+        dtpEndDate.TabIndex = 3;
         // 
         // lblPeriod
         // 
@@ -138,14 +142,14 @@ partial class MainForm
         dtpStartDate.Name = "dtpStartDate";
         dtpStartDate.ShowCheckBox = true;
         dtpStartDate.Size = new Size(100, 23);
-        dtpStartDate.TabIndex = 1;
+        dtpStartDate.TabIndex = 2;
         // 
         // cbQueued
         // 
         cbQueued.Location = new Point(243, 15);
         cbQueued.Name = "cbQueued";
         cbQueued.Size = new Size(72, 22);
-        cbQueued.TabIndex = 3;
+        cbQueued.TabIndex = 4;
         cbQueued.Text = "Queued";
         cbQueued.UseVisualStyleBackColor = true;
         // 
@@ -154,7 +158,7 @@ partial class MainForm
         btnSearch.Location = new Point(241, 46);
         btnSearch.Name = "btnSearch";
         btnSearch.Size = new Size(67, 28);
-        btnSearch.TabIndex = 4;
+        btnSearch.TabIndex = 5;
         btnSearch.Text = "Search";
         btnSearch.UseVisualStyleBackColor = true;
         btnSearch.Click += btnSearch_Click;
@@ -175,7 +179,28 @@ partial class MainForm
         lblCallsign.TabIndex = 0;
         lblCallsign.Text = "Callsign";
         lblCallsign.TextAlign = ContentAlignment.MiddleLeft;
-        // 
+        //
+        // lblHamEvent
+        //
+        lblHamEvent.AutoSize = true;
+        lblHamEvent.Location = new Point(6, 89);
+        lblHamEvent.Name = "lblHamEvent";
+        lblHamEvent.TabIndex = 0;
+        lblHamEvent.Text = "Ham event";
+        //
+        // cmbHamEvent
+        //
+        cmbHamEvent.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+        cmbHamEvent.AutoCompleteSource = AutoCompleteSource.ListItems;
+        cmbHamEvent.DropDownStyle = ComboBoxStyle.DropDown;
+        cmbHamEvent.DropDownWidth = 450;
+        cmbHamEvent.FormattingEnabled = true;
+        cmbHamEvent.Location = new Point(8, 108);
+        cmbHamEvent.Name = "cmbHamEvent";
+        cmbHamEvent.Size = new Size(300, 23);
+        cmbHamEvent.TabIndex = 1;
+        mainFormTooltip.SetToolTip(cmbHamEvent, "Type an event name for autocomplete suggestions. Clear the text or select -All events- to clear the filter.");
+        //
         // btnAnalyze
         // 
         btnAnalyze.Location = new Point(89, 18);
@@ -434,4 +459,6 @@ partial class MainForm
     private DateTimePicker dtpStartDate;
     private CheckBox cbShowWaiting;
     private ToolTip mainFormTooltip;
+    private Label lblHamEvent;
+    private ComboBox cmbHamEvent;
 }

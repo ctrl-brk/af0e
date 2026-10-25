@@ -119,6 +119,7 @@ public class HrdDbContext(string connectionString, QueryTrackingBehavior trackin
         {
             entity.HasIndex(e => e.EndDate, "IX_HamEvents_EndDate");
             entity.HasIndex(e => e.StartDate, "IX_HamEvents_StartDate");
+            entity.HasIndex(e => e.CallSigns, "IX_HamEvents_CallSigns");
 
             entity.Property(e => e.Comments).HasMaxLength(2000);
             entity.Property(e => e.EndDate).HasColumnType("datetime");
@@ -128,6 +129,7 @@ public class HrdDbContext(string connectionString, QueryTrackingBehavior trackin
             entity.Property(e => e.QslDueDate).HasColumnType("datetime");
             entity.Property(e => e.StartDate).HasColumnType("datetime");
             entity.Property(e => e.Url).HasConversion<string>().HasMaxLength(500);
+            entity.Property(e => e.CallSigns).HasMaxLength(850);
         });
     }
 

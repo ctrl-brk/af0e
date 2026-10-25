@@ -6,6 +6,6 @@ public class AppSettings
     public string WebFiltersFile { get; init; } = null!;
     public string HrdFiltersFile { get; init; } = null!;
     public string HrdDxFilterTitle { get; init; } = null!;
-    public string CustomDxFile { get; init; } = null!;
+    public string ConnectionString { get; init; } = null!;
     public string SaveToFile { get; init; } = null!;
 }

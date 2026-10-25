@@ -126,11 +126,13 @@ partial class MainForm
         //gridLog.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft;
         gridLog.CellBorderStyle = DataGridViewCellBorderStyle.SingleVertical;
         gridLog.Columns["UTC"]!.DefaultCellStyle.Format = "yy-MM-dd HH:mm:ss";
+        gridLog.Columns["QslDueDate"]!.DefaultCellStyle.Format = "yy-MM-dd";
 
-        gridLog.Columns["ID"]!.ReadOnly = gridLog.Columns["Country"]!.ReadOnly = true;
+        gridLog.Columns["ID"]!.ReadOnly = gridLog.Columns["Country"]!.ReadOnly = gridLog.Columns["HamEventName"]!.ReadOnly = gridLog.Columns["QslDueDate"]!.ReadOnly = true;
         gridLog.Columns["UTC"]!.Width = 105;
         gridLog.Columns["rQSL"]!.Width = gridLog.Columns["lQSL"]!.Width = gridLog.Columns["Mode"]!.Width = gridLog.Columns["Band"]!.Width = gridLog.Columns["Mhz"]!.Width = gridLog.Columns["RST"]!.Width = 40;
         gridLog.Columns["Sat"]!.Width = gridLog.Columns["MyState"]!.Width = gridLog.Columns["ID"]!.Width = 50;
+        gridLog.Columns["QslDueDate"]!.Width = 55;
         gridLog.Columns["CountryQslStatus"]!.Visible = gridLog.Columns["IsDirty"]!.Visible = false;
         ((DataGridViewTextBoxColumn)gridLog.Columns["QrzQslInfo"]!).MaxInputLength = 64;
         ((DataGridViewTextBoxColumn)gridLog.Columns["SiteComment"]!).MaxInputLength = 64;

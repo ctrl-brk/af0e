@@ -1,6 +1,10 @@
 # AF0E Logbook Web API
 [http://localhost:5200/scalar](http://localhost:5200/scalar) - Scalar
 
+## Ham events
+
+Creating a QSO automatically links it to all active ham events whose pipe-separated `CallSigns` list contains the contacted callsign. Store the list with leading and trailing pipes and no whitespace around entries, for example `|W1AW|AF0E|K1ABC|`. Matching uses SQL `LIKE '%|CALL|%'` to require a complete callsign match; case sensitivity follows the database column's collation. Automatic assignment requires both start and end dates, with inclusive bounds against the current UTC date; events missing either date are excluded. Explicitly selected events are preserved. Updating a QSO continues to use only the explicitly selected event IDs.
+
 ## DX Cluster
 
 - Configure one or more servers in the `DxCluster` section of `appsettings.json`

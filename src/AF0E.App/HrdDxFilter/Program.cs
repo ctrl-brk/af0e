@@ -22,6 +22,10 @@ var host = new HostBuilder()
             .Configure<HostOptions>(opt => opt.ShutdownTimeout = TimeSpan.FromSeconds(10))
             .Configure<AppSettings>(ctx.Configuration.GetSection("AppSettings"))
             .AddSingleton<IHostedService, HostedService>();
+
+        svc.AddOptions<AppSettings>()
+            .Validate(options => !string.IsNullOrWhiteSpace(options.ConnectionString), "AppSettings:ConnectionString is required.")
+            .ValidateOnStart();
     })
 
     .ConfigureLogging((ctx, cfg) =>

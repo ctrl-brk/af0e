@@ -1,18 +1,17 @@
-alter proc GetQslLabelData(@Call varchar(32) = null, @QueuedOnly bit = 1, @StartDate datetime2, @EndDate datetime2, @Analyze bit = 0, @DxOnly bit = 1, @ShowWaiting bit = 1)
+alter proc GetQslLabelData(@Call varchar(32) = null, @QueuedOnly bit = 1, @StartDate datetime2, @EndDate datetime2, @Analyze bit = 0, @DxOnly bit = 1, @ShowWaiting bit = 1, @HamEventId int = null)
 as
-set nocount on;
---exec GetQslLabelData null, 1, 1
---exec GetQslLabelData 'v51pj', 1, 1
+set nocount on
+-- @HamEventId limits results to linked HamEventContacts; null includes all events.
 
-if (@Call is null and @QueuedOnly = 0 and @Analyze = 0)
-  throw 51000, 'Call cannot be null with QueuedOnly = 0 and Analyze = 0', 1
+if (@Call is null and @HamEventId is null and @QueuedOnly = 0 and @Analyze = 0)
+  throw 51000, 'Call and HamEventId cannot both be null with QueuedOnly = 0 and Analyze = 0', 1
 
 declare @CallsTbl table ([Call] varchar(32))
 if (@Analyze = 0) begin
-    if (@Call is null ) begin
+    if (@Call is null and @HamEventId is null) begin
       insert into @CallsTbl select distinct COL_CALL from TABLE_HRD_CONTACTS_V01 where COL_QSL_SENT = 'Q'
     end else begin
-      insert into @CallsTbl select distinct COL_CALL from TABLE_HRD_CONTACTS_V01 where COL_CALL like @Call and COL_QSL_SENT <> 'I'
+      insert into @CallsTbl select distinct COL_CALL from TABLE_HRD_CONTACTS_V01 where (@Call is null or COL_CALL like @Call) and COL_QSL_SENT <> 'I'
     end
 end
 
@@ -93,10 +92,18 @@ select l.COL_PRIMARY_KEY as ID
          else 0 -- no sent/rcvd
        end as CountryQslStatus
       ,isnull(l.COL_USER_DEFINED_3, '') as Metadata
+      ,e.Name as HamEventName
+      ,e.QslDueDate
   from TABLE_HRD_CONTACTS_V01 l
 	   left join pota on pota.LogId = l.COL_PRIMARY_KEY
+       left join HamEventContacts ec on ec.LogId = l.COL_PRIMARY_KEY
+       left join HamEvents e on e.HamEventId = ec.HamEventId
  where COL_TIME_ON between @StartDate and @EndDate
    and l.COL_CALL in (select [Call] from @CallsTbl)
+   and (@HamEventId is null or exists (
+         select 1 from HamEventContacts c
+          where c.HamEventId = @HamEventId and c.LogId = l.COL_PRIMARY_KEY
+       ))
    and (
          (    @Analyze = 0
           and (@QueuedOnly = 0 or l.COL_QSL_SENT in ('Q', 'N'))
