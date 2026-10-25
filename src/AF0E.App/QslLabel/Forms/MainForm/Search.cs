@@ -8,12 +8,26 @@ partial class MainForm
 {
     private async Task DoSearch(bool analyze)
     {
+        var eventIndex = string.IsNullOrWhiteSpace(cmbHamEvent.Text) ? 0 : cmbHamEvent.SelectedIndex;
+        if (eventIndex < 0)
+            eventIndex = cmbHamEvent.FindStringExact(cmbHamEvent.Text);
+
+        if (eventIndex < 0)
+        {
+            MessageBox.Show("Select an event from the suggestions, or clear the text to search all events.", "Invalid ham event", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            cmbHamEvent.Focus();
+            return;
+        }
+
+        cmbHamEvent.SelectedIndex = eventIndex;
+
         if (btnSave.Enabled && MessageBox.Show("Reload anyway?", "There are unsaved changes", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
             return;
 
         int printCountB = 0, printCountD = 0;
+        var hamEventId = (int?)cmbHamEvent.SelectedValue;
 
-        if (!analyze && string.IsNullOrEmpty(tbCall.Text))
+        if (!analyze && string.IsNullOrEmpty(tbCall.Text) && hamEventId is null)
             cbQueued.Checked = true;
 
         _highlightedRowIndex = 0;
@@ -29,7 +43,8 @@ partial class MainForm
                   @EndDate={(dtpEndDate.Checked ? dtpEndDate.Value : DateTime.MaxValue)},
                   @Analyze={analyze},
                   @DxOnly={cbDxOnly.Checked},
-                  @ShowWaiting = {cbShowWaiting.Checked}
+                  @ShowWaiting = {cbShowWaiting.Checked},
+                  @HamEventId={hamEventId}
              """
         ).ToListAsync();
 

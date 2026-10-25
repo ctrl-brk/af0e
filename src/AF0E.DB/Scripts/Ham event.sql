@@ -1,36 +1,33 @@
-select top 1000 COL_CALL, COL_COMMENT, COL_TIME_ON, * from TABLE_HRD_CONTACTS_V01 where COL_COMMENT like '%/%' order by 3 desc
-
 insert into HamEvents (EventType, Name, Description, Url, StartDate, EndDate, LogDueDate, QslDueDate, QslInfo, Comments)
 values (
  'E' -- C - contest, E - special event, D - DXpedition
  -- Name
-,'150 Years of A&M College of TX'
+,'Baseball World Series ''26'
 -- Description
-,'On April 17, 1871, the Texas Legislature took advantage of the federal Morrill Land-Grant Act of 1862 to establish the Agricultural & Mechanical College of Texas. After years of construction and planning, the college officially opened its doors to its first classes on October 4, 1876.'
+,null
 -- Url
 ,null
 -- StartDate
-,'2026-10-04'
+,'2026-10-17'
 -- EndDate
-,'2026-10-18'
+,'2026-10-31'
 -- LogDueDate
 ,null
 -- QslDueDate
-,'2026-10-25'
+,'2026-11-07'
 -- QslInfo
-,'TIFFANY M BLOXOM
-P.O. Box 9535
-COLLEGE STATION, TX 77842'
+,'Marcus Boyd W2S
+PO Box 371
+Raven, VA 24639'
 -- Comments
 ,null
 )
 
-select * from HamEvents order by HamEventId desc
+select distinct e.* from HamEvents e
+inner join HamEventContacts c on e.HamEventId = c.HamEventId
+inner join TABLE_HRD_CONTACTS_V01 l on c.LogId = l.COL_PRIMARY_KEY and l.COL_QSL_SENT in ('N','Q')
+where qslduedate is not null
+and QslDueDate < getdate()
+order by QslDueDate
 
-insert into HamEventContacts (HamEventId, LogId)
-values (
-(select top 1 HamEventId from HamEvents order by HamEventId desc)
-,92629
-)
-
-select COL_PRIMARY_KEY, COL_CALL, COL_COMMENT, COL_TIME_ON, * from TABLE_HRD_CONTACTS_V01 where COL_CALL = 'n6s' order by 1 desc
+--update HamEvents set QslDueDate = null where HamEventId = 14

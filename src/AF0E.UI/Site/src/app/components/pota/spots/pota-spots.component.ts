@@ -228,7 +228,7 @@ export class PotaSpotsComponent implements OnInit, OnDestroy {
   }
 
   private addPotaSpot(qso: any) {
-    if (!this._spotParkNum) return;
+    if (!this._spotParkNum || !(qso.comment as string)?.startsWith('POTA')) return;
 
     this._potaAppSvc.addSpot(qso.call, this._spotParkNum, this._spotFreq.toString(), qso.mode, `${qso.rstSent} in ${qso.myGrid.slice(0, 4)} CO. TU ${Utils.extractNameOrNickname(qso.name_fmt)}!`).subscribe({
       next: () => {},

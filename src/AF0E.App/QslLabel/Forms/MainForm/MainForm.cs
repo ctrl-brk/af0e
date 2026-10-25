@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using AF0E.DB;
+using Microsoft.Data.SqlClient;
 using QslLabel.Forms;
 using QslLabel.Models;
 
@@ -30,6 +31,29 @@ internal sealed partial class MainForm : Form
         _dbContext = new HrdDbContext(AppSettings.ConnectionString);
         gridLog.SetDoubleBuffered();
         SetupContextMenu();
+        try
+        {
+            var events = _dbContext.HamEvents
+                .Where(x => x.QslDueDate != null && x.QslDueDate <= DateTime.Today)
+                .Where(x => x.HamEventContacts.Any(c => c.Log.ColQslSent == "N" || c.Log.ColQslSent == "Q"))
+                .OrderBy(x => x.QslDueDate)
+                .ThenBy(x => x.Name)
+                .ThenBy(x => x.HamEventId)
+                .Select(x => new { HamEventId = (int?)x.HamEventId, x.Name, x.QslDueDate })
+                .AsEnumerable()
+                .Select(x => new { x.HamEventId, Name = $"{x.Name} ({x.QslDueDate:yy-MM-dd})" })
+                .ToList();
+            events.Insert(0, new { HamEventId = (int?)null, Name = "-All events-" });
+            cmbHamEvent.DisplayMember = "Name";
+            cmbHamEvent.ValueMember = "HamEventId";
+            cmbHamEvent.DataSource = events;
+        }
+        catch (SqlException ex)
+        {
+            btnSearch.Enabled = false;
+            btnAnalyze.Enabled = false;
+            MessageBox.Show($"Unable to load ham events: {ex.Message}", "Database error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
         tbCall.Focus();
     }
 

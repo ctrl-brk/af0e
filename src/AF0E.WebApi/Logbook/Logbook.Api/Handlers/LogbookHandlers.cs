@@ -173,7 +173,15 @@ public static partial class LogbookHandlers
         if (activation is not null)
             AddActivationComment(log, activation.Park);
 
-        await SyncHamEventContacts(log, qso.HamEventIds, dbContext, ct);
+        var utcToday = DateTime.UtcNow.Date;
+        var matchingEventIds = await dbContext.HamEvents
+            .Where(x => (x.StartDate != null && x.StartDate <= utcToday)
+                        && (x.EndDate != null && x.EndDate >= utcToday)
+                        && EF.Functions.Like(x.CallSigns, $"%|{log.ColCall}|%"))
+            .Select(x => x.HamEventId)
+            .ToListAsync(ct);
+
+        await SyncHamEventContacts(log, (qso.HamEventIds ?? []).Concat(matchingEventIds), dbContext, ct);
 
         dbContext.Log.Add(log);
         await dbContext.SaveChangesAsync(ct);
