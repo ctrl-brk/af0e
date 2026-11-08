@@ -431,7 +431,7 @@
           @if (qsoMode() == 'CW' && keyerReady() && (editMode() === QsoEditMode.Add || editMode() === QsoEditMode.PotaHuntingAdd || editMode() === QsoEditMode.PotaActivatingAdd)) {
             @if (editMode() === QsoEditMode.PotaActivatingAdd) {
               <button pButton type="button" [severity]="cqSending() ? 'danger' : 'success'" (click)="sendPotaCq(true)" title="{{f1Title}}">F1&middot;CQ</button>
-              <button pButton type="button" severity="help" (click)="sendCw('R 73 de AF|0|E')" title="{{f2Title}}">F2&middot;TU</button>
+              <button pButton type="button" severity="help" (click)="sendCw(f2CwMsg().def)" title="{{f2Title()}}">F2&middot;TU</button>
             }
             <button pButton type="button" severity="info" (click)="sendCw(f3CwMsg().def, true)" [disabled]="cwCallLabel() === '???'" [title]="f3Title()">F3&middot;Exch</button>
             <button pButton type="button" severity="info" size="small" class="x2-btn" (click)="sendCw(f3CwMsg().ctl, true)" [disabled]="cwCallLabel() === '???'" title="{{f3CwMsg().ctl}}">x2</button>

@@ -154,9 +154,10 @@ export class QsoEditComponent implements OnInit {
 
   protected stationInfo = {stationCall: "AF0E", cwCall: "AF|0|E", operatorCall: "AF0E"};
 
+  protected f2CwMsg = signal<{def: string, alt: string, ctl: string, f6: string}>({def: 'R 73 ee', alt: '', ctl: 'R 73 de AF0E', f6: ''});
   protected f3CwMsg = signal<{def: string, alt: string, ctl: string, f6: string}>({def: '', alt: '', ctl: '', f6: ''});
-  protected f1Title = 'cq POTA de AF|Ø|E AFØE k';
-  protected f2Title = 'r 73 ee\nr 73 de AFØE [alt]';
+  protected f1Title = `cq POTA de ${this.stationInfo.cwCall} ${this.stationInfo.cwCall} k`;
+  protected f2Title = computed(() => `${this.f2CwMsg().def}\n${this.f2CwMsg().alt} [alt]\n${this.f2CwMsg().ctl.replaceAll('0', 'Ø')} [ctl]`);
   protected f3Title = computed(() => {return `${this.f3CwMsg().def.replaceAll('|', '')} k\n${this.f3CwMsg().alt.replaceAll('|', '')} k [alt]\n${this.f3CwMsg().ctl.replaceAll('|', '')} k [ctl]\n${this.f3CwMsg().f6.replaceAll('|', '')} k [F6]`.replaceAll('0', 'Ø');});
   protected f8Title = '?\nAGN? [alt]';
 
@@ -325,36 +326,40 @@ export class QsoEditComponent implements OnInit {
     let greet = Utils.getTimeOfDay(state) + Utils.extractNameOrNickname(name);
     const rst = rstSent ? rstSent.replaceAll('9', 'n') : '5nn';
 
-    const cwText = {...untracked(() => this.f3CwMsg())};
+    const f2CwText = {...untracked(() => this.f2CwMsg())};
+    const f3CwText = {...untracked(() => this.f3CwMsg())};
+
+    f2CwText.alt = `R ${greet} 73 ee`;
+    this.f2CwMsg.set(f2CwText);
 
     if (this.editMode() === QsoEditMode.PotaHuntingAdd) {
       const state = 'C|O';
-      cwText.def = `R TU ${rst} ${state}`;
-      cwText.alt = `R ${greet} UR ${rst} ${state}`;
-      cwText.ctl = `R TU ${rst} ${rst} ${state} ${state}`;
-      cwText.f6 = '';
+      f3CwText.def = `R TU ${rst} ${state}`;
+      f3CwText.alt = `R ${greet} UR ${rst} ${state}`;
+      f3CwText.ctl = `R TU ${rst} ${rst} ${state} ${state}`;
+      f3CwText.f6 = '';
 
-      this.f3CwMsg.set(cwText);
+      this.f3CwMsg.set(f3CwText);
     }
     else if (this.editMode() === QsoEditMode.PotaActivatingAdd) {
       const call = this.cwCallLabel() ? this.cwCallLabel() : '';
       let state = this.params().potaActivation?.state || 'CO';
       state = `${state.charAt(0)}|${state.charAt(1)}`;
 
-      cwText.def = `${call} TU ${rst} ${state}`;
-      cwText.alt = `${call} ${greet} UR ${rst} ${state}`;
-      cwText.ctl = `${call} TU ${rst} ${rst} ${state} ${state}`;
-      cwText.f6 = `TU ${rst} ${state}`;
+      f3CwText.def = `${call} TU ${rst} ${state}`;
+      f3CwText.alt = `${call} ${greet} UR ${rst} ${state}`;
+      f3CwText.ctl = `${call} TU ${rst} ${rst} ${state} ${state}`;
+      f3CwText.f6 = `TU ${rst} ${state}`;
 
-      this.f3CwMsg.set(cwText);
+      this.f3CwMsg.set(f3CwText);
     }
     else if (this.editMode() === QsoEditMode.Add) {
-      cwText.def = `TU ${rst}`;
-      cwText.alt = '';
-      cwText.ctl = '';
-      cwText.f6 = '';
+      f3CwText.def = `TU ${rst}`;
+      f3CwText.alt = '';
+      f3CwText.ctl = '';
+      f3CwText.f6 = '';
 
-      this.f3CwMsg.set(cwText);
+      this.f3CwMsg.set(f3CwText);
     }
   }
 
@@ -974,9 +979,11 @@ export class QsoEditComponent implements OnInit {
         handled = true;
         $event.preventDefault();
         if ($event.altKey)
-          this.sendCw(`R 73 de ${this.stationInfo.cwCall}`);
+          this.sendCw(this.f2CwMsg().alt);
+        else if ($event.ctrlKey)
+          this.sendCw(this.f2CwMsg().ctl);
         else
-          this.sendCw('R 73 E|E');
+          this.sendCw(this.f2CwMsg().def);
         break;
       case 'F3':
         handled = true;
@@ -1042,7 +1049,7 @@ export class QsoEditComponent implements OnInit {
       case 'к':
         if ($event.ctrlKey) {
           handled = true;
-          this.sendCw('R R R', false, false);
+          this.sendCw('RRR', false, false);
         }
         break;
       case 'Escape':
@@ -1137,7 +1144,7 @@ export class QsoEditComponent implements OnInit {
     );
 
     this.f1Title = `cq POTA de ${stationCall} ${stationCall} k`.replaceAll('0', 'Ø');
-    this.f2Title = `r 73 ee\nr 73 de ${stationCall} [alt]`.replaceAll('0', 'Ø');
+    this.f2CwMsg.set({def: 'R 73 ee', alt: '', ctl: `R 73 de ${stationCall}`, f6: ''});
   }
 
    private tuneRig(freqHz: number, mode: string | undefined) {
