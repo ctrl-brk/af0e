@@ -1,15 +1,18 @@
-﻿using System.Net;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Net;
+using AF0E.Common.Pota;
 using Microsoft.Extensions.Logging;
 
 namespace PotaHuntingLookup;
 
+[SuppressMessage("ReSharper", "InconsistentLogPropertyNaming")]
 internal static partial class Logging
 {
     [LoggerMessage(Level = LogLevel.Information, Message = "Lookup started for {startDate} - {endDate}")]
     public static partial void LogAppStarted(this ILogger logger, string startDate, string endDate);
 
-    [LoggerMessage(Level = LogLevel.Debug, Message = "{callSign} {parkNum} {parkName}")]
-    public static partial void LogQso(this ILogger logger, string callSign, string parkNum, string parkName);
+    [LoggerMessage(Level = LogLevel.Debug, Message = "{qso}")]
+    public static partial void LogQso(this ILogger logger, PotaLogEntry qso);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Adding {parkNum} - {parkName}")]
     public static partial void LogNewPark(this ILogger logger, string parkNum, string parkName);

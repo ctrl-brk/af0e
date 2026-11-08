@@ -124,6 +124,7 @@ internal sealed class HostedService(ILogger<HostedService> logger, IHostApplicat
 
         foreach (var potaQso in potaLog)
         {
+            logger.LogQso(potaQso);
             var found = false;
             var bandMismatch = false;
 
